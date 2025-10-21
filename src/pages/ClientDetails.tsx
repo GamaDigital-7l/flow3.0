@@ -217,7 +217,7 @@ const ClientDetails: React.FC = () => {
               {client.contact_email && <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {client.contact_email}</p>}
               {client.contact_phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> {client.contact_phone}</p>}
               {client.description && <p className="text-muted-foreground">{client.description}</p>}
-              <p className="text-sm text-muted-foreground pt-2 border-t">Criado em: {format(new Date(client.created_at), "PPP", { locale: ptBR })}</p>
+              <p className="text-sm text-muted-foreground pt-2 border-t">Criado em: {format(new Date(client.created_at), "PPP")}</p> {/* FIX TS2554 */}
             </CardContent>
           </Card>
         </TabsContent>

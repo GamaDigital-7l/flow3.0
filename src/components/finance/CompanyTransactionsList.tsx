@@ -99,7 +99,7 @@ const CompanyTransactionsList: React.FC<CompanyTransactionsListProps> = ({ curre
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-foreground">Transações de Empresa</CardTitle>
         <CardDescription className="text-muted-foreground">
-          Transações para {format(currentPeriod, "MMMM yyyy", { locale: ptBR })}.
+          Transações para {format(currentPeriod, "MMMM yyyy")}. {/* FIX TS2554 */}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

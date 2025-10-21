@@ -228,7 +228,7 @@ const Health: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex justify-between items-center">
-            <p className="text-lg font-medium text-muted-foreground">Última Medição ({latestWeightMetric ? format(parseISO(latestWeightMetric.date), "PPP", { locale: ptBR }) : 'N/A'}):</p>
+            <p className="text-lg font-medium text-muted-foreground">Última Medição ({latestWeightMetric ? format(parseISO(latestWeightMetric.date), "PPP") : 'N/A'}):</p> {/* FIX TS2554 */}
             <p className="text-2xl font-bold text-blue-500">{currentWeight} kg</p>
           </div>
         </CardContent>
@@ -272,7 +272,7 @@ const Health: React.FC = () => {
                   <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                     {targetDate && (
                       <p className="flex items-center gap-1">
-                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP", { locale: ptBR })}
+                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP")} {/* FIX TS2554 */}
                       </p>
                     )}
                     {daysRemaining !== null && (
@@ -313,7 +313,7 @@ const Health: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-4 w-4" /> {format(parseISO(metric.date), "PPP", { locale: ptBR })}
+                  <CalendarDays className="h-4 w-4" /> {format(parseISO(metric.date), "PPP")} {/* FIX TS2554 */}
                 </p>
                 {metric.notes && (
                   <p className="text-xs text-muted-foreground mt-2 border-t pt-1 line-clamp-2">{metric.notes}</p>

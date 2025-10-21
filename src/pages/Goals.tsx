@@ -170,7 +170,7 @@ const Goals: React.FC = () => {
                   <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                     {targetDate && (
                       <p className="flex items-center gap-1">
-                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP", { locale: ptBR })}
+                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP")} {/* FIX TS2554 */}
                       </p>
                     )}
                     {daysRemaining !== null && (
@@ -200,7 +200,7 @@ const Goals: React.FC = () => {
             {completedGoals.map(goal => (
               <div key={goal.id} className="p-3 border border-green-500/50 rounded-lg bg-green-500/10">
                 <p className="font-semibold text-foreground line-through">{goal.title}</p>
-                <p className="text-xs text-muted-foreground">Concluída em: {format(parseISO(goal.updated_at), "PPP", { locale: ptBR })}</p>
+                <p className="text-xs text-muted-foreground">Concluída em: {format(parseISO(goal.updated_at), "PPP")}</p> {/* FIX TS2554 */}
               </div>
             ))}
           </CardContent>

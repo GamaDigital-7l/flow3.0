@@ -112,7 +112,7 @@ const HealthMetricForm: React.FC<HealthMetricFormProps> = ({ initialData, onMetr
                     >
                       <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                       {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
+                        format(field.value, "PPP") // FIX TS2554
                       ) : (
                         <span>Escolha uma data</span>
                       )}

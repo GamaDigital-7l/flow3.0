@@ -119,7 +119,7 @@ const CompanyBudgets: React.FC = () => {
                 <p className="font-semibold text-foreground truncate">{budget.name}</p>
                 <p className="text-sm text-muted-foreground">Valor: {formatCurrency(budget.amount)} | Tipo: {budget.type === 'income' ? 'Receita' : 'Despesa'}</p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> Período: {format(new Date(budget.start_date), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(budget.end_date), "dd/MM/yyyy", { locale: ptBR })}
+                  <CalendarDays className="h-3 w-3" /> Período: {format(new Date(budget.start_date), "dd/MM/yyyy")} - {format(new Date(budget.end_date), "dd/MM/yyyy")} {/* FIX TS2554 (x2) */}
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">

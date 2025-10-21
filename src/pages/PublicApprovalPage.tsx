@@ -140,7 +140,7 @@ const PublicApprovalPage: React.FC<PublicApprovalPageProps> = () => {
     );
   }
 
-  const monthName = format(new Date(`${approvalLink.month_year_reference}-01`), "MMMM yyyy", { locale: ptBR });
+  const monthName = format(new Date(`${approvalLink.month_year_reference}-01`), "MMMM yyyy"); // FIX TS2554
   const tasksToReview = approvalLink.client_tasks;
 
   return (
@@ -155,7 +155,7 @@ const PublicApprovalPage: React.FC<PublicApprovalPageProps> = () => {
             <p className="text-lg text-muted-foreground">Revisão de Tarefas: {monthName}</p>
           </div>
         </div>
-        <Badge className="bg-primary text-primary-foreground text-sm">Expira em: {format(new Date(approvalLink.expires_at), "PPP", { locale: ptBR })}</Badge>
+        <Badge className="bg-primary text-primary-foreground text-sm">Expira em: {format(new Date(approvalLink.expires_at), "PPP")}</Badge> {/* FIX TS2554 */}
       </header>
 
       <h2 className="text-xl font-bold text-foreground mb-4">Tarefas Pendentes de Ação ({tasksToReview.length})</h2>
@@ -192,7 +192,7 @@ const PublicApprovalPage: React.FC<PublicApprovalPageProps> = () => {
               <CardContent className="flex-grow space-y-3">
                 {task.due_date && (
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="h-4 w-4 text-primary flex-shrink-0" /> Vencimento: {format(new Date(task.due_date), "PPP", { locale: ptBR })}
+                    <CalendarDays className="h-4 w-4 text-primary flex-shrink-0" /> Vencimento: {format(new Date(task.due_date), "PPP")} {/* FIX TS2554 */}
                   </p>
                 )}
                 {task.status === 'edit_requested' && task.edit_reason && (

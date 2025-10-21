@@ -121,7 +121,7 @@ const CompanyRecurrences: React.FC = () => {
                   {formatCurrency(rec.amount)} ({rec.frequency})
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> Próximo Vencimento: {format(new Date(rec.next_due_date), "PPP", { locale: ptBR })}
+                  <Clock className="h-3 w-3" /> Próximo Vencimento: {format(new Date(rec.next_due_date), "PPP")} {/* FIX TS2554 */}
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">

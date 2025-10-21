@@ -123,7 +123,7 @@ const QuickTransactionEntry: React.FC<QuickTransactionEntryProps> = ({ onTransac
               description: parseQuickEntry(input)?.description || '',
               amount: parseQuickEntry(input)?.amount || 0,
               type: 'expense',
-              date: new Date(),
+              date: format(new Date(), "yyyy-MM-dd"), // FIX TS2322: Passando string date
             }}
             onTransactionSaved={handleTransactionFormSaved}
             onClose={() => setIsFormOpen(false)}

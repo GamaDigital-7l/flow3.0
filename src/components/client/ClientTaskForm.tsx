@@ -20,7 +20,7 @@ import TagSelector from "../TagSelector";
 import { Checkbox } from "../ui/checkbox";
 import { ptBR } from "date-fns/locale/pt-BR";
 import TimePicker from "../TimePicker";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; // Adicionado Form components
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Adicionado FormDescription
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Adicionado Select components
 
 const clientTaskSchema = z.object({
@@ -252,7 +252,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                         {field.value ? (
-                          format(field.value, "PPP", { locale: ptBR })
+                          format(field.value, "PPP") // FIX TS2554
                         ) : (
                           <span>Escolha uma data</span>
                         )}

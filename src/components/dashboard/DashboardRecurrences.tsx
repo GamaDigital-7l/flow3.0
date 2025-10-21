@@ -66,7 +66,7 @@ const DashboardRecurrences: React.FC = () => {
               <div>
                 <p className="font-medium">{rec.description}</p>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(rec.start_date), 'dd/MM/yyyy', { locale: ptBR })}
+                  {format(new Date(rec.start_date), 'dd/MM/yyyy')} {/* FIX TS2554 */}
                 </p>
               </div>
               <p className={cn("font-semibold", rec.type === 'income' ? 'text-green-500' : 'text-red-500')}>

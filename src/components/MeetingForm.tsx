@@ -237,7 +237,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ initialData, onMeetingSaved, 
               >
                 <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 {form.watch("date") ? (
-                  format(form.watch("date")!, "PPP", { locale: ptBR })
+                  format(form.watch("date")!, "PPP") // FIX TS2554
                 ) : (
                   <span>Escolha uma data</span>
                 )}

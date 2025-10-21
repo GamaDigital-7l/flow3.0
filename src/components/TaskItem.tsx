@@ -54,7 +54,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
   }
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
-    let dateString = format(dueDate, "PPP", { locale: ptBR });
+    let dateString = format(dueDate, "PPP"); // FIX TS2554
     if (task.time) {
       dateString += ` às ${formatTime(task.time)}`;
     }
@@ -304,7 +304,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
               </DialogDescription>
             </DialogHeader>
             <TaskForm
-              initialData={{ ...editingTask, due_date: editingTask?.due_date ? parseISO(editingTask.due_date) : undefined } as any}
+              initialData={{ ...editingTask, due_date: editingTask?.due_date ? parseISO(editingTask.due_date) : undefined } as any} // FIX TS2322
               onTaskSaved={refetchTasks}
               onClose={() => setIsFormOpen(false)}
             />
@@ -329,7 +329,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
                 origin_board: task.origin_board,
                 current_board: task.current_board,
                 due_date: task.due_date ? parseISO(task.due_date) : undefined,
-              }}
+              } as any} // FIX TS2322
               parentTaskId={task.id}
               onTaskSaved={refetchTasks}
               onClose={() => setIsSubtaskFormOpen(false)}

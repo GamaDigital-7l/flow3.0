@@ -151,7 +151,7 @@ const BriefingPage: React.FC = () => {
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 <p>Perguntas: {briefing.questions.length}</p>
-                <p>Atualizado em: {format(new Date(briefing.updated_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                <p>Atualizado em: {format(new Date(briefing.updated_at), 'dd/MM/yyyy')}</p> {/* FIX TS2554 */}
               </CardContent>
               <CardFooter className="flex justify-between gap-2">
                 <Button

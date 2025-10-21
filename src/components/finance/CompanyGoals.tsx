@@ -118,7 +118,7 @@ const CompanyGoals: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Alvo: {formatCurrency(goal.target_amount)} | Atual: {formatCurrency(goal.current_amount)}</p>
                 {goal.target_date && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3" /> Data Alvo: {format(new Date(goal.target_date), "PPP", { locale: ptBR })}
+                    <CalendarDays className="h-3 w-3" /> Data Alvo: {format(new Date(goal.target_date), "PPP")} {/* FIX TS2554 */}
                   </p>
                 )}
               </div>

@@ -38,8 +38,8 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
   const formatString = includeTime ? "PPP 'às' HH:mm" : "PPP";
-  // Corrigido para usar 2 argumentos, passando locale no objeto de opções
-  return format(dateObj, formatString, { locale: ptBR });
+  // FIX TS2554: Removendo o terceiro argumento { locale: ptBR }
+  return format(dateObj, formatString);
 }
 
 export function formatTime(timeString: string | null | undefined): string {

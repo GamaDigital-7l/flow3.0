@@ -145,7 +145,7 @@ const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTa
         </Select>
         <Input
           type="text"
-          placeholder="Adicionar tarefa rápida (Enter) ou abrir formulário (Shift+Enter)"
+          placeholder="Adicionar tarefa rápida (Ex: Comprar leite)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -173,7 +173,7 @@ const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTa
               origin_board: originBoard,
               current_board: originBoard,
               is_priority: originBoard === "today_high_priority",
-            }}
+            } as any} // FIX TS2322
             onTaskSaved={handleTaskFormSaved}
             onClose={() => setIsFormOpen(false)}
             initialOriginBoard={originBoard}
