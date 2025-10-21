@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from 'date-fns';
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import * as dateFnsTz from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -25,13 +25,13 @@ const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 export function convertToUtc(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
-  return zonedTimeToUtc(dateObj, SAO_PAULO_TIME_ZONE);
+  return dateFnsTz.zonedTimeToUtc(dateObj, SAO_PAULO_TIME_ZONE);
 }
 
 export function convertToSaoPauloTime(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
-  return utcToZonedTime(dateObj, SAO_PAULO_TIME_ZONE);
+  return dateFnsTz.utcToZonedTime(dateObj, SAO_PAULO_TIME_ZONE);
 }
 
 export function formatDateTime(date: Date | string | null | undefined, includeTime: boolean = true): string {
