@@ -20,6 +20,7 @@ import EditReasonDialog from "@/components/client/EditReasonDialog"; // Correcte
 const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string }[] = [
   { id: "pending", title: "A Fazer" },
   { id: "in_progress", title: "Em Produção" },
+  { id: "edit_requested", title: "Edição Solicitada" }, // Adicionado coluna de Edição Solicitada
   { id: "under_review", title: "Para Aprovação" },
   { id: "approved", title: "Aprovado" },
   { id: "posted", title: "Postado" },
@@ -110,6 +111,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
       // Refetch completo para garantir a ordem correta no DB e no cache
       queryClient.invalidateQueries({ queryKey: ["clientTasks", client.id, userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks", "client_tasks", userId] }); // Invalidate dashboard mirror
+      queryClient.invalidateQueries({ queryKey: ["clientProgress", client.id, userId] }); // Invalidate progress
     },
     onError: (err: any) => {
       showError("Erro ao mover tarefa: " + err.message);
@@ -194,6 +196,14 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
             return;
         }
     }
+    
+    // Se a tarefa for movida para 'edit_requested', forçamos o diálogo de razão
+    if (newStatus === 'edit_requested') {
+        setTaskToProcess(task);
+        setIsEditReasonDialogOpen(true);
+        // Não atualiza o estado local ainda, espera a razão
+        return;
+    }
 
     // Atualizar o estado local para mudança de coluna
     setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus, order_index: newOrderIndex } : t));
@@ -239,6 +249,8 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
 
   const handleEditReasonSubmit = (reason: string) => {
     if (taskToProcess) {
+      // Atualiza o estado local e envia para o DB
+      setLocalTasks(prev => prev.map(t => t.id === taskToProcess.id ? { ...t, status: "edit_requested", edit_reason: reason } : t));
       updateTaskStatusMutation.mutate({ taskId: taskToProcess.id, newStatus: "edit_requested", reason });
     }
     setIsEditReasonDialogOpen(false);
