@@ -15,7 +15,7 @@ import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { showError, showSuccess } from "@/utils/toast";
 import ClientKanbanSkeleton from "@/components/client/ClientKanbanSkeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import EditReasonDialog from "@/components/client/EditReasonDialog";
+import EditReasonDialog from "@/components/client/EditReasonDialog"; // Corrected import path
 
 const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string }[] = [
   { id: "pending", title: "A Fazer" },
@@ -55,6 +55,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isEditReasonDialogOpen, setIsEditReasonDialogOpen] = useState(false);
   const [taskToProcess, setTaskToProcess] = useState<ClientTask | null>(null);
+  const [targetStatus, setTargetStatus] = useState<ClientTaskStatus | null>(null);
 
   const { data: tasks, isLoading, error, refetch } = useQuery<ClientTask[], Error>({
     queryKey: ["clientTasks", client.id, userId],
@@ -64,9 +65,28 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
 
   const updateTaskStatusMutation = useMutation({
     mutationFn: async ({ taskId, newStatus, reason }: { taskId: string; newStatus: ClientTaskStatus; reason?: string }) => {
+      const updatePayload: { status: ClientTaskStatus, edit_reason?: string | null, is_completed?: boolean, completed_at?: string | null, updated_at: string } = {
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (newStatus === 'edit_requested') {
+        updatePayload.edit_reason = reason || null;
+        updatePayload.is_completed = false;
+        updatePayload.completed_at = null;
+      } else if (newStatus === 'approved' || newStatus === 'posted') {
+        updatePayload.is_completed = true;
+        updatePayload.completed_at = new Date().toISOString();
+        updatePayload.edit_reason = null;
+      } else {
+        updatePayload.is_completed = false;
+        updatePayload.completed_at = null;
+        updatePayload.edit_reason = null;
+      }
+
       const { error } = await supabase
         .from("client_tasks")
-        .update({ status: newStatus, edit_reason: reason, updated_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq("id", taskId);
       if (error) throw error;
     },
@@ -74,6 +94,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
       const statusTitle = KANBAN_COLUMNS.find(c => c.id === variables.newStatus)?.title || variables.newStatus;
       showSuccess(`Tarefa movida para "${statusTitle}"!`);
       queryClient.invalidateQueries({ queryKey: ["clientTasks", client.id, userId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardTasks", "client_tasks", userId] }); // Invalidate dashboard mirror
     },
     onError: (err: any) => {
       showError("Erro ao mover tarefa: " + err.message);
@@ -90,20 +111,25 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
 
     if (!task) return;
 
-    // Determine the destination status
     let newStatus: ClientTaskStatus;
     const overIsAColumn = KANBAN_COLUMNS.some(col => col.id === over.id);
 
     if (overIsAColumn) {
       newStatus = over.id as ClientTaskStatus;
     } else {
-      // Dropped on another task, find that task's status
       const overTask = tasks?.find(t => t.id === over.id);
       if (!overTask) return;
       newStatus = overTask.status;
     }
 
-    // Only mutate if the status is actually changing
+    // Prevent dragging into 'posted' or 'approved' directly if not coming from 'under_review'
+    if (newStatus === 'approved' || newStatus === 'posted') {
+        if (task.status !== 'under_review' && task.status !== 'approved') {
+            showError("Aprovação e Postagem só podem ser feitas a partir de 'Para Aprovação' ou 'Aprovado'.");
+            return;
+        }
+    }
+
     if (task.status !== newStatus) {
       updateTaskStatusMutation.mutate({ taskId, newStatus });
     }
@@ -124,16 +150,20 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
     const task = tasks?.find(t => t.id === taskId);
     if (task) {
       setTaskToProcess(task);
+      // Determine if we are approving (from under_review) or marking as posted (from approved)
+      const statusToSet = task.status === 'approved' ? 'posted' : 'approved';
+      setTargetStatus(statusToSet);
       setIsApproveDialogOpen(true);
     }
   };
 
   const confirmApprove = () => {
-    if (taskToProcess) {
-      updateTaskStatusMutation.mutate({ taskId: taskToProcess.id, newStatus: "approved" });
+    if (taskToProcess && targetStatus) {
+      updateTaskStatusMutation.mutate({ taskId: taskToProcess.id, newStatus: targetStatus });
     }
     setIsApproveDialogOpen(false);
     setTaskToProcess(null);
+    setTargetStatus(null);
   };
 
   const handleRequestEditClick = (task: ClientTask) => {
@@ -206,14 +236,14 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
       <AlertDialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Aprovação</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar {targetStatus === 'posted' ? 'Postagem' : 'Aprovação'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja aprovar a tarefa "{taskToProcess?.title}"?
+              Tem certeza que deseja {targetStatus === 'posted' ? 'marcar como postado' : 'aprovar'} a tarefa "{taskToProcess?.title}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmApprove}>Aprovar</AlertDialogAction>
+            <AlertDialogAction onClick={confirmApprove}>Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

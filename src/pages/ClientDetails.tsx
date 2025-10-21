@@ -11,7 +11,7 @@ import { ArrowLeft, Edit, Trash2, Mail, Phone, Info, LayoutDashboard, Link as Li
 import { useSession } from "@/integrations/supabase/auth";
 import { Client } from "@/types/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import ClientForm from "@/components/client/ClientForm";
+import ClientFormContent from "@/components/client/ClientFormContent";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientKanbanPage from "./ClientKanbanPage";
 import { format } from "date-fns";
@@ -179,7 +179,7 @@ const ClientDetails: React.FC = () => {
             <DialogHeader>
               <DialogTitle>Editar Cliente</DialogTitle>
             </DialogHeader>
-            <ClientForm initialData={client} onClientSaved={handleClientSaved} onClose={() => setIsFormOpen(false)} />
+            <ClientFormContent initialData={client} onClientSaved={handleClientSaved} onClose={() => setIsFormOpen(false)} />
           </DialogContent>
         </Dialog>
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -213,6 +213,7 @@ const ClientDetails: React.FC = () => {
               <CardTitle>Detalhes do Cliente</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {client.company && <p className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /> {client.company}</p>}
               {client.contact_email && <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {client.contact_email}</p>}
               {client.contact_phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> {client.contact_phone}</p>}
               {client.description && <p className="text-muted-foreground">{client.description}</p>}

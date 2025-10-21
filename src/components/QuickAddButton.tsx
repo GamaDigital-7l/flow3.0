@@ -10,7 +10,7 @@ import { useSession } from "@/integrations/supabase/auth";
 
 import TaskForm from "@/components/TaskForm";
 import NoteForm from "@/components/NoteForm";
-import ClientForm from "@/components/client/ClientForm";
+import ClientFormContent from "./client/ClientFormContent"; // Updated import
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
 const QuickAddButton: React.FC = () => {
@@ -96,7 +96,7 @@ const QuickAddButton: React.FC = () => {
             <DialogTitle>Adicionar Novo Cliente</DialogTitle>
             <DialogDescription>Adicione um novo cliente para gerenciar suas tarefas.</DialogDescription>
           </DialogHeader>
-          <ClientForm onClientSaved={handleClientSaved} onClose={() => setIsClientFormOpen(false)} />
+          <ClientFormContent initialData={null} onClientSaved={handleClientSaved} onClose={() => setIsClientFormOpen(false)} />
         </DialogContent>
       </Dialog>
     </>

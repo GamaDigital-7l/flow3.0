@@ -8,16 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from "@/integrations/supabase/auth";
 import ClientList from '@/components/client/ClientList';
 import ClientFormDialog from '@/components/client/ClientFormDialog';
-
-export interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  company: string | null;
-  created_at: string;
-  user_id: string;
-}
+import { Client } from '@/types/client'; // Importando o tipo Client
 
 const ClientsPage: React.FC = () => {
   const { session } = useSession();
@@ -44,7 +35,7 @@ const ClientsPage: React.FC = () => {
       const { data, error } = await query;
 
       if (error) throw new Error(error.message);
-      return data;
+      return data as Client[];
     },
     enabled: !!userId,
   });

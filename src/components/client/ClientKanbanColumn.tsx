@@ -22,8 +22,9 @@ const ClientKanbanColumn: React.FC<ClientKanbanColumnProps> = ({ id, title, task
   return (
     <div
       ref={setNodeRef}
+      // Ajustado para ser mais estreito em telas pequenas (w-64) e fixo em telas maiores (w-72)
       className={cn(
-        "w-72 flex-shrink-0 bg-muted/30 rounded-xl p-2 transition-colors duration-200",
+        "w-64 sm:w-72 flex-shrink-0 bg-muted/30 rounded-xl p-2 transition-colors duration-200",
         isOver && "bg-primary/10"
       )}
     >

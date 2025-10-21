@@ -44,6 +44,16 @@ interface ClientTaskFormProps {
   onClose: () => void;
 }
 
+const sanitizeFilename = (filename: string) => {
+  return filename
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9.]/g, "-")
+    .replace(/--+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+};
+
 const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, onClientTaskSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -66,7 +76,11 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setImageFiles(prev => [...prev, ...files]);
+    const validFiles = files.filter(file => file.size <= MAX_FILE_SIZE);
+    if (validFiles.length !== files.length) {
+      showError("Alguns arquivos excedem o limite de 5MB e foram ignorados.");
+    }
+    setImageFiles(prev => [...prev, ...validFiles]);
     e.target.value = ''; // Reset input
   };
 
@@ -87,12 +101,16 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
     try {
       let uploadedImageUrls = [...existingImageUrls];
+      
+      // 1. Upload new images
       for (const file of imageFiles) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${userId}/${clientId}/${fileName}`;
+        const sanitizedFilename = sanitizeFilename(file.name);
+        // Path: client-assets/{userId}/{clientId}/{timestamp}-{fileName}
+        const filePath = `${userId}/${clientId}/${Date.now()}-${sanitizedFilename}`;
+        
         const { error: uploadError } = await supabase.storage.from('client-assets').upload(filePath, file);
         if (uploadError) throw new Error('Erro no upload da imagem: ' + uploadError.message);
+        
         const { data: publicUrlData } = supabase.storage.from('client-assets').getPublicUrl(filePath);
         uploadedImageUrls.push(publicUrlData.publicUrl);
       }
@@ -103,7 +121,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         due_date: values.due_date ? format(values.due_date, "yyyy-MM-dd") : null,
         time: values.time,
         status: values.status,
-        is_standard_task: true, // Sempre será true agora
+        is_standard_task: true, 
         image_urls: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
         updated_at: new Date().toISOString(),
       };
@@ -125,8 +143,8 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         clientTaskId = data.id;
       }
 
-      // Sempre criar ou atualizar a tarefa principal no dashboard
-      const { data: client } = await supabase.from('clients').select('name').eq('id', clientId).single();
+      // Sincronizar com a tarefa principal (Dashboard)
+      const { data: clientData } = await supabase.from('clients').select('name').eq('id', clientId).single();
       const mainTaskPayload = {
         user_id: userId,
         title: `[CLIENTE] ${values.title}`,
@@ -135,7 +153,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         time: dataToSave.time,
         current_board: 'client_tasks' as const,
         origin_board: 'client_tasks' as const,
-        client_name: client?.name || 'Cliente',
+        client_name: clientData?.name || 'Cliente',
       };
 
       if (mainTaskId) {
@@ -148,6 +166,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         await supabase.from('client_tasks').update({ main_task_id: mainTaskId }).eq('id', clientTaskId!);
       }
 
+      // Sincronizar Tags
       if (clientTaskId) {
         await supabase.from("client_task_tags").delete().eq("client_task_id", clientTaskId);
         if (values.selected_tag_ids && values.selected_tag_ids.length > 0) {

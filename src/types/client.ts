@@ -17,6 +17,7 @@ export interface Client {
   email?: string;
   phone?: string;
   status?: string;
+  company?: string | null; // Adicionado
 }
 
 export interface ClientTask {

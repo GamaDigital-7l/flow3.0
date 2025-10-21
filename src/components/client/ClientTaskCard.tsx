@@ -7,11 +7,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ClientTask, ClientTaskStatus } from "@/types/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, CalendarDays, CheckCircle2, Edit2 } from "lucide-react";
+import { Edit, CalendarDays, CheckCircle2, Edit2, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import FullScreenImageViewer from "./FullScreenImageViewer";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface ClientTaskCardProps {
   task: ClientTask;
@@ -39,10 +40,17 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
 
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
-  const handleImageClick = () => {
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (task.image_urls && task.image_urls.length > 0) {
       setIsImageViewerOpen(true);
     }
+  };
+
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.preventDefault();
+    e.stopPropagation();
+    action();
   };
 
   return (
@@ -54,12 +62,12 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
         {...listeners}
         onClick={() => onEdit(task)}
         className={cn(
-          "bg-card border border-border rounded-lg shadow-sm cursor-grab active:cursor-grabbing touch-none flex flex-col",
+          "bg-card border border-border rounded-lg shadow-sm cursor-grab active:cursor-grabbing flex flex-col w-full",
           isDragging && "shadow-xl opacity-80 scale-105"
         )}
       >
         {task.image_urls && task.image_urls.length > 0 && (
-          <div className="aspect-[4/5] w-full overflow-hidden rounded-t-lg cursor-pointer" onClick={(e) => { e.stopPropagation(); handleImageClick(); }}>
+          <div className="aspect-[4/5] w-full overflow-hidden rounded-t-lg cursor-pointer" onClick={handleImageClick}>
             <img
               src={task.image_urls[0]}
               alt={task.title}
@@ -95,23 +103,40 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
             </span>
           )}
         </CardContent>
-        <CardFooter className="p-2 border-t border-border flex justify-end gap-1">
-          {columnId === 'under_review' && (
-            <>
-              <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onApprove(task.id); }} className="h-7 w-7 text-green-500 hover:bg-green-500/10">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="sr-only">Aprovar</span>
+        <CardFooter className="p-2 border-t border-border flex justify-between items-center">
+          <div className="flex gap-1">
+            {columnId === 'under_review' && (
+              <>
+                <Button variant="ghost" size="icon" onClick={(e) => handleActionClick(e, () => onApprove(task.id))} className="h-7 w-7 text-green-500 hover:bg-green-500/10">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="sr-only">Aprovar</span>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => handleActionClick(e, () => onRequestEdit(task))} className="h-7 w-7 text-orange-500 hover:bg-orange-500/10">
+                  <Edit2 className="h-4 w-4" />
+                  <span className="sr-only">Solicitar Edição</span>
+                </Button>
+              </>
+            )}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Mais Ações</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRequestEdit(task); }} className="h-7 w-7 text-orange-500 hover:bg-orange-500/10">
-                <Edit2 className="h-4 w-4" />
-                <span className="sr-only">Solicitar Edição</span>
-              </Button>
-            </>
-          )}
-          <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(task); }} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
-            <Edit className="h-4 w-4" />
-            <span className="sr-only">Revisar/Editar Tarefa</span>
-          </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border-border rounded-md shadow-lg text-sm">
+              <DropdownMenuItem onClick={(e) => handleActionClick(e, () => onEdit(task))} className="cursor-pointer py-1.5 px-2">
+                <Edit className="mr-2 h-4 w-4" /> Revisar/Editar Tarefa
+              </DropdownMenuItem>
+              {/* Adicionar outras ações se necessário, como mover para posted */}
+              {columnId === 'approved' && (
+                <DropdownMenuItem onClick={(e) => handleActionClick(e, () => onApprove(task.id))} className="cursor-pointer py-1.5 px-2 text-green-500">
+                  <CheckCircle2 className="mr-2 h-4 w-4" /> Marcar como Postado
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardFooter>
       </Card>
       <FullScreenImageViewer
