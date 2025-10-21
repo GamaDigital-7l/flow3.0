@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ClientTask, ClientTaskStatus } from "@/types/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, CalendarDays, CheckCircle2, Edit2, MoreVertical, Paperclip } from "lucide-react";
+import { Edit, CalendarDays, CheckCircle2, Edit2, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -30,16 +30,15 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'TASK', task } });
+  } = useSortable({ id: task.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 250ms ease',
+    transition: transition || 'transform 250ms ease', // Animação suave
     zIndex: isDragging ? 10 : undefined,
   };
 
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-  const coverImage = task.image_urls && task.image_urls.length > 0 ? task.image_urls[0] : null;
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -67,10 +66,10 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
           isDragging && "shadow-xl opacity-80 scale-105"
         )}
       >
-        {coverImage && (
-          <div className="aspect-[16/10] w-full overflow-hidden rounded-t-lg cursor-pointer" onClick={handleImageClick}>
+        {task.image_urls && task.image_urls.length > 0 && (
+          <div className="aspect-[4/5] w-full overflow-hidden rounded-t-lg cursor-pointer" onClick={handleImageClick}>
             <img
-              src={coverImage}
+              src={task.image_urls[0]}
               alt={task.title}
               className="w-full h-full object-cover"
               loading="lazy"
@@ -83,6 +82,11 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-0 flex-grow">
+          {task.description && (
+            <p className="text-xs text-muted-foreground break-words line-clamp-3 mb-2">
+              {task.description}
+            </p>
+          )}
           {task.tags && task.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-2">
               {task.tags.map((tag) => (
@@ -92,20 +96,12 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
               ))}
             </div>
           )}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            {task.due_date && (
-              <span className="flex items-center gap-1">
-                <CalendarDays className="h-3 w-3" />
-                {format(new Date(task.due_date), "dd/MM", { locale: ptBR })}
-              </span>
-            )}
-            {task.image_urls && task.image_urls.length > 0 && (
-              <span className="flex items-center gap-1">
-                <Paperclip className="h-3 w-3" />
-                {task.image_urls.length}
-              </span>
-            )}
-          </div>
+          {task.due_date && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <CalendarDays className="h-3 w-3" />
+              {format(new Date(task.due_date), "dd/MM", { locale: ptBR })}
+            </span>
+          )}
         </CardContent>
         <CardFooter className="p-2 border-t border-border flex justify-between items-center">
           <div className="flex gap-1">
@@ -113,9 +109,11 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
               <>
                 <Button variant="ghost" size="icon" onClick={(e) => handleActionClick(e, () => onApprove(task.id))} className="h-7 w-7 text-green-500 hover:bg-green-500/10">
                   <CheckCircle2 className="h-4 w-4" />
+                  <span className="sr-only">Aprovar</span>
                 </Button>
                 <Button variant="ghost" size="icon" onClick={(e) => handleActionClick(e, () => onRequestEdit(task))} className="h-7 w-7 text-orange-500 hover:bg-orange-500/10">
                   <Edit2 className="h-4 w-4" />
+                  <span className="sr-only">Solicitar Edição</span>
                 </Button>
               </>
             )}
@@ -124,12 +122,19 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
                 <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Mais Ações</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={(e) => handleActionClick(e, () => onEdit(task))}>
-                <Edit className="mr-2 h-4 w-4" /> Revisar/Editar
+            <DropdownMenuContent align="end" className="bg-popover border-border rounded-md shadow-lg text-sm">
+              <DropdownMenuItem onClick={(e) => handleActionClick(e, () => onEdit(task))} className="cursor-pointer py-1.5 px-2">
+                <Edit className="mr-2 h-4 w-4" /> Revisar/Editar Tarefa
               </DropdownMenuItem>
+              {/* Adicionar outras ações se necessário, como mover para posted */}
+              {columnId === 'approved' && (
+                <DropdownMenuItem onClick={(e) => handleActionClick(e, () => onApprove(task.id))} className="cursor-pointer py-1.5 px-2 text-green-500">
+                  <CheckCircle2 className="mr-2 h-4 w-4" /> Marcar como Postado
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </CardFooter>
@@ -138,6 +143,8 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
         isOpen={isImageViewerOpen}
         onClose={() => setIsImageViewerOpen(false)}
         imageUrls={task.image_urls || []}
+        initialIndex={0}
+        description={task.description}
       />
     </>
   );
