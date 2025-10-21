@@ -3,7 +3,7 @@
 import React from "react";
 import { Note } from "@/pages/Notes";
 import { Button } from "@/components/ui/button";
-import { Edit, Pin, PinOff, Bell, Tag as TagIcon, ListTodo, TextCursorInput, CheckCircle2, Archive, Trash2 } from "lucide-react";
+import { Edit, Pin, PinOff, Tag as TagIcon, ListTodo, TextCursorInput, CheckCircle2, Archive, Trash2 } from "lucide-react";
 import { format } from "date-fns/format";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Badge } from "@/components/ui/badge";
@@ -61,12 +61,6 @@ const NoteViewer: React.FC<NoteViewerProps> = ({ note, onEdit }) => {
             </Badge>
           ))}
         </div>
-      )}
-
-      {(note.reminder_date || note.reminder_time) && (
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Bell className="h-3 w-3 text-primary flex-shrink-0" /> Lembrete: {note.reminder_date ? format(new Date(note.reminder_date), "PPP", { locale: ptBR }) : ''} {note.reminder_time ? `às ${note.reminder_time}` : ''}
-        </p>
       )}
 
       <div className="flex items-center gap-1 text-xs text-muted-foreground">

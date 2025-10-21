@@ -25,8 +25,6 @@ import BookReaderFullScreen from "./pages/BookReaderFullScreen";
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
-import FocusMode from "./pages/FocusMode";
-import AIChat from "./pages/AIChat";
 import BriefingPage from "./pages/Briefing";
 import { showError } from "@/utils/toast";
 
@@ -158,7 +156,6 @@ function AppContent() {
 
         {/* Rotas Protegidas */}
         <Route element={<ProtectedRoute session={session} />}>
-          <Route path="/focus" element={<FocusMode />} />
           <Route element={<Layout isOnline={isOnline} deferredPrompt={deferredPrompt} onInstallClick={handleInstallClick} />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             
@@ -175,7 +172,6 @@ function AppContent() {
             <Route path="/books" element={<Books />} />
             <Route path="/books/:id" element={<BookDetails />} />
             <Route path="/recurring" element={<RecurringTasks />} />
-            <Route path="/ai-chat" element={<AIChat />} />
             <Route path="/briefing" element={<BriefingPage />} />
           </Route>
         </Route>

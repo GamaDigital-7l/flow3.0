@@ -41,6 +41,7 @@ serve(async (req) => {
       .from('public_approval_links')
       .select('client_id, user_id, expires_at, month_year_reference')
       .eq('unique_id', uniqueId)
+      .gte('expires_at', new Date().toISOString()) // Link ainda válido
       .single();
 
     if (fetchLinkError || !approvalLink) {
@@ -60,7 +61,7 @@ serve(async (req) => {
 
     const { client_id, user_id, month_year_reference } = approvalLink;
 
-    // 2. Buscar detalhes do cliente e da tarefa para a notificação e histórico
+    // 2. Buscar detalhes do cliente e da tarefa para o histórico
     const { data: clientDetails, error: fetchClientDetailsError } = await supabaseServiceRole
       .from('clients')
       .select('name')
@@ -146,79 +147,25 @@ serve(async (req) => {
       }
     }
 
-    // 5. Enviar notificação via Telegram e registrar histórico
-    const { data: settings, error: settingsError } = await supabaseServiceRole
-      .from("settings")
-      .select("telegram_bot_token, telegram_chat_id, telegram_enabled, profiles(timezone)")
-      .eq("user_id", user_id)
-      .limit(1)
-      .single();
-
-    if (settingsError && settingsError.code !== 'PGRST116') {
-      console.error("Erro ao buscar configurações do usuário para notificação:", settingsError);
-    }
-
-    const telegramEnabled = settings?.telegram_enabled || false;
-    const telegramBotToken = settings?.telegram_bot_token;
-    const telegramChatId = settings?.telegram_chat_id;
-    const userTimezone = settings?.profiles?.timezone || "America/Sao_Paulo";
-
-    const nowInUserTimezone = utcToZonedTime(new Date(), userTimezone);
-    const formattedTime = format(nowInUserTimezone, "HH:mm", { locale: ptBR });
-    const formattedMonth = format(parseISO(`${month_year_reference}-01`), "MMM/yyyy", { locale: ptBR });
-
-    let telegramMessage = "";
+    // 5. Registrar no histórico da tarefa
     let eventType = "";
-    let icon = "";
-
     if (newStatus === 'approved') {
-      icon = "✅";
       eventType = "approved_via_public_link";
-      telegramMessage = `${icon} Cliente: ${clientDetails.name} | Ação: Aprovou | Tarefa: ${taskDetails.title} | Mês: ${formattedMonth} | Horário: ${formattedTime}`;
     } else if (newStatus === 'edit_requested') {
-      icon = "✏️";
       eventType = "edit_requested_via_public_link";
-      telegramMessage = `${icon} Cliente: ${clientDetails.name} | Ação: Solicitou edição | Tarefa: ${taskDetails.title} | Mês: ${formattedMonth} | Motivo: "${editReason || 'Nenhum motivo fornecido.'}" | Horário: ${formattedTime}`;
     } else if (newStatus === 'rejected') {
-      icon = "❌";
       eventType = "rejected_via_public_link";
-      telegramMessage = `${icon} Cliente: ${clientDetails.name} | Ação: Rejeitou | Tarefa: ${taskDetails.title} | Mês: ${formattedMonth} | Motivo: "${editReason || 'Nenhum motivo fornecido.'}" | Horário: ${formattedTime}`;
     }
 
-    // Adicionar link interno para acesso rápido
-    const appBaseUrl = Deno.env.get("APP_BASE_URL") || "http://localhost:8080"; // Usar variável de ambiente ou fallback
-    const quickAccessLink = `${appBaseUrl}/clients/${client_id}?openTaskId=${taskId}`;
-    if (telegramMessage) {
-        telegramMessage += `\n\nAcesso rápido: ${quickAccessLink}`;
-    }
+    // Obter fuso horário do usuário para registro de data/hora
+    const { data: profile, error: profileError } = await supabaseServiceRole
+      .from('profiles')
+      .select('timezone')
+      .eq('id', user_id)
+      .single();
+    const userTimezone = profile?.timezone || "America/Sao_Paulo";
+    const nowInUserTimezone = utcToZonedTime(new Date(), userTimezone);
 
-
-    if (telegramEnabled && telegramBotToken && telegramChatId && telegramMessage) {
-      try {
-        const telegramResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chat_id: telegramChatId,
-            text: telegramMessage,
-            parse_mode: 'Markdown',
-          }),
-        });
-
-        if (!telegramResponse.ok) {
-          const errorData = await telegramResponse.json();
-          console.error("Erro ao enviar mensagem para o Telegram:", errorData);
-        } else {
-          console.log(`Notificação Telegram enviada para o usuário ${user_id}.`);
-        }
-      } catch (telegramError: any) {
-        console.error(`Erro ao enviar mensagem Telegram para ${user_id}:`, telegramError);
-      }
-    }
-
-    // 6. Registrar no histórico da tarefa
     if (eventType) {
       const { error: historyError } = await supabaseServiceRole
         .from('client_task_history')
@@ -231,10 +178,8 @@ serve(async (req) => {
             task_title: taskDetails.title,
             month_year_reference: month_year_reference,
             edit_reason: editReason || null,
-            notification_message: telegramMessage,
-            quick_access_link: quickAccessLink,
           },
-          created_at: nowInUserTimezone.toISOString(), // Usar a data/hora no fuso horário do usuário
+          created_at: nowInUserTimezone.toISOString(),
         });
       if (historyError) {
         console.error("Erro ao registrar histórico da tarefa:", historyError);

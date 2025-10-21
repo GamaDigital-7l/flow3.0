@@ -97,19 +97,6 @@ export interface FinancialGoal {
   linked_account?: FinancialAccount;
 }
 
-export interface QuickTransactionSuggestion {
-  description: string;
-  amount: number;
-  type: FinancialTransactionType;
-  category_id: string | null;
-  category_name: string | null;
-  account_id: string | null;
-  account_name: string | null;
-  payment_method: string | null;
-  client_id: string | null;
-  client_name: string | null;
-}
-
 export interface RecurringTransaction {
     id: string;
     description: string;

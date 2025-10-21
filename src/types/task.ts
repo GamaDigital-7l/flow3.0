@@ -23,7 +23,6 @@ export interface Task {
   current_board: TaskCurrentBoard;
   is_priority: boolean;
   overdue: boolean;
-  last_notified_at: string | null;
   recurrence_time: string | null;
   completed_at: string | null;
   last_moved_to_overdue_at: string | null;

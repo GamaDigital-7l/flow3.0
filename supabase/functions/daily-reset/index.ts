@@ -43,8 +43,8 @@ serve(async (req) => {
       const yesterdayInUserTimezone = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd", { timeZone: userTimezone });
       const currentDayOfWeekInUserTimezone = getDay(nowInUserTimezone); // 0 para domingo, 1 para segunda, etc.
       const currentDayOfMonthInUserTimezone = nowInUserTimezone.getDate().toString();
-      const currentMonthYearRef = format(nowInUserTimezone, "yyyy-MM", { timeZone: userTimezone });
       const previousMonthYearRef = format(subDays(nowInUserTimezone, 1), "yyyy-MM", { timeZone: userTimezone });
+      const currentMonthYearRef = format(nowInUserTimezone, "yyyy-MM", { timeZone: userTimezone });
 
 
       console.log(`[User ${userId}] Executando daily-reset para o dia: ${todayInUserTimezone} no fuso horário ${userTimezone}. Verificando tarefas de: ${yesterdayInUserTimezone}`);
@@ -265,9 +265,6 @@ serve(async (req) => {
           console.log(`[User ${userId}, Client ${client.id}] Gerando tarefas para o mês atual (${currentMonthYearRef}).`);
           const { error: invokeGenerateError } = await supabase.functions.invoke('generate-client-tasks', {
             body: { clientId: client.id, monthYearRef: currentMonthYearRef, userId: userId }, // Passar userId no corpo
-            headers: {
-              // Remover Authorization header, pois userId está no body
-            },
           });
           if (invokeGenerateError) {
             console.error(`[User ${userId}, Client ${client.id}] Erro ao invocar generate-client-tasks:`, invokeGenerateError);

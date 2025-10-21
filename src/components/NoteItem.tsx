@@ -1,10 +1,12 @@
+"use client";
+
 import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Pin, PinOff, Archive, ArchiveRestore, Trash2, Edit, Undo2, MoreVertical, Bell } from "lucide-react";
+import { Pin, PinOff, Archive, ArchiveRestore, Trash2, Edit, Undo2, MoreVertical } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Note } from "@/pages/Notes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -103,20 +105,6 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, refetchNotes, onViewNote }) =
     updateNoteMutation.mutate({ trashed: false, archived: false, pinned: false });
   };
 
-  const handleChecklistItemToggle = async (index: number, checked: boolean) => {
-    if (note.type !== "checklist") return;
-
-    try {
-      const currentContent = JSON.parse(note.content);
-      if (Array.isArray(currentContent) && currentContent[index]) {
-        currentContent[index].completed = checked;
-        await updateNoteMutation.mutateAsync({ content: JSON.stringify(currentContent) });
-      }
-    } catch (err) {
-      showError("Erro ao atualizar item da checklist.");
-    }
-  };
-
   const renderNoteContentPreview = () => {
     if (note.type === "checklist") {
       try {
@@ -193,11 +181,6 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, refetchNotes, onViewNote }) =
               </Badge>
             ))}
           </div>
-        )}
-        {note.reminder_date && note.reminder_time && (
-          <p className="text-xs md:text-sm text-muted-foreground flex items-center gap-1">
-            <Bell className="h-3 w-3 text-blue-500 flex-shrink-0" /> Lembrete: {note.reminder_date ? format(new Date(note.reminder_date), "PPP", { locale: ptBR }) : ''} às {note.reminder_time}
-          </p>
         )}
       </CardContent>
 

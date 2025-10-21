@@ -42,8 +42,6 @@ export interface Note {
   created_at: string;
   updated_at: string;
   tags?: Tag[];
-  reminder_date?: string | null;
-  reminder_time?: string | null;
 }
 
 const fetchNotes = async (userId: string): Promise<Note[]> => {

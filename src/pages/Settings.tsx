@@ -9,9 +9,6 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import ProfileManagementCard from "@/components/settings/ProfileManagementCard";
 import IntegrationsCard from "@/components/settings/IntegrationsCard";
-import NotificationSettingsCard from "@/components/settings/NotificationSettingsCard";
-import AISettingsCard from "@/components/settings/AISettingsCard";
-import TelegramSettingsCard from "@/components/settings/TelegramSettingsCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -36,19 +33,8 @@ const TIMEZONES = [
   // Adicione mais fusos horários conforme necessário
 ];
 
-const settingsSchema = z.object({
-  groq_api_key: z.string().nullable().optional(),
-  openai_api_key: z.string().nullable().optional(),
-  ai_provider_preference: z.enum(["groq", "openai"]).default("groq"),
-  notification_channel: z.enum(["web_push", "none"]).default("web_push"),
-  telegram_bot_token: z.string().nullable().optional(),
-  telegram_chat_id: z.string().nullable().optional(),
-  telegram_enabled: z.boolean().default(false),
-  daily_brief_morning_time: z.string().default("08:00"),
-  daily_brief_evening_time: z.string().default("18:00"),
-  weekly_brief_day: z.string().default("Sunday"),
-  weekly_brief_time: z.string().default("08:00"),
-});
+// Schema vazio, pois as configurações de AI/Notificação foram removidas.
+const settingsSchema = z.object({});
 
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
 
@@ -65,28 +51,16 @@ const Settings: React.FC = () => {
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      groq_api_key: "",
-      openai_api_key: "",
-      ai_provider_preference: "groq",
-      notification_channel: "web_push",
-      telegram_bot_token: "", // Default vazio
-      telegram_chat_id: "", // Default vazio
-      telegram_enabled: false, // Default false
-      daily_brief_morning_time: "08:00",
-      daily_brief_evening_time: "18:00",
-      weekly_brief_day: "Sunday",
-      weekly_brief_time: "08:00",
-    },
+    defaultValues: {},
   });
 
   const fetchSettingsAndGoogleStatus = useCallback(async () => {
     if (!userId) return;
 
-    // Fetch user settings
+    // Fetch user settings (only to get settingsId if needed for future updates)
     const { data: settingsData, error: settingsError } = await supabase
       .from("settings")
-      .select("*")
+      .select("id")
       .eq("user_id", userId)
       .limit(1)
       .single();
@@ -94,7 +68,6 @@ const Settings: React.FC = () => {
     if (settingsError && settingsError.code !== 'PGRST116') {
       showError("Erro ao carregar configurações: " + settingsError.message);
     } else if (settingsData) {
-      form.reset(settingsData);
       setSettingsId(settingsData.id);
     }
 
@@ -114,57 +87,27 @@ const Settings: React.FC = () => {
       setIsGoogleConnected(false);
       setUserTimezone(null);
     }
-  }, [userId, form]);
+  }, [userId]);
 
   useEffect(() => {
     fetchSettingsAndGoogleStatus();
   }, [fetchSettingsAndGoogleStatus]);
 
-  const onSubmit = async (values: SettingsFormValues) => {
+  const onSubmit = async () => {
     if (!userId) {
       showError("Usuário não autenticado.");
       return;
     }
 
     try {
-      const settingsPayload = {
-        ...(settingsId ? { id: settingsId } : {}),
-        user_id: userId,
-        groq_api_key: values.groq_api_key || null,
-        openai_api_key: values.openai_api_key || null,
-        ai_provider_preference: values.ai_provider_preference,
-        notification_channel: values.notification_channel,
-        telegram_bot_token: values.telegram_bot_token || null,
-        telegram_chat_id: values.telegram_chat_id || null,
-        telegram_enabled: values.telegram_enabled,
-        daily_brief_morning_time: values.daily_brief_morning_time,
-        daily_brief_evening_time: values.daily_brief_evening_time,
-        weekly_brief_day: values.weekly_brief_day,
-        weekly_brief_time: values.weekly_brief_time,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data, error } = await supabase
-        .from("settings")
-        .upsert(settingsPayload, { onConflict: 'user_id' })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      if (data) {
-        setSettingsId(data.id);
-      }
-      showSuccess("Configurações salvas com sucesso!");
-
-      // Atualizar o fuso horário no perfil
+      // Apenas atualiza o fuso horário no perfil
       const { error: profileUpdateError } = await supabase
         .from("profiles")
         .update({ timezone: userTimezone, updated_at: new Date().toISOString() })
         .eq("id", userId);
 
       if (profileUpdateError) throw profileUpdateError;
-      showSuccess("Fuso horário atualizado com sucesso!");
+      showSuccess("Configurações salvas com sucesso!");
 
     } catch (error: any) {
       showError("Erro ao salvar configurações: " + error.message);
@@ -172,20 +115,19 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleTimezoneChange = async (newTimezone: string) => {
+  const handleTimezoneChange = (newTimezone: string) => {
     if (!userId) {
       showError("Usuário não autenticado.");
       return;
     }
     setUserTimezone(newTimezone);
-    // O fuso horário será salvo junto com as outras configurações no onSubmit
   };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6 bg-background text-foreground">
       <h1 className="text-3xl font-bold">Configurações</h1>
       <p className="text-lg text-muted-foreground">
-        Gerencie as configurações do seu aplicativo, incluindo chaves de API.
+        Gerencie as configurações do seu aplicativo.
       </p>
 
       <ProfileManagementCard
@@ -200,7 +142,7 @@ const Settings: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-foreground">Fuso Horário</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Selecione seu fuso horário para notificações e agendamentos precisos.
+            Selecione seu fuso horário para agendamentos precisos.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -235,25 +177,8 @@ const Settings: React.FC = () => {
         onGoogleAuthComplete={fetchSettingsAndGoogleStatus} // Re-fetch all settings and status after Google auth
       />
 
-      <TelegramSettingsCard
-        userId={userId}
-        session={session}
-        form={form as any}
-      />
-
-      <NotificationSettingsCard
-        userId={userId}
-        session={session}
-        form={form as any}
-      />
-
-      <AISettingsCard
-        form={form as any}
-        onSubmit={onSubmit}
-      />
-
-      <Button type="submit" onClick={form.handleSubmit(onSubmit)} className="w-full max-w-lg bg-primary text-primary-foreground hover:bg-primary/90 self-center mt-6">
-        Salvar Todas as Configurações
+      <Button type="submit" onClick={onSubmit} className="w-full max-w-lg bg-primary text-primary-foreground hover:bg-primary/90 self-center mt-6">
+        Salvar Configurações
       </Button>
     </div>
   );

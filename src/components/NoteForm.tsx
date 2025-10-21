@@ -12,11 +12,9 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { Note } from "@/pages/Notes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { PlusCircle, XCircle, CalendarIcon, Image as ImageIcon, Trash2, Pin, PinOff, Bell, Tag as TagIcon, ListTodo, TextCursorInput } from "lucide-react";
+import { PlusCircle, XCircle, Tag as TagIcon, ListTodo, TextCursorInput, Pin, PinOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import TagSelector from "./TagSelector";
-import TimePicker from "./TimePicker";
-import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -35,8 +33,6 @@ const noteSchema = z.object({
   content: z.string().min(1, "O conteúdo da nota é obrigatório."), 
   type: z.enum(["text", "checklist"]).default("text"),
   selected_tag_ids: z.array(z.string()).optional(),
-  reminder_date: z.date().optional().nullable(),
-  reminder_time: z.string().optional().nullable(),
   pinned: z.boolean().default(false),
 });
 
@@ -68,16 +64,12 @@ const NoteForm: React.FC<NoteFormProps> = ({ initialData, onNoteSaved, onClose, 
       ...initialData,
       content: initialData.content || "", 
       selected_tag_ids: initialData.tags?.map(tag => tag.id) || [],
-      reminder_date: initialData.reminder_date ? new Date(initialData.reminder_date) : undefined,
-      reminder_time: initialData.reminder_time || undefined,
       pinned: initialData.pinned,
     } : {
       title: "",
       content: "",
       type: "text",
       selected_tag_ids: [],
-      reminder_date: undefined,
-      reminder_time: undefined,
       pinned: false,
     },
   });
@@ -226,8 +218,6 @@ const NoteForm: React.FC<NoteFormProps> = ({ initialData, onNoteSaved, onClose, 
         content: finalContent,
         color: "#FFFFFF", 
         type: values.type,
-        reminder_date: values.reminder_date ? format(values.reminder_date, "yyyy-MM-dd") : null,
-        reminder_time: values.reminder_time || null,
         pinned: values.pinned,
         archived: false, 
         trashed: false, 
@@ -353,33 +343,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ initialData, onNoteSaved, onClose, 
 
       <div className="flex items-center justify-between p-2 border-t border-border bg-card flex-wrap gap-2"> {/* Reduzido padding e gap */}
         <div className="flex items-center gap-1 flex-wrap"> {/* Reduzido gap */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-8 w-8" disabled={!userId}> {/* Ajustado altura e largura */}
-                <Bell className="h-4 w-4" /> {/* Ajustado tamanho do ícone */}
-                <span className="sr-only">Adicionar Lembrete</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-3 bg-popover border-border rounded-md shadow-lg space-y-2"> {/* Reduzido padding e space-y */}
-              <div>
-                <Label htmlFor="reminder_date" className="text-foreground text-sm">Data do Lembrete</Label> {/* Ajustado tamanho da fonte */}
-                <Calendar
-                  mode="single"
-                  selected={form.watch("reminder_date") || undefined}
-                  onSelect={(date) => form.setValue("reminder_date", date || null)}
-                  initialFocus
-                  locale={ptBR}
-                />
-              </div>
-              <div>
-                <Label htmlFor="reminder_time" className="text-foreground text-sm">Hora do Lembrete</Label> {/* Ajustado tamanho da fonte */}
-                <TimePicker
-                  value={form.watch("reminder_time") || null}
-                  onChange={(time) => form.setValue("reminder_time", time || null)}
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
+          {/* REMOVED: Popover for Reminder */}
 
           <Popover>
             <PopoverTrigger asChild>
