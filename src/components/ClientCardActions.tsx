@@ -60,7 +60,7 @@ export function ClientCardActions({ client }: ClientCardActionsProps) {
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: client.name,
-      email: client.email,
+      email: client.email || "",
     },
   });
 

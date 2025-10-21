@@ -43,12 +43,11 @@ export const useAddClient = () => {
   });
 };
 
-
 // Hook (Mutation) para atualizar o status de um cliente
 export const useUpdateClientStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { data, error } = await supabase
         .from("clients")
         .update({ status })
@@ -60,6 +59,58 @@ export const useUpdateClientStatus = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
+  });
+};
+
+// Hook (Mutation) para atualizar um cliente (usado no ClientCardActions)
+export const useUpdateClient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (updatedClient: Partial<Client> & { id: string }) => {
+      const { data, error } = await supabase
+        .from("clients")
+        .update(updatedClient)
+        .eq("id", updatedClient.id)
+        .select();
+
+      if (error) throw new Error(error.message);
+      return data[0];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
+  });
+};
+
+// Hook (Mutation) para deletar um cliente (usado no ClientCardActions)
+export const useDeleteClient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
+  });
+};
+
+// Hook (Mutation) para sair da sessão
+export const useSignOut = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.clear(); // Limpa o cache de todas as queries ao sair
     },
   });
 };
