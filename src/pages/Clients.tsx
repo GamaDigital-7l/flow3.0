@@ -8,6 +8,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import ClientList from '@/components/client/ClientList';
 import ClientFormDialog from '@/components/client/ClientFormDialog';
 import { Client } from '@/types/client'; // Importando o tipo Client
+import { showError } from '@/utils/toast'; // Importando showError
 
 const ClientsPage: React.FC = () => {
   const { session } = useSession();
@@ -35,7 +36,11 @@ const ClientsPage: React.FC = () => {
 
       const { data, error } = await query;
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Logando o erro detalhado para depuração
+        console.error("Supabase Fetch Error (Clients):", error);
+        throw new Error(error.message);
+      }
       return data as Client[];
     },
     enabled: !!userId,
@@ -65,6 +70,8 @@ const ClientsPage: React.FC = () => {
   }
 
   if (error) {
+    // Exibir o erro no toast para o usuário
+    showError("Erro ao carregar clientes: " + error.message);
     return <div className="text-destructive">Erro ao carregar clientes: {error.message}</div>;
   }
 
