@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +9,9 @@ import { Meeting } from "@/types/meeting";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import MeetingForm, { MeetingFormValues } from "./MeetingForm";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
+import { formatDateTime, formatTime } from "@/lib/utils"; // Importando as novas funções
 
 interface MeetingItemProps {
   meeting: Meeting;
@@ -90,11 +89,11 @@ const MeetingItem: React.FC<MeetingItemProps> = ({ meeting, refetchMeetings }) =
       <div className="flex-grow min-w-0">
         <h3 className="font-semibold text-foreground text-base break-words">{meeting.title}</h3>
         {meeting.description && <p className="text-sm text-muted-foreground break-words">{meeting.description}</p>}
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-          <CalendarDays className="h-3 w-3 flex-shrink-0" /> {format(new Date(meeting.date), "PPP", { locale: ptBR })}
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <CalendarDays className="h-3 w-3 flex-shrink-0" /> {formatDateTime(meeting.date, false)}
         </p>
         <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Clock className="h-3 w-3 flex-shrink-0" /> {meeting.start_time} {meeting.end_time && `- ${meeting.end_time}`}
+          <Clock className="h-3 w-3 flex-shrink-0" /> {formatTime(meeting.start_time)} {meeting.end_time && `- ${formatTime(meeting.end_time)}`}
         </p>
         {meeting.location && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">

@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +11,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import FullScreenImageViewer from "./FullScreenImageViewer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
 
 interface ClientTaskCardProps {
   task: ClientTask;
@@ -99,7 +98,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
           {task.due_date && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <CalendarDays className="h-3 w-3" />
-              {format(new Date(task.due_date), "dd/MM", { locale: ptBR })}
+              {formatDateTime(task.due_date, false)}
             </span>
           )}
         </CardContent>

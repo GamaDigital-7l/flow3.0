@@ -8,8 +8,9 @@ import { showError } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, BookOpen } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
 
 interface Book {
   id: string;
@@ -19,12 +20,13 @@ interface Book {
   content?: string;
   cover_image_url?: string;
   pdf_url?: string;
+  created_at: string;
 }
 
 const fetchBookById = async (bookId: string): Promise<Book | null> => {
   const { data, error } = await supabase
     .from("books")
-    .select("id, title, author, description, content, cover_image_url, pdf_url")
+    .select("id, title, author, description, content, cover_image_url, pdf_url, created_at")
     .eq("id", bookId)
     .single();
 
@@ -89,8 +91,8 @@ const BookDetails: React.FC = () => {
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-background text-foreground z-50">
         <h1 className="text-3xl font-bold">Erro ao Carregar Livro</h1>
         <p className="text-lg text-red-500">Ocorreu um erro: {error.message}</p>
-        <Button onClick={() => navigate("/books")} className="w-fit bg-primary text-primary-foreground hover:bg-primary/90 mt-4">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a Biblioteca
+        <Button onClick={() => navigate(`/books/${id}`)} className="w-fit bg-primary text-primary-foreground hover:bg-primary/90 mt-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Detalhes do Livro
         </Button>
       </div>
     );
@@ -156,7 +158,7 @@ const BookDetails: React.FC = () => {
               </div>
             </div>
           )}
-
+          <p className="text-sm text-muted-foreground pt-2 border-t">Criado em: {formatDateTime(book.created_at, false)}</p>
           {!book.pdf_url && !book.content && (
             <p className="text-muted-foreground text-base md:text-lg">Nenhum conteúdo de livro ou PDF disponível para leitura.</p>
           )}

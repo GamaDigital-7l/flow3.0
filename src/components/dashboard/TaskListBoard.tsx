@@ -8,12 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { PlusCircle, AlertCircle } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
-import { Task, TaskOriginBoard } from "@/types/task";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import TaskForm from "@/components/TaskForm";
+import { Task, TaskOriginBoard } from "@/types/task"; // Importar Task e TaskOriginBoard
 import TaskItem from "@/components/TaskItem"; // Import TaskItem
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
 
 interface TaskListBoardProps {
   title: string;
