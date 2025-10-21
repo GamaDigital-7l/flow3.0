@@ -1,7 +1,7 @@
 "use client";
 
 import { KanbanBoard } from "@/components/KanbanBoard";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useClients } from "@/integrations/supabase/queries";
 import { AddClientDialog } from "@/components/AddClientDialog";
 
