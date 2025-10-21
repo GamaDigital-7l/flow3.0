@@ -150,7 +150,7 @@ const StudySessionForm: React.FC<StudySessionFormProps> = ({ initialData, onSess
               >
                 <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 {form.watch("session_date") ? (
-                  formatDateTime(form.watch("session_date"))
+                  format(form.watch("session_date")!, "PPP", { locale: ptBR })
                 ) : (
                   <span>Escolha uma data</span>
                 )}

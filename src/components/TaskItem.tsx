@@ -78,7 +78,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
 const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurringView = false }) => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false);
+  const [editingTask, setEditingTask] = React.useState<Task | undefined>(undefined);
 
   const isClientTaskMirrored = task.current_board === "client_tasks";
 

@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,24 +5,18 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ptBR } from "date-fns/locale/pt-BR";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { formatDateTime, convertToSaoPauloTime, convertToUtc } from '@/lib/utils'; // Importando as novas funções
 
 const healthGoalSchema = z.object({
   title: z.string().min(1, "O título da meta é obrigatório."),
@@ -84,15 +76,15 @@ const HealthGoalForm: React.FC<HealthGoalFormProps> = ({ initialData, onGoalSave
         title: values.title,
         initial_weight_kg: values.initial_weight_kg,
         target_weight_kg: values.target_weight_kg,
-        start_date: format(values.start_date, "yyyy-MM-dd"),
-        target_date: format(values.target_date, "yyyy-MM-dd"),
+        start_date: format(convertToUtc(values.start_date)!, "yyyy-MM-dd"),
+        target_date: format(convertToUtc(values.target_date)!, "yyyy-MM-dd"),
         is_completed: values.is_completed,
         description: values.description || null,
         status: values.status,
         updated_at: new Date().toISOString(),
       };
 
-      if (initialData) {
+      if (initialData?.id) {
         const { error } = await supabase
           .from("health_goals")
           .update(dataToSave)
@@ -100,22 +92,25 @@ const HealthGoalForm: React.FC<HealthGoalFormProps> = ({ initialData, onGoalSave
           .eq("user_id", userId);
 
         if (error) throw error;
-        showSuccess("Meta de saúde atualizada com sucesso!");
+        showSuccess("Meta atualizada com sucesso!");
       } else {
         const { error } = await supabase.from("health_goals").insert({
-          ...dataToSave,
+          title: values.title,
+          description: values.description || null,
+          target_date: values.target_date ? format(convertToUtc(values.target_date)!, "yyyy-MM-dd") : null,
+          status: values.status,
           user_id: userId,
         });
 
         if (error) throw error;
-        showSuccess("Meta de saúde adicionada com sucesso!");
+        showSuccess("Meta adicionada com sucesso!");
       }
       form.reset();
       onGoalSaved();
       onClose();
     } catch (error: any) {
-      showError("Erro ao salvar meta de saúde: " + error.message);
-      console.error("Erro ao salvar meta de saúde:", error);
+      showError("Erro ao salvar meta: " + error.message);
+      console.error("Erro ao salvar meta:", error);
     }
   };
 
@@ -126,7 +121,7 @@ const HealthGoalForm: React.FC<HealthGoalFormProps> = ({ initialData, onGoalSave
         <Input
           id="title"
           {...form.register("title")}
-          placeholder="Ex: Perder 10kg"
+          placeholder="Ex: Aprender um novo idioma"
           className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
         />
         {form.formState.errors.title && (
@@ -171,20 +166,22 @@ const HealthGoalForm: React.FC<HealthGoalFormProps> = ({ initialData, onGoalSave
         <Label htmlFor="start_date" className="text-foreground">Data de Início</Label>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
-                !form.watch("start_date") && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-              {form.watch("start_date") ? (
-                format(form.watch("start_date")!, "PPP", { locale: ptBR })
-              ) : (
-                <span>Escolha uma data</span>
-              )}
-            </Button>
+            <FormControl>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
+                  !form.watch("start_date") && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                {form.watch("start_date") ? (
+                  format(form.watch("start_date")!, "PPP", { locale: ptBR })
+                ) : (
+                  <span>Escolha uma data</span>
+                )}
+              </Button>
+            </FormControl>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-popover border-border rounded-md shadow-lg">
             <Calendar
@@ -201,20 +198,22 @@ const HealthGoalForm: React.FC<HealthGoalFormProps> = ({ initialData, onGoalSave
         <Label htmlFor="target_date" className="text-foreground">Data Alvo</Label>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
-                !form.watch("target_date") && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-              {form.watch("target_date") ? (
-                format(form.watch("target_date")!, "PPP", { locale: ptBR })
-              ) : (
-                <span>Escolha uma data</span>
-              )}
-            </Button>
+            <FormControl>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
+                  !form.watch("target_date") && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                {form.watch("target_date") ? (
+                  format(form.watch("target_date")!, "PPP", { locale: ptBR })
+                ) : (
+                  <span>Escolha uma data</span>
+                )}
+              </Button>
+            </FormControl>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-popover border-border rounded-md shadow-lg">
             <Calendar
@@ -249,15 +248,6 @@ const HealthGoalForm: React.FC<HealthGoalFormProps> = ({ initialData, onGoalSave
             <SelectItem value="completed">Concluída</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="is_completed"
-          checked={form.watch("is_completed")}
-          onCheckedChange={(checked) => form.setValue("is_completed", checked as boolean)}
-          className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-        />
-        <Label htmlFor="is_completed" className="text-foreground">Meta Concluída</Label>
       </div>
       <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
         {initialData ? "Atualizar Meta" : "Adicionar Meta"}

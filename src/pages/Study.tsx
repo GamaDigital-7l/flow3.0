@@ -1,18 +1,17 @@
-"use client";
-
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit, Trash2, BookOpen, CheckCircle2, Hourglass, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import StudySessionForm, { StudySessionFormValues } from "@/components/StudySessionForm";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
 import { useSession } from "@/integrations/supabase/auth";
-import { Checkbox } from "@/components/ui/checkbox";
+import { isToday } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Edit, Trash2, BookOpen, Dumbbell, GraduationCap, Loader2, AlertCircle, Repeat } from "lucide-react";
+import { showError } from "@/utils/toast";
+import { format, differenceInDays } from "date-fns";
+import { parseISO } from "date-fns/parseISO";
+import { ptBR } from "date-fns/locale/pt-BR";
+import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
 
 interface StudySession extends Omit<StudySessionFormValues, 'session_date'> {
   id: string;
@@ -131,17 +130,15 @@ const Study: React.FC = () => {
               <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Sessão
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] w-[90vw] bg-card border border-border rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
             <DialogHeader>
-              <DialogTitle className="text-foreground">
-                {editingSession ? "Editar Sessão de Estudo" : "Adicionar Nova Sessão de Estudo"}
-              </DialogTitle>
+              <DialogTitle className="text-foreground">Editar Sessão de Estudo</DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                {editingSession ? "Atualize os detalhes da sua sessão de estudo." : "Registre uma nova sessão de estudo."}
+                Atualize os detalhes da sua sessão de estudo.
               </DialogDescription>
             </DialogHeader>
             <StudySessionForm
-              initialData={editingSession ? { ...editingSession, session_date: new Date(editingSession.session_date) } : undefined}
+              initialData={editingSession}
               onSessionSaved={refetch}
               onClose={() => setIsFormOpen(false)}
             />
@@ -153,10 +150,10 @@ const Study: React.FC = () => {
       </p>
 
       {studySessions && studySessions.length > 0 ? (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {studySessions.map((session) => (
-            <Card key={session.id} className="flex flex-col h-full bg-card border border-border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+            <Card key={session.id} className="flex flex-col h-full rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 p-3 pb-2">
                 <div className="flex items-center gap-2 flex-grow min-w-0">
                   <Checkbox
                     id={`study-session-${session.id}`}
@@ -164,35 +161,31 @@ const Study: React.FC = () => {
                     onCheckedChange={() => handleToggleComplete(session.id, session.is_completed)}
                     className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
                   />
-                  <CardTitle className={`text-xl md:text-2xl font-semibold break-words min-w-0 ${session.is_completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                  <CardTitle className={`text-xl md:text-2xl font-semibold break-words ${session.is_completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                     {session.title}
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 mt-1 sm:mt-0">
-                  <Button variant="ghost" size="icon" onClick={() => handleEditSession(session)} className="text-blue-500 hover:bg-blue-500/10">
+                  <Button variant="ghost" size="icon" onClick={() => handleEditSession(session)} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
                     <Edit className="h-4 w-4" />
                     <span className="sr-only">Editar Sessão</span>
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteSession(session.id)} className="text-red-500 hover:bg-red-500/10">
+                  <Button variant="ghost" size="icon" onClick={() => handleDeleteSession(session.id,)} className="h-7 w-7 text-red-500 hover:bg-red-500/10">
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Deletar Sessão</span>
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="flex-grow">
-                {session.notes && (
-                  <CardDescription className="mb-2 text-muted-foreground break-words text-sm md:text-base">
-                    {session.notes}
-                  </CardDescription>
+              <CardContent className="flex-grow p-3 pt-0">
+                {session.description && (
+                  <p className="text-xs text-muted-foreground break-words">{session.description}</p>
                 )}
-                <p className="text-sm md:text-base text-muted-foreground flex items-center gap-1 mb-1">
-                  <BookOpen className="h-4 w-4 text-primary flex-shrink-0" /> Data: {format(new Date(session.session_date), "PPP", { locale: ptBR })}
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3 flex-shrink-0" /> {formatDateTime(session.session_date, false)}
                 </p>
-                {session.duration_minutes && (
-                  <p className="text-sm md:text-base text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-primary flex-shrink-0" /> Duração: {session.duration_minutes} minutos
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3 flex-shrink-0" /> {formatTime(session.start_time)} {session.end_time && `- ${formatTime(session.end_time)}`}
+                </p>
               </CardContent>
             </Card>
           ))}

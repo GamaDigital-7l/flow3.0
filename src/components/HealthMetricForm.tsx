@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +58,7 @@ const HealthMetricForm: React.FC<HealthMetricFormProps> = ({ initialData, onMetr
 
     try {
       const dataToSave = {
-        date: format(values.date, "yyyy-MM-dd"),
+        date: format(convertToUtc(values.date)!, "yyyy-MM-dd"),
         weight_kg: values.weight_kg || null,
         notes: values.notes || null,
         updated_at: new Date().toISOString(),
@@ -99,20 +97,22 @@ const HealthMetricForm: React.FC<HealthMetricFormProps> = ({ initialData, onMetr
         <Label htmlFor="date" className="text-foreground">Data</Label>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
-                !form.watch("date") && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-              {form.watch("date") ? (
-                format(form.watch("date")!, "PPP", { locale: ptBR })
-              ) : (
-                <span>Escolha uma data</span>
-              )}
-            </Button>
+            <FormControl>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
+                  !form.watch("date") && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                {form.watch("date") ? (
+                  format(form.watch("date")!, "PPP", { locale: ptBR })
+                ) : (
+                  <span>Escolha uma data</span>
+                )}
+              </Button>
+            </FormControl>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-popover border-border rounded-md shadow-lg">
             <Calendar
