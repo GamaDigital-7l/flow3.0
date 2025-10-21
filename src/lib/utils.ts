@@ -1,7 +1,8 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from 'date-fns';
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import { utcToZonedTime } from 'date-fns-tz/utcToZonedTime';
+import { zonedTimeToUtc } from 'date-fns-tz/zonedTimeToUtc';
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -39,7 +40,7 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   const dateObj = date instanceof Date ? date : parseISO(date);
   const formatString = includeTime ? "PPP 'às' HH:mm" : "PPP";
   // FIX TS2554: Removendo o terceiro argumento { locale: ptBR }
-  return format(dateObj, formatString);
+  return format(dateObj, formatString, { locale: ptBR });
 }
 
 export function formatTime(timeString: string | null | undefined): string {
