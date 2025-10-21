@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,40 @@ import { TaskRecurrenceType } from "@/types/task";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 
+interface TaskSchedulingProps {
+  form: UseFormReturn<TaskFormValues>;
+}
+
+const DAYS_OF_WEEK = [
+  { label: "Dom", value: 0 },
+  { label: "Seg", value: 1 },
+  { label: "Ter", value: 2 },
+  { label: "Qua", value: 3 },
+  { label: "Qui", value: 4 },
+  { label: "Sex", value: 5 },
+  { label: "Sáb", value: 6 },
+];
+
 const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
   const recurrenceType = form.watch("recurrence_type");
   const isDailyRecurring = form.watch("is_daily_recurring");
+
+  // Logic for weekly recurrence details
+  const initialRecurrenceDetails = form.watch("recurrence_details") || "";
+  const initialDays = initialRecurrenceDetails.split(',').map(Number).filter(n => !isNaN(n));
+  const [selectedDays, setSelectedDays] = useState<number[]>(initialDays);
+
+  useEffect(() => {
+    form.setValue("recurrence_details", selectedDays.join(','));
+  }, [selectedDays, form]);
+
+  const handleDayToggle = (dayValue: number) => {
+    setSelectedDays(prev => 
+      prev.includes(dayValue) 
+        ? prev.filter(d => d !== dayValue) 
+        : [...prev, dayValue].sort((a, b) => a - b)
+    );
+  };
 
   return (
     <>
