@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import FullScreenImageViewer from "./FullScreenImageViewer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDateTime, formatTime } from "@/lib/utils"; // Importando as novas funções
+import { AspectRatio } from "@/components/ui/aspect-ratio"; // Importando AspectRatio
 
 interface ClientTaskCardProps {
   task: ClientTask;
@@ -67,13 +68,15 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
       </CardHeader>
       <CardContent className="p-0 space-y-2">
         {task.image_urls && task.image_urls.length > 0 && (
-          <div className="relative w-full h-24 rounded-md overflow-hidden cursor-pointer" onClick={() => handleImageClick(0)}>
-            <img
-              src={task.image_urls[0]}
-              alt={task.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+          <div className="relative w-full rounded-md overflow-hidden cursor-pointer" onClick={() => handleImageClick(0)}>
+            <AspectRatio ratio={4 / 5} className="bg-muted">
+              <img
+                src={task.image_urls[0]}
+                alt={task.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </AspectRatio>
             {task.image_urls.length > 1 && (
               <Badge className="absolute bottom-1 right-1 bg-black/70 text-white text-xs">+{task.image_urls.length - 1}</Badge>
             )}

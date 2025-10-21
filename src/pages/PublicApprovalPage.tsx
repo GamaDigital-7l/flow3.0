@@ -18,6 +18,7 @@ import FullScreenImageViewer from "@/components/client/FullScreenImageViewer";
 import EditReasonDialog from "@/components/client/EditReasonDialog";
 import { cn } from "@/lib/utils";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
+import { AspectRatio } from "@/components/ui/aspect-ratio"; // Importando AspectRatio
 
 interface PublicApprovalPageProps {}
 
@@ -167,19 +168,21 @@ const PublicApprovalPage: React.FC<PublicApprovalPageProps> = () => {
           <p className="text-muted-foreground">Obrigado pela sua aprovação.</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {tasksToReview.map((task) => (
             <Card key={task.id} className="flex flex-col h-full bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow">
               {task.image_urls && task.image_urls.length > 0 && (
-                <div className="relative w-full h-48 rounded-t-xl overflow-hidden cursor-pointer" onClick={() => handleImageClick(task.image_urls!, 0, task.description)}>
-                  <img
-                    src={task.image_urls[0]}
-                    alt={task.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                <div className="relative w-full rounded-t-xl overflow-hidden cursor-pointer" onClick={() => handleImageClick(task.image_urls!, 0, task.description)}>
+                  <AspectRatio ratio={4 / 5} className="bg-muted">
+                    <img
+                      src={task.image_urls[0]}
+                      alt={task.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </AspectRatio>
                   {task.image_urls.length > 1 && (
-                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white">+{task.image_urls.length - 1}</Badge>
+                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white text-sm">+{task.image_urls.length - 1}</Badge>
                   )}
                 </div>
               )}

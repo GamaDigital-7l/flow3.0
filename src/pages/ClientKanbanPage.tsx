@@ -289,6 +289,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client, monthYearRe
         <div className="flex gap-4">
           {KANBAN_COLUMNS.map(({ id, title }) => (
             <div key={id} className="flex flex-col">
+              {/* Botão Adicionar Tarefa no topo da coluna */}
               <div className="mb-3">
                 <Dialog>
                   <DialogTrigger asChild>
@@ -322,7 +323,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client, monthYearRe
         </div>
       </ScrollArea>
 
-      {/* Dialog para Edição de Tarefa */}
+      {/* Dialog para Edição de Tarefa (Centralizado) */}
       <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingTask(undefined); }}>
         <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
           <DialogHeader>

@@ -219,7 +219,7 @@ const ClientDetails: React.FC = () => {
         </Dialog>
       </PageTitle>
 
-      {/* Informações do Cliente (Movidas para cima) */}
+      {/* Informações do Cliente */}
       <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass">
         <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
           <div className="flex items-center gap-2">
