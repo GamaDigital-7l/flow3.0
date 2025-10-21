@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, CalendarDays, CheckCircle2, Edit2, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { cn } from "@/lib/utils";
 import FullScreenImageViewer from "./FullScreenImageViewer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
+import { formatDateTime, formatTime } from "@/lib/utils"; // Importando as novas funções
 
 interface ClientTaskCardProps {
   task: ClientTask;
@@ -98,7 +98,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, columnId, onEdit,
           {task.due_date && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <CalendarDays className="h-3 w-3" />
-              {formatDateTime(task.due_date, false)}
+              {format(new Date(task.due_date), "dd/MM/yyyy", { locale: ptBR })}
             </span>
           )}
         </CardContent>

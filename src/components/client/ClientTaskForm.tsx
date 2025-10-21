@@ -21,6 +21,7 @@ import TagSelector from "../TagSelector";
 import { Checkbox } from "../ui/checkbox";
 import { ptBR } from "date-fns/locale/pt-BR";
 import TimePicker from "../TimePicker";
+import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -42,7 +43,12 @@ interface ClientTaskFormProps {
   onClose: () => void;
 }
 
-const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, onClientTaskSaved, onClose }) => {
+const ClientTaskForm: React.FC<ClientTaskFormProps> = ({
+  clientId,
+  initialData,
+  onClientTaskSaved,
+  onClose,
+}) => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
@@ -195,7 +201,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
             <PopoverTrigger asChild>
               <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.watch("due_date") && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch("due_date") ? formatDateTime(form.watch("due_date"), false) : <span>Escolha uma data</span>}
+                {form.watch("due_date") ? formatDateTime(form.watch("due_date")!, false) : <span>Escolha uma data</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">

@@ -13,19 +13,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { CalendarIcon, Loader2, Save } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RecurringTransaction, FinancialTransactionType } from '@/types/finance';
-import { useFinancialData } from '@/hooks/useFinancialData';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { FinancialRecurrence } from '@/types/finance';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess } from '@/utils/toast';
+import { useFinancialData } from '@/hooks/useFinancialData';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
-import { Checkbox } from '@/components/ui/checkbox'; // Importando Checkbox
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { convertToSaoPauloTime, convertToUtc, formatDateTime } from '@/lib/utils'; // Importando as novas funções
 
 const RECURRENCE_OPTIONS = ['monthly', 'weekly', 'yearly', 'quarterly'] as const;
@@ -35,18 +33,16 @@ const recurringTransactionSchema = z.object({
   description: z.string().min(3, "Descrição deve ter pelo menos 3 caracteres."),
   amount: z.number().min(0.01, "O valor deve ser positivo."),
   type: z.enum(['income', 'expense']),
+  frequency: z.enum(['monthly', 'weekly', 'yearly', 'quarterly'], { required_error: "A frequência é obrigatória." }),
+  next_due_date: z.date({ required_error: "A próxima data de vencimento é obrigatória." }),
+  category_id: z.string().nullable().optional(),
   account_id: z.string().min(1, "A conta é obrigatória."),
-  category_id: z.string().optional().nullable(),
-  client_id: z.string().optional().nullable(),
-  recurrence_type: z.enum(RECURRENCE_OPTIONS, { required_error: "O tipo de recorrência é obrigatório." }),
-  start_date: z.date({ required_error: "A data de início é obrigatória." }),
-  is_active: z.boolean().default(true),
 });
 
-type RecurringTransactionFormValues = z.infer<typeof recurringTransactionSchema>;
+export type RecurringTransactionFormValues = z.infer<typeof recurringTransactionSchema>;
 
 interface RecurringTransactionFormProps {
-  initialData?: Partial<RecurringTransaction>;
+  initialData?: Partial<FinancialRecurrence>;
   onTransactionSaved: () => void;
   onClose: () => void;
 }
@@ -54,20 +50,18 @@ interface RecurringTransactionFormProps {
 const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ initialData, onTransactionSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const queryClient = useQueryClient();
-  const { categories, accounts, clients, isLoading: isDataLoading } = useFinancialData();
+  const { categories, accounts, isLoading: isDataLoading } = useFinancialData();
 
   const form = useForm<RecurringTransactionFormValues>({
-    resolver: zodResolver(recurringTransactionSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       description: initialData?.description || '',
       amount: initialData?.amount || 0,
       type: initialData?.type || 'expense',
-      account_id: initialData?.account_id || '',
+      frequency: initialData?.frequency as RecurrenceType || 'monthly',
+      next_due_date: initialData?.next_due_date ? new Date(initialData.next_due_date) : new Date(),
       category_id: initialData?.category_id || '',
-      client_id: initialData?.client_id || '',
-      recurrence_type: initialData?.recurrence_type as RecurrenceType || 'monthly',
-      start_date: initialData?.start_date ? new Date(initialData.start_date) : new Date(),
+      account_id: initialData?.account_id || '',
       is_active: initialData?.is_active ?? true,
     },
   });
@@ -289,9 +283,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {/* FIX: Use a non-empty string for the optional/null value */}
-                    <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {currentCategories.map((category) => (
+                    {filteredCategories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
                       </SelectItem>
