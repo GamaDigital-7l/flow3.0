@@ -17,7 +17,7 @@ import { format } from "date-fns";
 const fetchDailyRecurringTasks = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
-    .select("*, tags:task_tags(tags(id, name, color)), subtasks:tasks!tasks_parent_task_id_fkey(*, tags:task_tags(tags(id, name, color)))")
+    .select("*, tags:task_tags(tags(id, name, color)), subtasks:tasks!parent_task_id(*, tags:task_tags(tags(id, name, color)))")
     .eq("user_id", userId)
     .eq("is_daily_recurring", true)
     .is("parent_task_id", null)

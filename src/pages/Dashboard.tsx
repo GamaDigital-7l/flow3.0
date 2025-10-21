@@ -31,6 +31,14 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
       is_daily_recurring, recurrence_streak, recurrence_failure_history,
       task_tags(
         tags(id, name, color)
+      ),
+      subtasks:tasks!parent_task_id(
+        id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+        last_successful_completion_date, origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+        is_daily_recurring, recurrence_streak, recurrence_failure_history,
+        task_tags(
+          tags(id, name, color)
+        )
       )
     `)
     .eq("user_id", userId)
@@ -41,6 +49,10 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
+    subtasks: task.subtasks.map((sub: any) => ({
+      ...sub,
+      tags: sub.task_tags.map((tt: any) => tt.tags),
+    })),
   })) || [];
   return mappedData;
 };

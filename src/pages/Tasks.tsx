@@ -18,7 +18,7 @@ import { ptBR } from "date-fns/locale/pt-BR";
 const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task[]> => {
   let query = supabase
     .from("tasks")
-    .select("*, tags:task_tags(tags(id, name, color)), subtasks:tasks!tasks_parent_task_id_fkey(*, tags:task_tags(tags(id, name, color)))")
+    .select("*, tags:task_tags(tags(id, name, color)), subtasks:tasks!parent_task_id(*, tags:task_tags(tags(id, name, color)))")
     .eq("user_id", userId)
     .eq("current_board", board)
     .is("parent_task_id", null);
