@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, CheckCircle2, XCircle, TrendingUp, CalendarDays, Repeat, PlusCircle, Edit, Clock } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { format, differenceInDays, isToday, subDays } from "date-fns";
-import { parseISO } from "date-fns/parseISO";
 import { ptBR } from "date-fns/locale/pt-BR";
 import TaskItem from "@/components/TaskItem";
 import { Progress } from "@/components/ui/progress";
@@ -17,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, parseISO } from "@/lib/utils";
 
 const fetchDailyRecurringTasks = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
@@ -163,7 +162,7 @@ const RecurringTasks: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
-      <p className="text-muted-foreground mb-8">
+      <p className="text-lg text-muted-foreground mb-8">
         Suas tarefas diárias que devem ser concluídas todos os dias para manter o streak.
       </p>
 

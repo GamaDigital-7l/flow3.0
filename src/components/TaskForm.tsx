@@ -64,7 +64,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
     defaultValues: {
       title: initialData?.title || "",
       description: initialData?.description || null,
-      due_date: initialData?.due_date || initialDueDate || null,
+      // FIX: Ensure due_date is a Date object if it comes from the DB as a string
+      due_date: initialData?.due_date ? parseISO(initialData.due_date) : initialDueDate || null,
       time: initialData?.time || null,
       recurrence_type: initialData?.recurrence_type || "none",
       recurrence_details: initialData?.recurrence_details || null,

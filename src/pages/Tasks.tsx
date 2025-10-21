@@ -24,6 +24,7 @@ import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import PullToRefresh from "@/components/PullToRefresh"; // Importar PullToRefresh
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput"; // Importar QuickAddTaskInput
+import { parseISO } from "@/lib/utils";
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
@@ -216,7 +217,7 @@ const Tasks: React.FC = () => {
     }
 
     if (!task.due_date) return false;
-    const dueDate = new Date(task.due_date);
+    const dueDate = parseISO(task.due_date);
 
     switch (filterType) {
       case "weekly":
@@ -307,7 +308,7 @@ const Tasks: React.FC = () => {
                 </DialogDescription>
               </DialogHeader>
               <TaskForm
-                initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date ? new Date(editingTask.due_date) : undefined } : undefined}
+                initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date ? parseISO(editingTask.due_date) : undefined } : undefined}
                 onTaskSaved={handleTaskUpdated}
                 onClose={() => setIsFormOpen(false)}
               />
@@ -315,7 +316,7 @@ const Tasks: React.FC = () => {
           </Dialog>
         </div>
         <p className="text-lg text-muted-foreground">
-          Organize suas tarefas pontuais e recorrentes (não diárias) aqui.
+          Organize suas tarefas pontuais e recorrentes (não diárias).
         </p>
 
         <QuickAddTaskInput originBoard="general" onTaskAdded={handleTaskUpdated} />

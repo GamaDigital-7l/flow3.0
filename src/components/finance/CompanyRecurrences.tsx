@@ -12,7 +12,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import RecurrenceForm from './RecurrenceForm';
+import RecurringTransactionForm from './RecurringTransactionForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -103,9 +103,9 @@ const CompanyRecurrences: React.FC = () => {
                 Crie uma transação que se repete automaticamente.
               </DialogDescription>
             </DialogHeader>
-            <RecurrenceForm
+            <RecurringTransactionForm
               initialData={editingRecurrence}
-              onRecurrenceSaved={handleRecurrenceSaved}
+              onTransactionSaved={handleRecurrenceSaved}
               onClose={() => setIsRecurrenceFormOpen(false)}
             />
           </DialogContent>
