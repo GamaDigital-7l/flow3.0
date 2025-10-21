@@ -10,7 +10,7 @@ import { Task, TaskRecurrenceType, TaskOriginBoard, TaskCurrentBoard } from "@/t
 import { Form } from "@/components/ui/form";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { parseISO } from 'date-fns';
+import { parseISO, isSameDay } from 'date-fns';
 import { formatDateTime, convertToSaoPauloTime, convertToUtc } from "@/lib/utils"; // Importando as novas funções
 
 import TaskBasicInfo from "./task/TaskBasicInfo";
@@ -119,6 +119,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
         const { data, error } = await supabase.from("tasks").insert({
           ...dataToSave,
           user_id: userId,
+          created_at: formatISO(convertToSaoPauloTime(new Date())), // Garantindo que created_at seja a data/hora atual no fuso de SP
         }).select("id").single();
 
         if (error) throw error;

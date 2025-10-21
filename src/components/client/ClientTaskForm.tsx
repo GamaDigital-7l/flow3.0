@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2, XCircle, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
-import { parseISO } from "date-fns/parseISO";
+import { parseISO } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
@@ -21,7 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ClientTask, ClientTaskStatus } from "@/types/client";
 import TagSelector from "../TagSelector";
 import { Checkbox } from "../ui/checkbox";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import TimePicker from "../TimePicker";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -43,16 +41,6 @@ interface ClientTaskFormProps {
   onClientTaskSaved: () => void;
   onClose: () => void;
 }
-
-const sanitizeFilename = (filename: string) => {
-  return filename
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9.]/g, "-")
-    .replace(/--+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-};
 
 const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, onClientTaskSaved, onClose }) => {
   const { session } = useSession();
@@ -118,7 +106,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
       const dataToSave = {
         title: values.title,
         description: values.description,
-        due_date: values.due_date ? format(values.due_date, "yyyy-MM-dd") : null,
+        due_date: values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null,
         time: values.time,
         status: values.status,
         is_standard_task: true, 
@@ -143,7 +131,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         clientTaskId = data.id;
       }
 
-      // Sincronizar com a tarefa principal (Dashboard)
+      // Sincronizar com a tarefa principal se for uma tarefa padrão
       const { data: clientData } = await supabase.from('clients').select('name').eq('id', clientId).single();
       const mainTaskPayload = {
         user_id: userId,
@@ -170,7 +158,10 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
       if (clientTaskId) {
         await supabase.from("client_task_tags").delete().eq("client_task_id", clientTaskId);
         if (values.selected_tag_ids && values.selected_tag_ids.length > 0) {
-          const tagsToInsert = values.selected_tag_ids.map(tagId => ({ client_task_id: clientTaskId, tag_id: tagId }));
+          const tagsToInsert = values.selected_tag_ids.map(tagId => ({
+            client_task_id: clientTaskId,
+            tag_id: tagId,
+          }));
           await supabase.from("client_task_tags").insert(tagsToInsert);
         }
       }
@@ -204,7 +195,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
             <PopoverTrigger asChild>
               <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.watch("due_date") && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch("due_date") ? format(form.watch("due_date")!, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                {form.watch("due_date") ? formatDateTime(form.watch("due_date"), false) : <span>Escolha uma data</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
