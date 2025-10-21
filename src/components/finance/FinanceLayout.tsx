@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageTitle from '@/components/layout/PageTitle';
 import { DollarSign, Briefcase, User } from 'lucide-react';
 import PeriodSelector from './PeriodSelector';
-import CompanyDashboard from './CompanyDashboard';
+import CompanyFinance from './CompanyFinance';
 import PersonalFinance from './PersonalFinance';
 import QuickTransactionEntry from './QuickTransactionEntry';
 
@@ -33,7 +33,7 @@ const FinanceLayout: React.FC = () => {
         </TabsList>
         
         <TabsContent value="company" className="mt-4">
-          <CompanyDashboard currentPeriod={currentPeriod} onTransactionAdded={handleTransactionAdded} />
+          <CompanyFinance currentPeriod={currentPeriod} onTransactionAdded={handleTransactionAdded} />
         </TabsContent>
         
         <TabsContent value="personal" className="mt-4">
