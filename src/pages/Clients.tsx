@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from "@/integrations/supabase/auth";
@@ -19,12 +18,14 @@ const ClientsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: clients, isLoading, error } = useQuery<Client[]>({
-    queryKey: ['clients', userId],
+    queryKey: ['clients', userId, searchTerm],
     queryFn: async () => {
       if (!userId) return [];
+      
+      // Listando explicitamente as colunas para evitar problemas de cache de esquema com '*'
       let query = supabase
         .from('clients')
-        .select('*')
+        .select('id, user_id, name, logo_url, description, color, type, monthly_delivery_goal, contact_email, contact_phone, company, created_at, updated_at')
         .eq('user_id', userId)
         .order('name', { ascending: true });
 
