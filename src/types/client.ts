@@ -14,10 +14,9 @@ export interface Client {
   contact_phone?: string | null; // Adicionado
   created_at: string;
   updated_at: string;
-  email?: string;
-  phone?: string;
+  // email?: string; // Removido
+  // phone?: string; // Removido
   status?: string;
-  // company?: string | null; // Removido para resolver o erro de esquema
 }
 
 export interface ClientTask {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Target, Loader2 } from "lucide-react";
 import { Client } from "@/types/client";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,7 +79,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
         <div className="flex items-center gap-2 min-w-0">
           <Avatar className="h-8 w-8">
             <AvatarImage src={client.logo_url || undefined} alt={client.name} />
-            <AvatarFallback>{client.name.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
           </Avatar>
           <CardTitle className="text-base font-semibold text-foreground break-words min-w-0 line-clamp-1">{client.name}</CardTitle>
         </div>
