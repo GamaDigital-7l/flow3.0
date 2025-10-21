@@ -46,8 +46,8 @@ const ClientFormContent: React.FC<ClientFormContentProps> = ({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: initialData?.name || '',
-      email: initialData?.email || '',
-      phone: initialData?.phone || '',
+      email: initialData?.contact_email || initialData?.email || '', // Usar contact_email ou fallback para email
+      phone: initialData?.contact_phone || initialData?.phone || '', // Usar contact_phone ou fallback para phone
       company: initialData?.company || '',
     },
   });
@@ -59,9 +59,9 @@ const ClientFormContent: React.FC<ClientFormContentProps> = ({
       const clientData = {
         ...data,
         user_id: userId,
-        // Assuming 'email' maps to 'contact_email' and 'phone' maps to 'contact_phone' in the DB for consistency
         contact_email: data.email,
         contact_phone: data.phone,
+        company: data.company || null, // Garantir que 'company' seja incluído
       };
 
       if (initialData) {

@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Client, ClientTask, ClientTaskStatus } from "@/types/client";
 import { useSession } from "@/integrations/supabase/auth";
-import { DndContext, DragEndEvent, closestCorners } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, closestCorners, DragOverEvent } from "@dnd-kit/core";
 import ClientKanbanColumn from "@/components/client/ClientKanbanColumn";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -56,19 +56,31 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
   const [isEditReasonDialogOpen, setIsEditReasonDialogOpen] = useState(false);
   const [taskToProcess, setTaskToProcess] = useState<ClientTask | null>(null);
   const [targetStatus, setTargetStatus] = useState<ClientTaskStatus | null>(null);
+  const [localTasks, setLocalTasks] = useState<ClientTask[]>([]); // Estado local para DND
 
-  const { data: tasks, isLoading, error, refetch } = useQuery<ClientTask[], Error>({
+  const { data: fetchedTasks, isLoading, error, refetch } = useQuery<ClientTask[], Error>({
     queryKey: ["clientTasks", client.id, userId],
     queryFn: () => fetchClientTasks(client.id, userId!),
     enabled: !!userId,
   });
 
+  // Sincronizar tarefas buscadas com o estado local
+  React.useEffect(() => {
+    if (fetchedTasks) {
+      setLocalTasks(fetchedTasks);
+    }
+  }, [fetchedTasks]);
+
   const updateTaskStatusMutation = useMutation({
-    mutationFn: async ({ taskId, newStatus, reason }: { taskId: string; newStatus: ClientTaskStatus; reason?: string }) => {
-      const updatePayload: { status: ClientTaskStatus, edit_reason?: string | null, is_completed?: boolean, completed_at?: string | null, updated_at: string } = {
+    mutationFn: async ({ taskId, newStatus, reason, newOrderIndex }: { taskId: string; newStatus: ClientTaskStatus; reason?: string; newOrderIndex?: number }) => {
+      const updatePayload: { status: ClientTaskStatus, edit_reason?: string | null, is_completed?: boolean, completed_at?: string | null, updated_at: string, order_index?: number } = {
         status: newStatus,
         updated_at: new Date().toISOString(),
       };
+
+      if (newOrderIndex !== undefined) {
+        updatePayload.order_index = newOrderIndex;
+      }
 
       if (newStatus === 'edit_requested') {
         updatePayload.edit_reason = reason || null;
@@ -91,13 +103,18 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      const statusTitle = KANBAN_COLUMNS.find(c => c.id === variables.newStatus)?.title || variables.newStatus;
-      showSuccess(`Tarefa movida para "${statusTitle}"!`);
+      if (variables.newOrderIndex === undefined) {
+        const statusTitle = KANBAN_COLUMNS.find(c => c.id === variables.newStatus)?.title || variables.newStatus;
+        showSuccess(`Tarefa movida para "${statusTitle}"!`);
+      }
+      // Refetch completo para garantir a ordem correta no DB e no cache
       queryClient.invalidateQueries({ queryKey: ["clientTasks", client.id, userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks", "client_tasks", userId] }); // Invalidate dashboard mirror
     },
     onError: (err: any) => {
       showError("Erro ao mover tarefa: " + err.message);
+      // Se houver erro, forçar o refetch para reverter o estado local
+      refetch();
     },
   });
 
@@ -107,32 +124,82 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
     if (!over) return;
 
     const taskId = active.id as string;
-    const task = tasks?.find(t => t.id === taskId);
-
+    const task = localTasks.find(t => t.id === taskId);
     if (!task) return;
 
+    const oldStatus = task.status;
     let newStatus: ClientTaskStatus;
+    let newOrderIndex: number;
+
     const overIsAColumn = KANBAN_COLUMNS.some(col => col.id === over.id);
 
     if (overIsAColumn) {
       newStatus = over.id as ClientTaskStatus;
+      // Se soltar na coluna vazia, vai para o final
+      newOrderIndex = (tasksByColumn.get(newStatus)?.length || 0) + 1;
     } else {
-      const overTask = tasks?.find(t => t.id === over.id);
+      const overTask = localTasks.find(t => t.id === over.id);
       if (!overTask) return;
       newStatus = overTask.status;
+
+      // Calcular a nova ordem
+      const columnTasks = tasksByColumn.get(newStatus) || [];
+      const overIndex = columnTasks.findIndex(t => t.id === overTask.id);
+      const activeIndex = columnTasks.findIndex(t => t.id === taskId);
+
+      if (oldStatus === newStatus) {
+        // Reordenação dentro da mesma coluna
+        if (activeIndex === overIndex) return;
+        
+        const newTasks = [...columnTasks];
+        const [movedTask] = newTasks.splice(activeIndex, 1);
+        newTasks.splice(overIndex, 0, movedTask);
+
+        // Atualizar o estado local imediatamente para feedback visual
+        setLocalTasks(prev => {
+            const updatedTasks = prev.map(t => {
+                if (t.id === taskId) return { ...t, order_index: newTasks[overIndex].order_index };
+                return t;
+            });
+            // Reconstruir a lista completa com a nova ordem para a coluna afetada
+            const updatedColumnTasks = updatedTasks.filter(t => t.status === newStatus).sort((a, b) => a.order_index - b.order_index);
+            
+            // Aplicar a nova ordem de índice (0, 1, 2...)
+            const finalUpdatedTasks = updatedTasks.map(t => {
+                const indexInNewColumn = newTasks.findIndex(nt => nt.id === t.id);
+                if (t.status === newStatus && indexInNewColumn !== -1) {
+                    return { ...t, order_index: indexInNewColumn };
+                }
+                return t;
+            });
+            return finalUpdatedTasks;
+        });
+
+        // Enviar a atualização de ordem para o DB (apenas o item movido)
+        newOrderIndex = overIndex;
+        updateTaskStatusMutation.mutate({ taskId, newStatus: oldStatus, newOrderIndex });
+        return;
+      } else {
+        // Mudança de coluna
+        newOrderIndex = overIndex;
+      }
     }
 
-    // Prevent dragging into 'posted' or 'approved' directly if not coming from 'under_review'
+    // Validação de transição de status
     if (newStatus === 'approved' || newStatus === 'posted') {
-        if (task.status !== 'under_review' && task.status !== 'approved') {
+        if (oldStatus !== 'under_review' && oldStatus !== 'approved') {
             showError("Aprovação e Postagem só podem ser feitas a partir de 'Para Aprovação' ou 'Aprovado'.");
+            // Reverter o estado local se a transição for inválida
+            setLocalTasks(fetchedTasks || []);
             return;
         }
     }
 
-    if (task.status !== newStatus) {
-      updateTaskStatusMutation.mutate({ taskId, newStatus });
-    }
+    // Atualizar o estado local para mudança de coluna
+    setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus, order_index: newOrderIndex } : t));
+
+    // Enviar a atualização de status e ordem para o DB
+    updateTaskStatusMutation.mutate({ taskId, newStatus, newOrderIndex });
   };
 
   const handleTaskSaved = () => {
@@ -147,10 +214,9 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
   };
 
   const handleApproveClick = (taskId: string) => {
-    const task = tasks?.find(t => t.id === taskId);
+    const task = localTasks.find(t => t.id === taskId);
     if (task) {
       setTaskToProcess(task);
-      // Determine if we are approving (from under_review) or marking as posted (from approved)
       const statusToSet = task.status === 'approved' ? 'posted' : 'approved';
       setTargetStatus(statusToSet);
       setIsApproveDialogOpen(true);
@@ -182,14 +248,22 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
   const tasksByColumn = useMemo(() => {
     const columns = new Map<ClientTaskStatus, ClientTask[]>();
     KANBAN_COLUMNS.forEach(col => columns.set(col.id, []));
-    tasks?.forEach(task => {
+    
+    // Usar localTasks para o render do DND
+    localTasks.forEach(task => {
       const column = columns.get(task.status);
       if (column) {
         column.push(task);
       }
     });
+
+    // Ordenar as tarefas dentro de cada coluna pelo order_index
+    columns.forEach(tasks => {
+      tasks.sort((a, b) => a.order_index - b.order_index);
+    });
+
     return columns;
-  }, [tasks]);
+  }, [localTasks]);
 
   if (isLoading) return <ClientKanbanSkeleton />;
   if (error) return <p className="text-red-500">Erro ao carregar tarefas: {error.message}</p>;
