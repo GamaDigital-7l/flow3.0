@@ -1,0 +1,1 @@
+export const DIALOG_CONTENT_CLASSNAMES = "sm:max-w-[425px] max-w-[90vw] mx-auto bg-card border border-border rounded-lg shadow-lg max-h-[90vh] overflow-y-auto";

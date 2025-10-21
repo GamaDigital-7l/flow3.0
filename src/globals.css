@@ -1,0 +1,312 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Theme (Default) - Gama Flow */
+    --background: 210 20% 98%; /* #F9FAFB - Fundo principal claro */
+    --foreground: 222.2 84% 4.9%; /* #12141A - Texto principal escuro */
+
+    --card: 0 0% 100%; /* #FFFFFF - Fundo branco puro */
+    --card-foreground: 222.2 84% 4.9%;
+    --card-rgb: 255, 255, 255;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 340 80% 51%; /* #ED1857 - Gama Pink */
+    --primary-hover: 340 80% 60%; /* #FF2E6E - Versão mais viva */
+    --primary-foreground: 0 0% 100%; /* Branco */
+    --primary-light: 340 80% 60%;
+
+    --secondary: 214.3 31.8% 91.4%; /* #E3E6EB - Botão secundário cinza claro */
+    --secondary-hover: 214.3 20% 85%; /* #D1D4DB - Hover secundário */
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%; /* #61656F - Cinza médio */
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%; /* #E3E6EB - Borda sutil */
+    --border-rgb: 227, 230, 235;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 340 80% 51%; /* Gama Pink */
+
+    --radius: 0.75rem;
+
+    /* Cores de status (Light) */
+    --status-success: 140 70% 48%; /* #2ECC71 */
+    --status-alert: 45 90% 50%; /* #F1C40F */
+    --status-overdue: #4C2EFF;
+    --status-urgent: #5F77FF;
+    --status-today: #4CAF50;
+    --status-completed: rgba(200, 200, 200, 0.5);
+    --status-recurring: #9370DB;
+
+    /* Variáveis para safe areas */
+    --sab: env(safe-area-inset-bottom);
+    --sat: env(safe-area-inset-top);
+    --sal: env(safe-area-inset-left);
+    --sar: env(safe-area-inset-right);
+  }
+
+  /* Tema Escuro (Dark Mode) - Definido como padrão no HTML */
+  .dark {
+    --background: 220 15% 6%; /* #12141A - Fundo principal */
+    --foreground: 210 20% 98%; /* #FFFFFF - Texto primário */
+    
+    --card: 220 15% 12%; /* #1D2028 - Fundo dos cards */
+    --card-foreground: 210 20% 98%;
+    --card-rgb: 29, 32, 40;
+
+    --popover: 220 15% 12%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 340 80% 51%; /* #ED1857 - Gama Pink */
+    --primary-hover: 340 80% 60%; /* #FF2E6E - Hover */
+    --primary-foreground: 0 0% 100%; /* Branco */
+    --primary-light: 340 80% 60%;
+
+    --secondary: 220 15% 18%; /* #2B2E38 - Botão secundário/Bordas */
+    --secondary-hover: 220 15% 22%; /* #353946 - Hover secundário */
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 220 15% 18%; /* #2B2E38 - Scrollbar/Placeholders */
+    --muted-foreground: 215 14% 75%; /* #B4B8C2 - Texto secundário */
+
+    --accent: 220 15% 18%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 80% 50%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 220 15% 18%; /* #2B2E38 - Bordas sutis */
+    --border-rgb: 43, 46, 56;
+    --input: 220 15% 18%;
+    --ring: 340 80% 51%; /* Gama Pink */
+
+    /* Cores de status (Dark) */
+    --status-success: 140 70% 48%; /* #2ECC71 */
+    --status-alert: 45 90% 50%; /* #F1C40F */
+    --status-overdue: #4C2EFF;
+    --status-urgent: #5F77FF;
+    --status-today: #4CAF50;
+    --status-completed: rgba(169, 169, 184, 0.2);
+    --status-recurring: #9370DB;
+
+    /* Cores específicas para a Sidebar (ajustadas para a nova paleta) */
+    --sidebar-background: 220 15% 6%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 340 80% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 340 80% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth; /* Rolagem suave */
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden; /* Garantir que não haja overflow lateral */
+    padding-top: var(--sat);
+    padding-bottom: var(--sab);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+    min-height: 100vh; /* Garante que o body ocupe a altura total */
+  }
+  /* Para navegadores Webkit (Chrome, Safari) */
+  body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  body::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  body::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 4px;
+    border: 2px solid hsl(var(--background));
+  }
+  /* Para Firefox */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+  }
+
+  /* Estilos globais para tipografia Inter */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-foreground; /* Alterado para 600 */
+  }
+
+  h1 {
+    @apply text-2xl sm:text-3xl lg:text-4xl tracking-tight; /* Removido uppercase */
+    letter-spacing: -0.5px;
+  }
+
+  h2 {
+    @apply text-xl sm:text-2xl lg:text-3xl tracking-tight; /* Removido uppercase */
+    letter-spacing: -0.5px;
+  }
+
+  /* Subtítulos / seções */
+  .subtitle {
+    @apply font-normal text-[--muted-foreground] text-sm sm:text-base; /* Alterado para 400 */
+  }
+
+  /* Texto padrão / corpo */
+  p, span, div {
+    @apply font-normal text-[--foreground] text-xs sm:text-sm; /* Mantido 400 */
+  }
+
+  /* Pequenos labels / legendas */
+  .label-sm {
+    @apply font-medium text-[--muted-foreground] opacity-80 text-xs; /* Mantido xs */
+  }
+
+  /* Imagens responsivas por padrão */
+  img {
+    @apply max-w-full h-auto;
+  }
+
+  /* Efeito de Frosted Glass (vidro fosco) */
+  .frosted-glass {
+    background-color: rgba(var(--card-rgb), 0.6); /* Fundo do card com transparência */
+    backdrop-filter: blur(10px) saturate(180%); /* Efeito de blur e saturação */
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    border: 1px solid rgba(var(--border-rgb), 0.3); /* Borda sutil */
+  }
+}
+
+/* Utilitário para gradientes sutis */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+}
+
+/* Estilo para ícones monocromáticos */
+.icon-mono {
+  @apply text-foreground; /* Cor padrão branca */
+}
+
+/* Estilo para ícones com glow */
+.icon-glow {
+  @apply text-secondary; /* Cor azul neon */
+  filter: drop-shadow(0 0 3px rgba(95, 119, 255, 0.7));
+}
+
+/* Estilo para botões com glow */
+.btn-glow {
+  @apply relative overflow-hidden;
+}
+
+.btn-glow::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(95, 119, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 0;
+}
+
+.btn-glow:hover::before {
+  opacity: 1;
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 10px rgba(95, 119, 255, 0.6), 0 0 20px rgba(76, 46, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Estilo para o efeito de elevação no hover de cards */
+.card-hover-effect {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 15px rgba(95, 119, 255, 0.2);
+}
+
+/* Estilos para links de navegação da Sidebar */
+@layer components {
+  .nav-link-base {
+    @apply flex items-center gap-2 rounded-md px-3 py-2 transition-all text-sm; /* Mais compacto */
+  }
+
+  .nav-link-active {
+    @apply bg-sidebar-accent text-sidebar-primary shadow-sm;
+  }
+
+  .nav-link-inactive {
+    @apply text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
+  }
+}
+
+/* Custom Scrollbar Utility Class */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted));
+  border-radius: 4px;
+  border: 2px solid hsl(var(--background));
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+}
+
+/* Ajustes para o Quill Editor */
+.ql-toolbar.ql-snow {
+  @apply border-border rounded-t-md bg-input;
+}
+
+.ql-container.ql-snow {
+  @apply border-border rounded-b-md bg-input;
+  min-height: 100px;
+}
+
+.ql-editor {
+  @apply text-foreground text-sm; /* Ajustar tamanho da fonte no editor */
+  min-height: 100px;
+}
+
+/* Ajustes para modais e popovers no mobile */
+.dialog-content-mobile-full {
+  @apply fixed inset-0 w-full h-full max-w-full max-h-full rounded-none;
+}
+
+/* Ajustes para o layout principal */
+#root {
+  @apply min-h-screen flex flex-col;
+}

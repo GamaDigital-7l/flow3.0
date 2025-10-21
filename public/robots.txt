@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Sitemap: https://minhavida.com/sitemap.xml
+
+# Favicon
+# https://minhavida.com/favicon.png
