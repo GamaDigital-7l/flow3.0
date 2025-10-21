@@ -2,7 +2,7 @@ import React from 'react';
 import { Client } from '@/pages/Clients';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Mail, Phone, Building } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone, Building, Users } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
