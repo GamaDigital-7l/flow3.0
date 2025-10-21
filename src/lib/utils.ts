@@ -1,12 +1,20 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from 'date-fns';
-import { parseISO as dfnsParseISO, formatISO as dfnsFormatISO } from 'date-fns'; // Use aliases if needed, but they are usually imported from date-fns/esm
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 
-// Re-exporting parseISO and formatISO from date-fns directly, as they are available in the installed version.
-export { parseISO, formatISO } from 'date-fns';
+// Define local versions of parseISO and formatISO to avoid TS conflicts
+export function parseISO(dateString: string | Date): Date {
+  if (dateString instanceof Date) return dateString;
+  // Simple parsing for ISO strings, relying on native Date constructor
+  return new Date(dateString);
+}
+
+export function formatISO(date: Date): string {
+  // Simple ISO formatting, relying on native Date toISOString
+  return date.toISOString();
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -30,12 +38,12 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
   const formatString = includeTime ? "PPP 'às' HH:mm" : "PPP";
-  // Corrected format usage to pass locale as an options object
+  // Corrigido para usar 2 argumentos, passando locale no objeto de opções
   return format(dateObj, formatString, { locale: ptBR });
 }
 
 export function formatTime(timeString: string | null | undefined): string {
-  if (!timeString) return "Sem horário";
+  if (timeString === null || timeString === undefined) return "Sem horário";
   try {
     const [hours, minutes] = timeString.split(':').map(Number);
     const date = new Date();

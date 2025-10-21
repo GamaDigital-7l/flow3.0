@@ -103,7 +103,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
         .update({
           is_completed: true,
           updated_at: new Date().toISOString(),
-          last_successful_completion_date: todayISO,
+          last_successful_completion_date: lastCompletionDate,
           completed_at: new Date().toISOString(),
           current_board: newCurrentBoard,
           overdue: newOverdueStatus,

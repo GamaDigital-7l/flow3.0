@@ -5,7 +5,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { isToday, differenceInDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit, Trash2, CalendarIcon, CheckCircle2, Hourglass, PlayCircle, TrendingDown, TrendingUp, Scale, Dumbbell, Loader2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, CalendarIcon, CheckCircle2, Hourglass, PlayCircle, TrendingDown, TrendingUp, Scale, Dumbbell, Loader2, CalendarDays } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";

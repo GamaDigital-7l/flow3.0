@@ -1,10 +1,10 @@
 import React from 'react';
 import FinanceLayout from '@/components/finance/FinanceLayout';
 
-const Finance: React.FC = () => {
+const PersonalFinance: React.FC = () => {
   return (
     <FinanceLayout />
   );
 };
 
-export default Finance;
+export default PersonalFinance;

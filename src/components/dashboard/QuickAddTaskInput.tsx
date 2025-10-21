@@ -169,7 +169,7 @@ const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTa
           <TaskForm
             initialData={{
               title: input,
-              due_date: dueDate,
+              due_date: dueDate, // dueDate é do tipo Date | undefined
               origin_board: originBoard,
               current_board: originBoard,
               is_priority: originBoard === "today_high_priority",
