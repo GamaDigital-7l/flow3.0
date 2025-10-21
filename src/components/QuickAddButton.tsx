@@ -10,7 +10,6 @@ import { useSession } from "@/integrations/supabase/auth";
 
 import TaskForm from "@/components/TaskForm";
 import NoteForm from "@/components/NoteForm";
-import ClientFormContent from "./client/ClientFormContent"; // Updated import
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
 const QuickAddButton: React.FC = () => {
@@ -20,7 +19,6 @@ const QuickAddButton: React.FC = () => {
 
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
-  const [isClientFormOpen, setIsClientFormOpen] = useState(false);
 
   const handleTaskSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -32,11 +30,6 @@ const QuickAddButton: React.FC = () => {
   const handleNoteSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["notes"] });
     setIsNoteFormOpen(false);
-  };
-
-  const handleClientSaved = () => {
-    queryClient.invalidateQueries({ queryKey: ["clients"] });
-    setIsClientFormOpen(false);
   };
 
   return (
@@ -60,10 +53,6 @@ const QuickAddButton: React.FC = () => {
             <NotebookText className="mr-2 h-4 w-4" />
             <span>Nova Nota</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setIsClientFormOpen(true)} className="cursor-pointer">
-            <Users className="mr-2 h-4 w-4" />
-            <span>Novo Cliente</span>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -86,17 +75,6 @@ const QuickAddButton: React.FC = () => {
             <DialogDescription>Escreva uma nova nota para o seu segundo cérebro.</DialogDescription>
           </DialogHeader>
           <NoteForm onNoteSaved={handleNoteSaved} onClose={() => setIsNoteFormOpen(false)} userId={userId} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Client Form Dialog */}
-      <Dialog open={isClientFormOpen} onOpenChange={setIsClientFormOpen}>
-        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-          <DialogHeader>
-            <DialogTitle>Adicionar Novo Cliente</DialogTitle>
-            <DialogDescription>Adicione um novo cliente para gerenciar suas tarefas.</DialogDescription>
-          </DialogHeader>
-          <ClientFormContent initialData={null} onClientSaved={handleClientSaved} onClose={() => setIsClientFormOpen(false)} />
         </DialogContent>
       </Dialog>
     </>

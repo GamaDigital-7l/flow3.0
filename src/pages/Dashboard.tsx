@@ -10,7 +10,6 @@ import { Task, TaskCurrentBoard } from "@/types/task";
 import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
-import ClientTasksBoard from "@/components/dashboard/ClientTasksBoard";
 import DashboardFinanceSummary from "@/components/dashboard/DashboardFinanceSummary";
 import DailyRecurrencesBoard from "@/components/dashboard/DailyRecurrencesBoard";
 import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary";
@@ -18,7 +17,9 @@ import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSumm
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
-  { id: "week_low_priority", title: "Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
+  { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
+  { id: "general", title: "Geral" },
+  { id: "recurring", title: "Recorrentes" },
   { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
 ];
 
@@ -51,7 +52,7 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     tags: task.task_tags.map((tt: any) => tt.tags),
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
-      tags: sub.task_tags.map((tt: any) => tt.tags),
+      tags: sub.task_tags.map((t: any) => t.tags),
     })),
   })) || [];
   return mappedData;
@@ -137,7 +138,6 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DailyRecurrencesBoard refetchAllTasks={handleTaskUpdated} />
-        <ClientTasksBoard refetchAllTasks={handleTaskUpdated} />
       </div>
 
       <DashboardResultsSummary />
