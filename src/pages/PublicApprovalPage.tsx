@@ -193,6 +193,21 @@ const PublicApprovalPage: React.FC = () => {
   const approvedTasks = tasks.filter(t => t.status === 'approved' || t.status === 'posted');
   const actionTasks = tasks.filter(t => t.status === 'edit_requested' || t.status === 'rejected');
 
+  const handleApproveSelected = async () => {
+    setIsSubmitting(true);
+    try {
+      for (const taskId of selectedTasks) {
+        await updateTaskStatus.mutateAsync({ taskId: taskId, newStatus: 'approved' });
+      }
+      showSuccess("Tarefas aprovadas com sucesso!");
+      refetch();
+    } catch (e) {
+      // Errors are handled inside the mutation
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
@@ -472,9 +487,8 @@ const TaskApprovalItem: React.FC<TaskApprovalItemProps> = ({
             </div>
           )}
         </CardContent>
-      )}
-    </Card>
-  );
-};
+      </Card>
+    );
+  };
 
 export default PublicApprovalPage;
