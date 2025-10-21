@@ -9,7 +9,7 @@ import ClientList from '@/components/client/ClientList';
 import ClientFormDialog from '@/components/client/ClientFormDialog';
 import { Client } from '@/types/client'; // Importando o tipo Client
 import { showError } from '@/utils/toast'; // Importando showError
-import { Input } from '@/components/ui/input'; // Importação corrigida
+import { Input } from '@/components/ui/input'; // Importação do Input
 
 const ClientsPage: React.FC = () => {
   const { session } = useSession();
@@ -24,7 +24,7 @@ const ClientsPage: React.FC = () => {
     queryFn: async () => {
       if (!userId) return [];
       
-      // Listando explicitamente as colunas, removendo 'company'
+      // Listando explicitamente as colunas, removendo 'company' para resolver o erro 400
       let query = supabase
         .from('clients')
         .select('id, user_id, name, logo_url, description, color, type, monthly_delivery_goal, contact_email, contact_phone, created_at, updated_at')
