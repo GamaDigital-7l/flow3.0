@@ -22,6 +22,7 @@ import RecurringTasks from "./pages/RecurringTasks";
 import Books from "./pages/Books";
 import BookDetails from "./pages/BookDetails";
 import BookReaderFullScreen from "./pages/BookReaderFullScreen";
+import Tasks from "./pages/Tasks"; // Importando Tasks
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
@@ -160,6 +161,7 @@ function AppContent() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/tasks" element={<Tasks />} /> {/* Rota Tasks adicionada */}
             <Route path="/goals" element={<Goals />} />
             <Route path="/study" element={<Study />} />
             <Route path="/health" element={<Health />} />
