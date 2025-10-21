@@ -1,260 +1,159 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Client, ClientTask, ClientTaskStatus } from "@/types/client";
-import { useSession } from "@/integrations/supabase/auth";
-import { DndContext, DragEndEvent, closestCorners } from "@dnd-kit/core";
-import ClientKanbanColumn from "@/components/client/ClientKanbanColumn";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import ClientTaskForm from "@/components/client/ClientTaskForm";
+import React, { useState, useEffect } from 'react';
+import { DragDropContext, DropResult } from 'react-beautiful-dnd';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Client, ClientTask, ClientTaskStatus } from '@/types/client';
+import ClientKanbanColumn from '@/components/client/ClientKanbanColumn';
+import { showError, showSuccess } from '@/utils/toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ClientTaskForm from '@/components/client/ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { showError, showSuccess } from "@/utils/toast";
-import ClientKanbanSkeleton from "@/components/client/ClientKanbanSkeleton";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import EditReasonDialog from "@/components/client/EditReasonDialog"; // Corrected import path
-
-const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string }[] = [
-  { id: "pending", title: "A Fazer" },
-  { id: "in_progress", title: "Em Produção" },
-  { id: "under_review", title: "Para Aprovação" },
-  { id: "approved", title: "Aprovado" },
-  { id: "posted", title: "Postado" },
-];
-
-const fetchClientTasks = async (clientId: string, userId: string): Promise<ClientTask[]> => {
-  const { data, error } = await supabase
-    .from("client_tasks")
-    .select("*, tags:client_task_tags(tags(id, name, color))")
-    .eq("client_id", clientId)
-    .eq("user_id", userId)
-    .order("order_index", { ascending: true });
-
-  if (error) throw error;
-
-  return data.map(task => ({
-    ...task,
-    tags: task.tags.map((t: any) => t.tags)
-  }));
-};
+import { Loader2 } from 'lucide-react';
 
 interface ClientKanbanPageProps {
   client: Client;
 }
 
+const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string }[] = [
+  { id: 'pending', title: 'A Fazer' },
+  { id: 'in_progress', title: 'Em Progresso' },
+  { id: 'under_review', title: 'Em Revisão' },
+  { id: 'edit_requested', title: 'Ajustes Solicitados' },
+  { id: 'approved', title: 'Aprovado' },
+  { id: 'posted', title: 'Postado' },
+];
+
 const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
-  const { session } = useSession();
-  const userId = session?.user?.id;
   const queryClient = useQueryClient();
-
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
-  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
-  const [isEditReasonDialogOpen, setIsEditReasonDialogOpen] = useState(false);
-  const [taskToProcess, setTaskToProcess] = useState<ClientTask | null>(null);
-  const [targetStatus, setTargetStatus] = useState<ClientTaskStatus | null>(null);
-
-  const { data: tasks, isLoading, error, refetch } = useQuery<ClientTask[], Error>({
-    queryKey: ["clientTasks", client.id, userId],
-    queryFn: () => fetchClientTasks(client.id, userId!),
-    enabled: !!userId,
+  const [tasksByStatus, setTasksByStatus] = useState<Record<ClientTaskStatus, ClientTask[]>>({
+    pending: [], in_progress: [], under_review: [], approved: [], rejected: [], completed: [], edit_requested: [], posted: []
   });
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<ClientTask | null>(null);
+  const [selectedColumn, setSelectedColumn] = useState<ClientTaskStatus>('pending');
 
-  const updateTaskStatusMutation = useMutation({
-    mutationFn: async ({ taskId, newStatus, reason }: { taskId: string; newStatus: ClientTaskStatus; reason?: string }) => {
-      const updatePayload: { status: ClientTaskStatus, edit_reason?: string | null, is_completed?: boolean, completed_at?: string | null, updated_at: string } = {
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (newStatus === 'edit_requested') {
-        updatePayload.edit_reason = reason || null;
-        updatePayload.is_completed = false;
-        updatePayload.completed_at = null;
-      } else if (newStatus === 'approved' || newStatus === 'posted') {
-        updatePayload.is_completed = true;
-        updatePayload.completed_at = new Date().toISOString();
-        updatePayload.edit_reason = null;
-      } else {
-        updatePayload.is_completed = false;
-        updatePayload.completed_at = null;
-        updatePayload.edit_reason = null;
-      }
-
-      const { error } = await supabase
-        .from("client_tasks")
-        .update(updatePayload)
-        .eq("id", taskId);
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      const statusTitle = KANBAN_COLUMNS.find(c => c.id === variables.newStatus)?.title || variables.newStatus;
-      showSuccess(`Tarefa movida para "${statusTitle}"!`);
-      queryClient.invalidateQueries({ queryKey: ["clientTasks", client.id, userId] });
-      queryClient.invalidateQueries({ queryKey: ["dashboardTasks", "client_tasks", userId] }); // Invalidate dashboard mirror
-    },
-    onError: (err: any) => {
-      showError("Erro ao mover tarefa: " + err.message);
+  const { data: tasks, isLoading } = useQuery<ClientTask[]>({
+    queryKey: ['client_tasks', client.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('client_tasks')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('order_index', { ascending: true });
+      if (error) throw new Error(error.message);
+      return data;
     },
   });
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const taskId = active.id as string;
-    const task = tasks?.find(t => t.id === taskId);
-
-    if (!task) return;
-
-    let newStatus: ClientTaskStatus;
-    const overIsAColumn = KANBAN_COLUMNS.some(col => col.id === over.id);
-
-    if (overIsAColumn) {
-      newStatus = over.id as ClientTaskStatus;
-    } else {
-      const overTask = tasks?.find(t => t.id === over.id);
-      if (!overTask) return;
-      newStatus = overTask.status;
+  useEffect(() => {
+    if (tasks) {
+      const groupedTasks = KANBAN_COLUMNS.reduce((acc, column) => {
+        acc[column.id] = tasks.filter(task => task.status === column.id);
+        return acc;
+      }, {} as Record<ClientTaskStatus, ClientTask[]>);
+      setTasksByStatus(groupedTasks);
     }
-
-    // Prevent dragging into 'posted' or 'approved' directly if not coming from 'under_review'
-    if (newStatus === 'approved' || newStatus === 'posted') {
-        if (task.status !== 'under_review' && task.status !== 'approved') {
-            showError("Aprovação e Postagem só podem ser feitas a partir de 'Para Aprovação' ou 'Aprovado'.");
-            return;
-        }
-    }
-
-    if (task.status !== newStatus) {
-      updateTaskStatusMutation.mutate({ taskId, newStatus });
-    }
-  };
-
-  const handleTaskSaved = () => {
-    refetch();
-    setIsFormOpen(false);
-    setEditingTask(undefined);
-  };
-
-  const handleEditTask = (task: ClientTask) => {
-    setEditingTask(task);
-    setIsFormOpen(true);
-  };
-
-  const handleApproveClick = (taskId: string) => {
-    const task = tasks?.find(t => t.id === taskId);
-    if (task) {
-      setTaskToProcess(task);
-      // Determine if we are approving (from under_review) or marking as posted (from approved)
-      const statusToSet = task.status === 'approved' ? 'posted' : 'approved';
-      setTargetStatus(statusToSet);
-      setIsApproveDialogOpen(true);
-    }
-  };
-
-  const confirmApprove = () => {
-    if (taskToProcess && targetStatus) {
-      updateTaskStatusMutation.mutate({ taskId: taskToProcess.id, newStatus: targetStatus });
-    }
-    setIsApproveDialogOpen(false);
-    setTaskToProcess(null);
-    setTargetStatus(null);
-  };
-
-  const handleRequestEditClick = (task: ClientTask) => {
-    setTaskToProcess(task);
-    setIsEditReasonDialogOpen(true);
-  };
-
-  const handleEditReasonSubmit = (reason: string) => {
-    if (taskToProcess) {
-      updateTaskStatusMutation.mutate({ taskId: taskToProcess.id, newStatus: "edit_requested", reason });
-    }
-    setIsEditReasonDialogOpen(false);
-    setTaskToProcess(null);
-  };
-
-  const tasksByColumn = useMemo(() => {
-    const columns = new Map<ClientTaskStatus, ClientTask[]>();
-    KANBAN_COLUMNS.forEach(col => columns.set(col.id, []));
-    tasks?.forEach(task => {
-      const column = columns.get(task.status);
-      if (column) {
-        column.push(task);
-      }
-    });
-    return columns;
   }, [tasks]);
 
-  if (isLoading) return <ClientKanbanSkeleton />;
-  if (error) return <p className="text-red-500">Erro ao carregar tarefas: {error.message}</p>;
+  const updateTaskMutation = useMutation({
+    mutationFn: async (updatedTask: Partial<ClientTask> & { id: string }) => {
+      const { error } = await supabase
+        .from('client_tasks')
+        .update(updatedTask)
+        .eq('id', updatedTask.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client_tasks', client.id] });
+    },
+    onError: (err) => {
+      showError('Erro ao atualizar tarefa: ' + err.message);
+    },
+  });
+
+  const handleDragEnd = (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+
+    const sourceStatus = source.droppableId as ClientTaskStatus;
+    const destStatus = destination.droppableId as ClientTaskStatus;
+
+    const sourceTasks = Array.from(tasksByStatus[sourceStatus]);
+    const [movedTask] = sourceTasks.splice(source.index, 1);
+
+    if (sourceStatus === destStatus) {
+      sourceTasks.splice(destination.index, 0, movedTask);
+      setTasksByStatus(prev => ({ ...prev, [sourceStatus]: sourceTasks }));
+      sourceTasks.forEach((task, index) => {
+        updateTaskMutation.mutate({ id: task.id, order_index: index });
+      });
+    } else {
+      const destTasks = Array.from(tasksByStatus[destStatus]);
+      destTasks.splice(destination.index, 0, { ...movedTask, status: destStatus });
+      setTasksByStatus(prev => ({
+        ...prev,
+        [sourceStatus]: sourceTasks,
+        [destStatus]: destTasks,
+      }));
+      updateTaskMutation.mutate({ id: draggableId, status: destStatus, order_index: destination.index });
+      sourceTasks.forEach((task, index) => {
+        updateTaskMutation.mutate({ id: task.id, order_index: index });
+      });
+      destTasks.forEach((task, index) => {
+        updateTaskMutation.mutate({ id: task.id, order_index: index });
+      });
+    }
+  };
+
+  const handleOpenTaskForm = (task: ClientTask | null, status: ClientTaskStatus) => {
+    setSelectedTask(task);
+    setSelectedColumn(status);
+    setIsTaskFormOpen(true);
+  };
+
+  const handleCloseTaskForm = () => {
+    setIsTaskFormOpen(false);
+    setSelectedTask(null);
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
-    <div>
-      <div className="mb-4">
-        <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingTask(undefined); }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingTask(undefined)}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-            <DialogHeader>
-              <DialogTitle>{editingTask ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
-            </DialogHeader>
-            <ClientTaskForm
-              clientId={client.id}
-              initialData={editingTask as any}
-              onClientTaskSaved={handleTaskSaved}
-              onClose={() => setIsFormOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {KANBAN_COLUMNS.map(({ id, title }) => (
+    <>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="flex overflow-x-auto space-x-4 p-1 pb-4">
+          {KANBAN_COLUMNS.map(column => (
             <ClientKanbanColumn
-              key={id}
-              id={id}
-              title={title}
-              tasks={tasksByColumn.get(id) || []}
-              onEditTask={handleEditTask}
-              onApproveTask={handleApproveClick}
-              onRequestEditTask={handleRequestEditClick}
+              key={column.id}
+              status={column.id}
+              title={column.title}
+              tasks={tasksByStatus[column.id] || []}
+              onAddTask={() => handleOpenTaskForm(null, column.id)}
+              onTaskClick={(task) => handleOpenTaskForm(task, column.id)}
             />
           ))}
         </div>
-      </DndContext>
+      </DragDropContext>
 
-      <AlertDialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar {targetStatus === 'posted' ? 'Postagem' : 'Aprovação'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja {targetStatus === 'posted' ? 'marcar como postado' : 'aprovar'} a tarefa "{taskToProcess?.title}"?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmApprove}>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <EditReasonDialog
-        isOpen={isEditReasonDialogOpen}
-        onClose={() => setIsEditReasonDialogOpen(false)}
-        onSubmit={handleEditReasonSubmit}
-        initialReason={taskToProcess?.edit_reason}
-      />
-    </div>
+      <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle>{selectedTask ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
+          </DialogHeader>
+          <ClientTaskForm
+            clientId={client.id}
+            columnStatus={selectedColumn}
+            task={selectedTask}
+            onTaskSaved={() => queryClient.invalidateQueries({ queryKey: ['client_tasks', client.id] })}
+            onClose={handleCloseTaskForm}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
