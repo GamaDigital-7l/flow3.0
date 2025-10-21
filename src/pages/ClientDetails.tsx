@@ -4,13 +4,12 @@ import React, { useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
+import { showError } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Edit, Trash2, Mail, Phone, Info, LayoutDashboard, Link as LinkIcon, Copy, Loader2, Send, Building, CalendarDays } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Client } from "@/types/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import ClientFormContent from "@/components/client/ClientFormContent";
 import ClientKanbanPage from "./ClientKanbanPage";
 import { format, subMonths, addMonths, startOfMonth } from "date-fns";
@@ -21,6 +20,7 @@ import PageTitle from "@/components/layout/PageTitle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
 
 const fetchClientById = async (clientId: string): Promise<Client | null> => {
   const { data, error } = await supabase
