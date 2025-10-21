@@ -5,12 +5,6 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
@@ -18,6 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
 import { FormControl } from "@/components/ui/form"; // Importando FormControl
+import { format, parseISO } from 'date-fns';
+import { convertToSaoPauloTime, convertToUtc, formatDateTime } from '@/lib/utils'; // Importando as novas funções
+import TimePicker from "./TimePicker";
 
 const studySessionSchema = z.object({
   title: z.string().min(1, "O título da sessão de estudo é obrigatório."),
@@ -67,7 +64,7 @@ const StudySessionForm: React.FC<StudySessionFormProps> = ({ initialData, onSess
         title: values.title,
         duration_minutes: values.duration_minutes || null,
         notes: values.notes || null,
-        session_date: format(values.session_date, "yyyy-MM-dd"),
+        session_date: format(convertToUtc(values.session_date)!, "yyyy-MM-dd"),
         is_completed: values.is_completed,
         updated_at: new Date().toISOString(),
       };
@@ -153,7 +150,7 @@ const StudySessionForm: React.FC<StudySessionFormProps> = ({ initialData, onSess
               >
                 <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 {form.watch("session_date") ? (
-                  format(form.watch("session_date")!, "PPP", { locale: ptBR })
+                  formatDateTime(form.watch("session_date"))
                 ) : (
                   <span>Escolha uma data</span>
                 )}
@@ -170,6 +167,11 @@ const StudySessionForm: React.FC<StudySessionFormProps> = ({ initialData, onSess
             />
           </PopoverContent>
         </Popover>
+        {form.formState.errors.date && (
+          <p className="text-red-500 text-sm mt-1">
+            {form.formState.errors.date.message}
+          </p>
+        )}
       </div>
       <div className="flex items-center space-x-2">
         <Checkbox

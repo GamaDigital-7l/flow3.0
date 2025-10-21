@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,16 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 import { FinancialTransaction, FinancialTransactionType } from '@/types/finance';
 import { useFinancialData } from '@/hooks/useFinancialData';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess } from '@/utils/toast';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale/pt-BR';
+import { convertToSaoPauloTime, convertToUtc, formatDateTime } from '@/lib/utils'; // Importando as novas funções
 
 const transactionSchema = z.object({
   date: z.date({ required_error: "A data é obrigatória." }),
@@ -68,7 +67,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
       const payload = {
         ...data,
         user_id: userId,
-        date: format(data.date, 'yyyy-MM-dd'),
+        date: format(convertToUtc(data.date)!, 'yyyy-MM-dd'),
         category_id: data.category_id || null,
         client_id: data.client_id || null,
       };
@@ -149,7 +148,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(field.value, "PPP") : <span>Selecione uma data</span>}
+                        {field.value ? formatDateTime(field.value) : <span>Selecione uma data</span>}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -159,6 +158,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
                       selected={field.value}
                       onSelect={field.onChange}
                       initialFocus
+                      locale={ptBR}
                     />
                   </PopoverContent>
                 </Popover>
@@ -274,7 +274,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {clients.map(client => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}

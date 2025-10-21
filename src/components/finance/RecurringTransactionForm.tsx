@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { CalendarIcon, Loader2, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
@@ -25,9 +23,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess } from '@/utils/toast';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { Checkbox } from '@/components/ui/checkbox'; // Importando Checkbox
+import { convertToSaoPauloTime, convertToUtc, formatDateTime } from '@/lib/utils'; // Importando as novas funções
 
 const RECURRENCE_OPTIONS = ['monthly', 'weekly', 'yearly', 'quarterly'] as const;
 type RecurrenceType = typeof RECURRENCE_OPTIONS[number];
@@ -83,7 +82,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
       const payload = {
         ...data,
         user_id: userId,
-        start_date: format(data.start_date, 'yyyy-MM-dd'),
+        start_date: format(convertToUtc(data.start_date)!, 'yyyy-MM-dd'),
         category_id: data.category_id || null,
         client_id: data.client_id || null,
       };
@@ -175,7 +174,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             <FormItem>
               <FormLabel>Descrição</FormLabel>
               <FormControl>
-                <Textarea placeholder="Ex: Assinatura de Software" {...field} />
+                <Textarea placeholder="Ex: Assinatura de software" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -214,7 +213,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             name="start_date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Data de Início</FormLabel>
+                <FormLabel>Próximo Vencimento</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -226,7 +225,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                        {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
+                        {field.value ? formatDateTime(field.value, false) : <span>Selecione uma data</span>}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>

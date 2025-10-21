@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import TransactionForm from './TransactionForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils'; // Importando as novas funções
 
 interface CompanyTransactionsListProps {
   currentPeriod: Date;
@@ -113,7 +112,7 @@ const CompanyTransactionsList: React.FC<CompanyTransactionsListProps> = ({ curre
                   {formatCurrency(t.amount)} ({t.category?.name || 'Sem Categoria'})
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> {format(new Date(t.date), "PPP", { locale: ptBR })}
+                  <CalendarDays className="h-3 w-3" /> {formatDateTime(t.date)}
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">

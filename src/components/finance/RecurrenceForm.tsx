@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,17 +18,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess } from '@/utils/toast';
 import { useFinancialData } from '@/hooks/useFinancialData';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { convertToSaoPauloTime, convertToUtc, formatDateTime } from '@/lib/utils'; // Importando as novas funções
 
 const formSchema = z.object({
-  description: z.string().min(1, "A descrição é obrigatória."),
+  description: z.string().min(3, "Descrição deve ter pelo menos 3 caracteres."),
   amount: z.number().min(0.01, "O valor deve ser positivo."),
-  type: z.enum(["income", "expense"], { required_error: "O tipo é obrigatório." }),
-  frequency: z.enum(["monthly", "weekly", "yearly", "quarterly"], { required_error: "A frequência é obrigatória." }),
+  type: z.enum(['income', 'expense']),
+  frequency: z.enum(['monthly', 'weekly', 'yearly', 'quarterly'], { required_error: "A frequência é obrigatória." }),
   next_due_date: z.date({ required_error: "A próxima data de vencimento é obrigatória." }),
   category_id: z.string().nullable().optional(),
   account_id: z.string().min(1, "A conta é obrigatória."),
@@ -39,99 +39,79 @@ const formSchema = z.object({
 type RecurrenceFormValues = z.infer<typeof formSchema>;
 
 interface RecurrenceFormProps {
-  initialData?: FinancialRecurrence | null;
-  onRecurrenceSaved: () => void;
+  initialData?: Partial<FinancialRecurrence>;
+  onTransactionSaved: () => void;
   onClose: () => void;
 }
 
-const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurrenceSaved, onClose }) => {
+const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ initialData, onTransactionSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const { categories, accounts, isLoading } = useFinancialData();
 
-  const defaultValues: Partial<RecurrenceFormValues> = {
-    description: initialData?.description || "",
-    amount: initialData?.amount || 0,
-    type: initialData?.type || "expense",
-    frequency: initialData?.frequency || "monthly",
-    next_due_date: initialData?.next_due_date ? new Date(initialData.next_due_date) : new Date(),
-    category_id: initialData?.category_id || null,
-    account_id: initialData?.account_id || "",
-  };
-
-  const form = useForm<RecurrenceFormValues>({
+  const form = useForm<RecurringTransactionFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues as RecurrenceFormValues,
+    defaultValues: {
+      description: initialData?.description || '',
+      amount: initialData?.amount || 0,
+      type: initialData?.type || 'expense',
+      frequency: initialData?.frequency || 'monthly',
+      next_due_date: initialData?.next_due_date ? new Date(initialData.next_due_date) : new Date(),
+      category_id: initialData?.category_id || '',
+      account_id: initialData?.account_id || '',
+    },
   });
 
-  useEffect(() => {
-    if (initialData) {
-      form.reset({
-        ...defaultValues,
-        next_due_date: initialData.next_due_date ? new Date(initialData.next_due_date) : new Date(),
-      } as RecurrenceFormValues);
-    }
-  }, [initialData]);
+  const currentType = form.watch('type');
+  const filteredCategories = categories.filter(c => c.type === currentType);
 
-  const onSubmit = async (values: RecurrenceFormValues) => {
-    if (!userId) {
-      showError("Usuário não autenticado.");
-      return;
-    }
+  const saveRecurringTransaction = useMutation({
+    mutationFn: async (data: RecurringTransactionFormValues) => {
+      if (!userId) throw new Error("Usuário não autenticado.");
 
-    const recurrenceData = {
-      ...values,
-      user_id: userId,
-      next_due_date: format(values.next_due_date, 'yyyy-MM-dd'),
-      // Ensure null value for optional field
-      category_id: values.category_id === '__none__' ? null : values.category_id,
-    };
+      const payload = {
+        ...data,
+        user_id: userId,
+        start_date: format(convertToUtc(data.start_date)!, 'yyyy-MM-dd'),
+        category_id: data.category_id || null,
+        client_id: data.client_id || null,
+      };
 
-    try {
       if (initialData?.id) {
-        // Update
-        const { error } = await supabase
-          .from("financial_recurrences")
-          .update(recurrenceData)
-          .eq("id", initialData.id)
-          .select();
-
+        const { error } = await supabase.from('financial_recurrences').update(payload).eq('id', initialData.id).eq('user_id', userId);
         if (error) throw error;
-        showSuccess("Recorrência atualizada com sucesso!");
       } else {
-        // Create
-        const { error } = await supabase
-          .from("financial_recurrences")
-          .insert(recurrenceData)
-          .select();
-
+        const { error } = await supabase.from('financial_recurrences').insert(payload);
         if (error) throw error;
-        showSuccess("Recorrência registrada com sucesso!");
       }
-      onRecurrenceSaved();
-      onClose();
-    } catch (err: any) {
-      showError("Erro ao salvar recorrência: " + err.message);
-      console.error("Erro ao salvar recorrência:", err);
-    }
+    },
+    onSuccess: () => {
+      showSuccess(`Recorrência ${initialData?.id ? 'atualizada' : 'adicionada'} com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ["recurringTransactions", userId] });
+      onTransactionSaved();
+    },
+    onError: (error) => {
+      showError("Erro ao salvar recorrência: " + error.message);
+    },
+  });
+
+  const onSubmit = (data: RecurringTransactionFormValues) => {
+    saveRecurringTransaction.mutate(data);
   };
 
-  if (isLoading) {
+  if (isDataLoading) {
     return (
-      <div className="flex justify-center items-center h-40">
+      <div className="flex justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  const incomeCategories = categories.filter(c => c.type === 'income');
-  const expenseCategories = categories.filter(c => c.type === 'expense');
-  const currentCategories = form.watch('type') === 'income' ? incomeCategories : expenseCategories;
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
+          {/* Tipo (Receita/Despesa) */}
           <FormField
             control={form.control}
             name="type"
@@ -154,6 +134,7 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
             )}
           />
 
+          {/* Valor */}
           <FormField
             control={form.control}
             name="amount"
@@ -175,6 +156,7 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
           />
         </div>
 
+        {/* Descrição */}
         <FormField
           control={form.control}
           name="description"
@@ -190,9 +172,10 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
         />
 
         <div className="grid grid-cols-2 gap-4">
+          {/* Recorrência */}
           <FormField
             control={form.control}
-            name="frequency"
+            name="recurrence_type"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Frequência</FormLabel>
@@ -214,9 +197,10 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
             )}
           />
 
+          {/* Data de Início */}
           <FormField
             control={form.control}
-            name="next_due_date"
+            name="start_date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Próximo Vencimento</FormLabel>
@@ -230,8 +214,8 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
                           !field.value && "text-muted-foreground"
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(field.value, "PPP") : <span>Selecione uma data</span>}
+                        <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                        {field.value ? formatDateTime(field.value) : <span>Selecione uma data</span>}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -241,6 +225,7 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
                       selected={field.value}
                       onSelect={field.onChange}
                       initialFocus
+                      locale={ptBR}
                     />
                   </PopoverContent>
                 </Popover>
@@ -251,6 +236,7 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
         </div>
 
         <div className="grid grid-cols-2 gap-4">
+          {/* Conta */}
           <FormField
             control={form.control}
             name="account_id"
@@ -276,6 +262,7 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
             )}
           />
 
+          {/* Categoria */}
           <FormField
             control={form.control}
             name="category_id"
@@ -311,8 +298,8 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? (
+          <Button type="submit" disabled={saveRecurringTransaction.isPending}>
+            {saveRecurringTransaction.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : initialData ? (
               "Salvar Alterações"
@@ -326,4 +313,4 @@ const RecurrenceForm: React.FC<RecurrenceFormProps> = ({ initialData, onRecurren
   );
 };
 
-export default RecurrenceForm;
+export default RecurringTransactionForm;

@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +7,7 @@ import { DollarSign, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { FinancialTransactionType } from '@/types/finance';
 import { formatCurrency } from '@/utils/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDateTime } from '@/lib/utils'; // Importando as novas funções
 
 interface FinanceSummary {
   total_income: number;

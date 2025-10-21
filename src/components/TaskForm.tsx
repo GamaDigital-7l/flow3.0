@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +10,8 @@ import { Task, TaskRecurrenceType, TaskOriginBoard, TaskCurrentBoard } from "@/t
 import { Form } from "@/components/ui/form";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { parseISO } from 'date-fns';
+import { formatDateTime, convertToSaoPauloTime, convertToUtc } from "@/lib/utils"; // Importando as novas funções
 
 import TaskBasicInfo from "./task/TaskBasicInfo";
 import TaskScheduling from "./task/TaskScheduling";
@@ -87,7 +87,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       const dataToSave = {
         title: values.title,
         description: values.description || null,
-        due_date: values.due_date ? format(values.due_date, "yyyy-MM-dd") : null,
+        due_date: values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null,
         time: values.time || null,
         recurrence_type: finalRecurrenceType,
         recurrence_details: values.recurrence_details || null,

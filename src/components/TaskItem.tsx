@@ -1,9 +1,6 @@
-"use client";
-
 import React from "react";
 import { Trash2, Repeat, Clock, Edit, PlusCircle, BookOpen, Dumbbell, GraduationCap, Loader2, AlertCircle, Users, CalendarDays } from "lucide-react";
-import { format } from "date-fns";
-import { isPast, isToday, isTomorrow, isThisWeek, isThisMonth, isSameDay, addDays, subDays } from "date-fns";
+import { format, isPast, isToday, isTomorrow, isThisWeek, isThisMonth, isSameDay, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Task, TaskCurrentBoard } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { cn } from "@/lib/utils";
 import { getAdjustedTaskCompletionStatus } from "@/utils/taskHelpers";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
+import { formatDateTime, formatTime } from "@/lib/utils"; // Importando as novas funções
+import { parseISO } from 'date-fns';
 
 interface TaskItemProps {
   task: Task;
@@ -73,17 +72,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
 
   if (!task.due_date) return "Sem data";
 
-  const dueDate = new Date(task.due_date);
-
-  if (task.overdue && !task.is_completed) {
-    return `Atrasada (${format(dueDate, 'dd/MM')})`;
-  }
-
-  if (isToday(dueDate)) return "Hoje";
-  if (isTomorrow(dueDate)) return "Amanhã";
-  if (isThisWeek(dueDate, { weekStartsOn: 0 })) return format(dueDate, 'EEEE', { locale: ptBR });
-
-  return format(dueDate, 'dd/MM/yyyy');
+  return formatDateTime(task.due_date, false);
 };
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurringView = false }) => {
@@ -270,7 +259,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
             {task.title}
           </label>
           {task.description && (
-            <p className="text-xs text-muted-foreground break-words line-clamp-1 mt-0.5">
+            <p className="text-xs md:text-sm text-muted-foreground break-words line-clamp-1 mt-0.5">
               {task.description}
             </p>
           )}
@@ -291,7 +280,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
           </div>
           <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-1">
             <p className="flex items-center gap-0.5">
-              <Clock className="h-3 w-3" /> {task.time || 'Dia todo'}
+              <Clock className="h-3 w-3" /> {formatTime(task.time)}
             </p>
             <p className="flex items-center gap-0.5">
               <CalendarDays className="h-3 w-3" /> {getTaskDueDateDisplay(task)}
@@ -330,39 +319,12 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
             </DialogDescription>
           </DialogHeader>
           <TaskForm
-            initialData={{ ...task, due_date: task.due_date ? new Date(task.due_date) : undefined } as any}
+            initialData={{ ...task, due_date: task.due_date ? parseISO(task.due_date) : undefined } as any}
             onTaskSaved={() => {
               setIsFormOpen(false);
               refetchTasks();
             }}
             onClose={() => setIsFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isSubtaskFormOpen} onOpenChange={setIsSubtaskFormOpen}>
-        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Adicionar Subtarefa</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Crie uma subtarefa para "{task.title}".
-            </DialogDescription>
-          </DialogHeader>
-          <TaskForm
-            initialData={{
-              title: "",
-              parent_task_id: task.id,
-              due_date: task.due_date ? new Date(task.due_date) : undefined,
-              origin_board: task.origin_board as any,
-              current_board: task.current_board as any,
-              is_priority: task.is_priority,
-              selected_tag_ids: task.tags.map(t => t.id),
-            }}
-            onTaskSaved={() => {
-              setIsSubtaskFormOpen(false);
-              refetchTasks();
-            }}
-            onClose={() => setIsSubtaskFormOpen(false)}
           />
         </DialogContent>
       </Dialog>
