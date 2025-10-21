@@ -44,7 +44,7 @@ const FullScreenImageViewer: React.FC<FullScreenImageViewerProps> = ({ isOpen, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-95 z-50 p-0 border-none rounded-none max-w-full max-h-full h-full w-full animate-fade-in-slide-up">
+      <DialogContent className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-95 z-50 p-0 border-none rounded-none max-w-full max-h-full h-full w-full animate-fade-in-slide-up dialog-content-mobile-full">
         <DialogHeader className="sr-only">
           <DialogTitle>Visualizador de Imagem</DialogTitle>
           <DialogDescription>Visualizando a imagem em tela cheia. Use as setas para navegar entre as imagens.</DialogDescription>

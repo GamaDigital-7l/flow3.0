@@ -7,20 +7,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Edit, Trash2, Mail, Phone, Info, LayoutDashboard, Link as LinkIcon, Copy, Loader2, Send, Building } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Mail, Phone, Info, LayoutDashboard, Link as LinkIcon, Copy, Loader2, Send, Building, CalendarDays } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Client } from "@/types/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import ClientFormContent from "@/components/client/ClientFormContent";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientKanbanPage from "./ClientKanbanPage";
-import { format } from "date-fns";
+import { format, subMonths, addMonths, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PageTitle from "@/components/layout/PageTitle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const fetchClientById = async (clientId: string): Promise<Client | null> => {
   const { data, error } = await supabase
@@ -42,6 +42,9 @@ const ClientDetails: React.FC = () => {
   const userId = session?.user?.id;
   const isMobile = useIsMobile();
   const touchStartX = useRef(0);
+
+  // Estado para o período do Kanban (Mês/Ano)
+  const [currentPeriod, setCurrentPeriod] = useState(startOfMonth(new Date()));
 
   const { data: client, isLoading, error, refetch } = useQuery<Client | null, Error>({
     queryKey: ["client", clientId],
@@ -100,10 +103,12 @@ const ClientDetails: React.FC = () => {
     if (!client) return;
     setIsGeneratingLink(true);
     try {
+      const monthYearRef = format(currentPeriod, "yyyy-MM");
+      
       const { data, error } = await supabase.functions.invoke('generate-approval-link', {
         body: {
           clientId: client.id,
-          monthYearRef: format(new Date(), "yyyy-MM"),
+          monthYearRef: monthYearRef,
         },
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
@@ -129,9 +134,24 @@ const ClientDetails: React.FC = () => {
   };
 
   const shareOnWhatsApp = (link: string) => {
-    const message = `Olá! Seus posts estão prontos para aprovação. Por favor, acesse: ${link}`;
+    const message = `Olá! Seus posts de ${format(currentPeriod, "MMMM/yyyy", { locale: ptBR })} estão prontos para aprovação. Por favor, acesse: ${link}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const generateMonthOptions = () => {
+    const options = [];
+    const today = new Date();
+    for (let i = -6; i <= 6; i++) { // 6 meses para trás e 6 meses para frente
+      const date = startOfMonth(addMonths(today, i));
+      options.push(date);
+    }
+    return options;
+  };
+
+  const handleMonthChange = (value: string) => {
+    const [year, month] = value.split('-').map(Number);
+    setCurrentPeriod(new Date(year, month - 1, 1));
   };
 
   if (!clientId) {
@@ -199,29 +219,56 @@ const ClientDetails: React.FC = () => {
         </Dialog>
       </PageTitle>
 
-      <Tabs defaultValue="kanban" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground">
-          <TabsTrigger value="kanban"><LayoutDashboard className="mr-2 h-4 w-4" />Kanban</TabsTrigger>
-          <TabsTrigger value="info"><Info className="mr-2 h-4 w-4" />Informações</TabsTrigger>
-        </TabsList>
-        <TabsContent value="kanban" className="mt-4">
-          <ClientKanbanPage client={client} />
-        </TabsContent>
-        <TabsContent value="info" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes do Cliente</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {/* {client.company && <p className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /> {client.company}</p>} */}
-              {client.contact_email && <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {client.contact_email}</p>}
-              {client.contact_phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> {client.contact_phone}</p>}
-              {client.description && <p className="text-muted-foreground">{client.description}</p>}
-              <p className="text-sm text-muted-foreground pt-2 border-t">Criado em: {format(new Date(client.created_at), "PPP")}</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Informações do Cliente (Movidas para cima) */}
+      <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass">
+        <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Building className="h-4 w-4 text-primary" />
+            <p className="text-muted-foreground">Tipo: {client.type.charAt(0).toUpperCase() + client.type.slice(1)}</p>
+          </div>
+          {client.contact_email && (
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-primary" />
+              <p className="text-muted-foreground truncate">{client.contact_email}</p>
+            </div>
+          )}
+          {client.contact_phone && (
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-primary" />
+              <p className="text-muted-foreground">{client.contact_phone}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Seletor de Período para o Kanban */}
+      <div className="flex items-center gap-2 p-3 bg-card border border-border rounded-xl shadow-sm frosted-glass">
+        <Button variant="ghost" size="icon" onClick={() => setCurrentPeriod(subMonths(currentPeriod, 1))} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Select
+          value={format(currentPeriod, "yyyy-MM")}
+          onValueChange={handleMonthChange}
+        >
+          <SelectTrigger className="w-[180px] bg-input border-border text-foreground focus-visible:ring-ring">
+            <CalendarDays className="mr-2 h-4 w-4" />
+            <SelectValue placeholder="Selecionar Mês" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
+            {generateMonthOptions().map((date) => {
+              const value = format(date, "yyyy-MM");
+              const label = format(date, "MMMM yyyy", { locale: ptBR });
+              return <SelectItem key={value} value={value}>{label}</SelectItem>;
+            })}
+          </SelectContent>
+        </Select>
+        <Button variant="ghost" size="icon" onClick={() => setCurrentPeriod(addMonths(currentPeriod, 1))} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+          <ArrowLeft className="h-4 w-4 rotate-180" />
+        </Button>
+      </div>
+
+      {/* Kanban */}
+      <ClientKanbanPage client={client} monthYearRef={format(currentPeriod, "yyyy-MM")} />
 
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
         <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>

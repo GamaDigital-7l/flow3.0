@@ -16,6 +16,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import ClientKanbanSkeleton from "@/components/client/ClientKanbanSkeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import EditReasonDialog from "@/components/client/EditReasonDialog"; // Corrected import path
+import { ScrollArea } from "@/components/ui/scroll-area"; // Importando ScrollArea
 
 const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string }[] = [
   { id: "pending", title: "A Fazer" },
@@ -26,12 +27,13 @@ const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string }[] = [
   { id: "posted", title: "Postado" },
 ];
 
-const fetchClientTasks = async (clientId: string, userId: string): Promise<ClientTask[]> => {
+const fetchClientTasks = async (clientId: string, userId: string, monthYearRef: string): Promise<ClientTask[]> => {
   const { data, error } = await supabase
     .from("client_tasks")
     .select("*, tags:client_task_tags(tags(id, name, color))")
     .eq("client_id", clientId)
     .eq("user_id", userId)
+    .eq("month_year_reference", monthYearRef) // Filtrar por mês/ano
     .order("order_index", { ascending: true });
 
   if (error) throw error;
@@ -44,9 +46,10 @@ const fetchClientTasks = async (clientId: string, userId: string): Promise<Clien
 
 interface ClientKanbanPageProps {
   client: Client;
+  monthYearRef: string; // Novo prop para o mês/ano
 }
 
-const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
+const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client, monthYearRef }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
@@ -60,8 +63,8 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
   const [localTasks, setLocalTasks] = useState<ClientTask[]>([]); // Estado local para DND
 
   const { data: fetchedTasks, isLoading, error, refetch } = useQuery<ClientTask[], Error>({
-    queryKey: ["clientTasks", client.id, userId],
-    queryFn: () => fetchClientTasks(client.id, userId!),
+    queryKey: ["clientTasks", client.id, userId, monthYearRef], // Adicionar monthYearRef à chave
+    queryFn: () => fetchClientTasks(client.id, userId!, monthYearRef),
     enabled: !!userId,
   });
 
@@ -109,7 +112,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
         showSuccess(`Tarefa movida para "${statusTitle}"!`);
       }
       // Refetch completo para garantir a ordem correta no DB e no cache
-      queryClient.invalidateQueries({ queryKey: ["clientTasks", client.id, userId] });
+      queryClient.invalidateQueries({ queryKey: ["clientTasks", client.id, userId, monthYearRef] });
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks", "client_tasks", userId] }); // Invalidate dashboard mirror
       queryClient.invalidateQueries({ queryKey: ["clientProgress", client.id, userId] }); // Invalidate progress
     },
@@ -138,7 +141,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
     if (overIsAColumn) {
       newStatus = over.id as ClientTaskStatus;
       // Se soltar na coluna vazia, vai para o final
-      newOrderIndex = (tasksByColumn.get(newStatus)?.length || 0) + 1;
+      newOrderIndex = (tasksByColumn.get(newStatus)?.length || 0);
     } else {
       const overTask = localTasks.find(t => t.id === over.id);
       if (!overTask) return;
@@ -281,43 +284,58 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
   if (error) return <p className="text-red-500">Erro ao carregar tarefas: {error.message}</p>;
 
   return (
-    <div>
-      <div className="mb-4">
-        <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingTask(undefined); }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingTask(undefined)}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-            <DialogHeader>
-              <DialogTitle>{editingTask ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
-            </DialogHeader>
-            <ClientTaskForm
-              clientId={client.id}
-              initialData={editingTask as any}
-              onClientTaskSaved={handleTaskSaved}
-              onClose={() => setIsFormOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+    <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
+      <ScrollArea className="w-full whitespace-nowrap rounded-lg border border-border bg-muted/20 p-4">
+        <div className="flex gap-4">
           {KANBAN_COLUMNS.map(({ id, title }) => (
-            <ClientKanbanColumn
-              key={id}
-              id={id}
-              title={title}
-              tasks={tasksByColumn.get(id) || []}
-              onEditTask={handleEditTask}
-              onApproveTask={handleApproveClick}
-              onRequestEditTask={handleRequestEditClick}
-            />
+            <div key={id} className="flex flex-col">
+              <div className="mb-3">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full justify-start border-dashed border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+                    <DialogHeader>
+                      <DialogTitle>Nova Tarefa em "{title}"</DialogTitle>
+                    </DialogHeader>
+                    <ClientTaskForm
+                      clientId={client.id}
+                      initialData={{ status: id, month_year_reference: monthYearRef } as any}
+                      onClientTaskSaved={handleTaskSaved}
+                      onClose={() => setIsFormOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <ClientKanbanColumn
+                id={id}
+                title={title}
+                tasks={tasksByColumn.get(id) || []}
+                onEditTask={handleEditTask}
+                onApproveTask={handleApproveClick}
+                onRequestEditTask={handleRequestEditClick}
+              />
+            </div>
           ))}
         </div>
-      </DndContext>
+      </ScrollArea>
+
+      {/* Dialog para Edição de Tarefa */}
+      <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingTask(undefined); }}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle>{editingTask ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
+          </DialogHeader>
+          <ClientTaskForm
+            clientId={client.id}
+            initialData={editingTask as any}
+            onClientTaskSaved={handleTaskSaved}
+            onClose={() => setIsFormOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
         <AlertDialogContent>
@@ -340,7 +358,7 @@ const ClientKanbanPage: React.FC<ClientKanbanPageProps> = ({ client }) => {
         onSubmit={handleEditReasonSubmit}
         initialReason={taskToProcess?.edit_reason}
       />
-    </div>
+    </DndContext>
   );
 };
 

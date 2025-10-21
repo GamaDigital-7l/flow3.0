@@ -24,13 +24,13 @@ const ClientKanbanColumn: React.FC<ClientKanbanColumnProps> = ({ id, title, task
       ref={setNodeRef}
       // Ajustado para ser mais estreito em telas pequenas (w-64) e fixo em telas maiores (w-72)
       className={cn(
-        "w-64 sm:w-72 flex-shrink-0 bg-muted/30 rounded-xl p-2 transition-colors duration-200",
+        "w-64 sm:w-72 flex-shrink-0 bg-card border border-border rounded-xl p-2 transition-colors duration-200 shadow-lg",
         isOver && "bg-primary/10"
       )}
     >
       <h3 className="font-semibold text-foreground px-2 mb-3">{title} ({tasks.length})</h3>
       <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3 h-full overflow-y-auto custom-scrollbar pr-1">
+        <div className="space-y-3 h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar pr-1">
           {tasks.map((task) => (
             <ClientTaskCard 
               key={task.id} 

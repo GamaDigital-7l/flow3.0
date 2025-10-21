@@ -175,33 +175,44 @@ const ClientFormContent: React.FC<ClientFormContentProps> = ({
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
       
-      {/* Logo Upload */}
+      {/* Logo Upload/URL */}
       <div className="space-y-2">
         <Label htmlFor="logo_file">Logo/Foto de Perfil (Opcional)</Label>
         {currentLogoUrl ? (
-          <div className="flex items-center gap-3 p-2 border border-border rounded-md bg-muted/20">
-            <img src={currentLogoUrl} alt="Logo do Cliente" className="h-10 w-10 object-contain rounded-full" />
-            <Input 
-              id="logo_url" 
-              {...register('logo_url')} 
-              placeholder="URL da Logo" 
-              className="flex-grow"
-            />
-            <Button type="button" variant="ghost" size="icon" onClick={handleRemoveLogo} className="text-red-500 hover:bg-red-500/10">
-              <XCircle className="h-4 w-4" />
-            </Button>
+          <div className="flex flex-col gap-2 p-3 border border-border rounded-md bg-muted/20">
+            <div className="flex items-center gap-3">
+              <img src={currentLogoUrl} alt="Logo do Cliente" className="h-10 w-10 object-contain rounded-full flex-shrink-0" />
+              <Input 
+                id="logo_url" 
+                {...register('logo_url')} 
+                placeholder="URL da Logo" 
+                className="flex-grow"
+              />
+              <Button type="button" variant="ghost" size="icon" onClick={handleRemoveLogo} className="text-red-500 hover:bg-red-500/10 flex-shrink-0">
+                <XCircle className="h-4 w-4" />
+              </Button>
+            </div>
+            {errors.logo_url && <p className="text-sm text-destructive">{errors.logo_url.message}</p>}
           </div>
         ) : (
-          <Input 
-            id="logo_file" 
-            type="file" 
-            accept="image/*" 
-            onChange={handleLogoUpload} 
-            disabled={isUploading}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Input 
+              id="logo_file" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleLogoUpload} 
+              disabled={isUploading}
+              className="col-span-1"
+            />
+            <Input 
+              id="logo_url_input" 
+              {...register('logo_url')} 
+              placeholder="Ou cole a URL da Logo aqui" 
+              className="col-span-1"
+            />
+          </div>
         )}
         {isUploading && <Loader2 className="h-4 w-4 animate-spin text-primary mt-1" />}
-        {errors.logo_url && <p className="text-sm text-destructive">{errors.logo_url.message}</p>}
       </div>
 
       <div className="space-y-2">
