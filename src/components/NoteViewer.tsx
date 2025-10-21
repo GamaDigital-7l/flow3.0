@@ -4,7 +4,7 @@ import React from "react";
 import { Note } from "@/pages/Notes";
 import { Button } from "@/components/ui/button";
 import { Edit, Pin, PinOff, Tag as TagIcon, ListTodo, TextCursorInput, CheckCircle2, Archive, Trash2 } from "lucide-react";
-import { format } from "date-fns/format";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";

@@ -21,6 +21,7 @@ import { Meeting } from "@/types/meeting";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Checkbox } from "@/components/ui/checkbox"; 
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
+import { FormControl } from "@/components/ui/form"; // Importando FormControl
 
 export const meetingSchema = z.object({ // Exportar o schema
   id: z.string().optional(), // Adicionar id
@@ -226,20 +227,22 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ initialData, onMeetingSaved, 
         <Label htmlFor="date" className="text-foreground">Data da Reunião</Label>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
-                !form.watch("date") && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-              {form.watch("date") ? (
-                format(form.watch("date")!, "PPP", { locale: ptBR })
-              ) : (
-                <span>Escolha uma data</span>
-              )}
-            </Button>
+            <FormControl>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
+                  !form.watch("date") && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                {form.watch("date") ? (
+                  format(form.watch("date")!, "PPP", { locale: ptBR })
+                ) : (
+                  <span>Escolha uma data</span>
+                )}
+              </Button>
+            </FormControl>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-popover border-border rounded-md shadow-lg">
             <Calendar

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Client } from '@/pages/Clients';
+import { Client } from '@/types/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Mail, Phone, Building, Users } from 'lucide-react';

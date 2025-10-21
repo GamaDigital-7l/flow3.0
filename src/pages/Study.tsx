@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import StudySessionForm, { StudySessionFormValues } from "@/components/StudySessionForm";
-import { format } from "date-fns/format";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useSession } from "@/integrations/supabase/auth";
 import { Checkbox } from "@/components/ui/checkbox";

@@ -2,12 +2,12 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Edit, Trash2, CalendarIcon, CheckCircle2, Hourglass, PlayCircle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import FinancialGoalForm from "@/components/finance/FinancialGoalForm";
-import { format } from "date-fns/format";
+import GoalForm, { GoalFormValues } from "@/components/GoalForm"; // Importando GoalFormValues
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useSession } from "@/integrations/supabase/auth";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
@@ -46,32 +46,33 @@ const Goals: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingGoal, setEditingGoal] = React.useState<Goal | undefined>(undefined);
 
+  const handleDeleteGoal = useMutation({
+    mutationFn: async (goalId: string) => {
+      if (!userId) {
+        showError("Usuário não autenticado.");
+        return;
+      }
+      const { error } = await supabase
+        .from("goals")
+        .delete()
+        .eq("id", goalId)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Meta deletada com sucesso!");
+      refetch();
+    },
+    onError: (err: any) => {
+      showError("Erro ao deletar meta: " + err.message);
+      console.error("Erro ao deletar meta:", err);
+    },
+  });
+
   const handleEditGoal = (goal: Goal) => {
     setEditingGoal(goal);
     setIsFormOpen(true);
-  };
-
-  const handleDeleteGoal = async (goalId: string) => {
-    if (!userId) {
-      showError("Usuário não autenticado.");
-      return;
-    }
-    if (window.confirm("Tem certeza que deseja deletar esta meta?")) {
-      try {
-        const { error } = await supabase
-          .from("goals")
-          .delete()
-          .eq("id", goalId)
-          .eq("user_id", userId);
-
-        if (error) throw error;
-        showSuccess("Meta deletada com sucesso!");
-        refetch();
-      } catch (err: any) {
-        showError("Erro ao deletar meta: " + err.message);
-        console.error("Erro ao deletar meta:", err);
-      }
-    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -145,7 +146,7 @@ const Goals: React.FC = () => {
                   {editingGoal ? "Atualize os detalhes da sua meta." : "Crie uma nova meta para acompanhar seu progresso."}
                 </DialogDescription>
               </DialogHeader>
-              <FinancialGoalForm
+              <GoalForm
                 initialData={editingGoal ? { ...editingGoal, target_date: editingGoal.target_date ? new Date(editingGoal.target_date) : undefined } : undefined}
                 onGoalSaved={refetch}
                 onClose={() => setIsFormOpen(false)}

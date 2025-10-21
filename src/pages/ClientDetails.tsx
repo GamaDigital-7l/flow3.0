@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Edit, Trash2, Mail, Phone, Info, LayoutDashboard, Link as LinkIcon, Copy, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Mail, Phone, Info, LayoutDashboard, Link as LinkIcon, Copy, Loader2, Send, Building } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Client } from "@/types/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Trash2, Repeat, Clock, Edit, PlusCircle, BookOpen, Dumbbell, GraduationCap, Loader2, AlertCircle, Users, CalendarDays } from "lucide-react";
-import { format } from "date-fns/format";
+import { format } from "date-fns";
 import { isPast, isToday, isTomorrow, isThisWeek, isThisMonth, isSameDay, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Task, TaskCurrentBoard } from "@/types/task";
@@ -55,14 +55,12 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
       return <Badge className="bg-red-500 text-white">Hoje (Alta)</Badge>;
     case "today_medium_priority":
       return <Badge className="bg-orange-500 text-white">Hoje (Média)</Badge>;
-    case "urgent":
-      return <Badge className="bg-blue-500 text-white">Urgente</Badge>;
+    case "week_low_priority":
+      return <Badge className="bg-yellow-600 text-white">Semana (Baixa)</Badge>;
     case "completed":
       return <Badge className="bg-green-600 text-white">Concluída</Badge>;
     case "recurring":
       return <Badge className="bg-purple-500 text-white flex items-center gap-1"><Repeat className="h-3 w-3" /> Recorrente</Badge>;
-    case "week_low_priority":
-      return <Badge className="bg-yellow-600 text-white">Semana (Baixa)</Badge>;
     default:
       return <Badge variant="secondary">Geral</Badge>;
   }

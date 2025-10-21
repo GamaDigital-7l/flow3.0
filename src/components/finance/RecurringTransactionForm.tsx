@@ -1,9 +1,12 @@
+"use client";
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from 'zod';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -11,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { CalendarIcon, Loader2, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
@@ -24,6 +27,7 @@ import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
+import { Checkbox } from '@/components/ui/checkbox'; // Importando Checkbox
 
 const RECURRENCE_OPTIONS = ['monthly', 'weekly', 'yearly', 'quarterly'] as const;
 type RecurrenceType = typeof RECURRENCE_OPTIONS[number];
@@ -171,7 +175,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             <FormItem>
               <FormLabel>Descrição</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Assinatura de Software" {...field} />
+                <Textarea placeholder="Ex: Assinatura de Software" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -242,7 +246,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {/* Conta */}
           <FormField
             control={form.control}
@@ -257,7 +261,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {accounts.map(account => (
+                    {accounts.map((account) => (
                       <SelectItem key={account.id} value={account.id}>
                         {account.name}
                       </SelectItem>
@@ -288,7 +292,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                   <SelectContent>
                     {/* FIX: Use a non-empty string for the optional/null value */}
                     <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {filteredCategories.map((category) => (
+                    {currentCategories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
                       </SelectItem>
@@ -333,7 +337,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             ) : initialData ? (
               "Salvar Alterações"
             ) : (
-              "Adicionar Recorrência"
+              "Registrar Recorrência"
             )}
           </Button>
         </div>

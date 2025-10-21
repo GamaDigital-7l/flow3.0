@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, BookOpen, Edit, Trash2, Target } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import BookForm from "@/components/BookForm";
 import { Link } from "react-router-dom";
@@ -19,15 +19,16 @@ import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a const
 interface Book {
   id: string;
   title: string;
-  author?: string;
-  description?: string;
+  author?: string | null;
+  description?: string | null;
   read_status: "unread" | "reading" | "finished";
   created_at: string;
   updated_at: string;
-  total_pages?: number;
-  current_page?: number;
-  daily_reading_target_pages?: number;
-  last_read_date?: string;
+  total_pages?: number | null;
+  current_page?: number | null;
+  daily_reading_target_pages?: number | null;
+  last_read_date?: string | null;
+  cover_image_url?: string | null; // Ensure this is present
 }
 
 const fetchBooks = async (userId: string): Promise<Book[]> => {

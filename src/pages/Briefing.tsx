@@ -42,7 +42,6 @@ const BriefingPage: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBriefing, setEditingBriefing] = useState<Briefing | null>(null);
 
