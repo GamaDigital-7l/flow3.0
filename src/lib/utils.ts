@@ -1,8 +1,12 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format, parseISO, formatISO } from 'date-fns';
+import { format } from 'date-fns';
+import { parseISO as dfnsParseISO, formatISO as dfnsFormatISO } from 'date-fns'; // Use aliases if needed, but they are usually imported from date-fns/esm
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
+
+// Re-exporting parseISO and formatISO from date-fns directly, as they are available in the installed version.
+export { parseISO, formatISO } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -26,6 +30,7 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
   const formatString = includeTime ? "PPP 'às' HH:mm" : "PPP";
+  // Corrected format usage to pass locale as an options object
   return format(dateObj, formatString, { locale: ptBR });
 }
 
@@ -49,6 +54,3 @@ export function getInitials(name: string): string {
 export function sanitizeFilename(filename: string): string {
   return filename.replace(/[^a-z0-9_.]/gi, '_').toLowerCase();
 }
-
-// Re-exporting date-fns functions that are commonly used with time zones
-export { parseISO, formatISO };

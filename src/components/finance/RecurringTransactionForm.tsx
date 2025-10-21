@@ -1,4 +1,3 @@
-next_due_date, recurrence_type -> frequency), adding missing imports (Checkbox, FormDescription, useMutation, useQueryClient), and fixing logic.">
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,8 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form'; // Added FormDescription
-import { Checkbox } from '@/components/ui/checkbox'; // Added Checkbox
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FinancialRecurrence } from '@/types/finance';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
@@ -26,7 +25,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn, convertToSaoPauloTime, convertToUtc, formatDateTime, parseISO } from '@/lib/utils';
-import { useMutation, useQueryClient } from '@tanstack/react-query'; // Added useMutation, useQueryClient
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const RECURRENCE_OPTIONS = ['monthly', 'weekly', 'yearly', 'quarterly'] as const;
 type RecurrenceType = typeof RECURRENCE_OPTIONS[number];
@@ -35,11 +34,11 @@ const recurringTransactionSchema = z.object({
   description: z.string().min(3, "Descrição deve ter pelo menos 3 caracteres."),
   amount: z.number().min(0.01, "O valor deve ser positivo."),
   type: z.enum(['income', 'expense']),
-  frequency: z.enum(['monthly', 'weekly', 'yearly', 'quarterly'], { required_error: "A frequência é obrigatória." }),
+  frequency: z.enum(RECURRENCE_OPTIONS, { required_error: "A frequência é obrigatória." }),
   next_due_date: z.date({ required_error: "A próxima data de vencimento é obrigatória." }),
   category_id: z.string().nullable().optional(),
   account_id: z.string().min(1, "A conta é obrigatória."),
-  is_active: z.boolean().optional().default(true), // Added missing field
+  is_active: z.boolean().optional().default(true),
 });
 
 export type RecurringTransactionFormValues = z.infer<typeof recurringTransactionSchema>;
@@ -54,16 +53,16 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
   const { session } = useSession();
   const userId = session?.user?.id;
   const { categories, accounts, isLoading: isDataLoading } = useFinancialData();
-  const queryClient = useQueryClient(); // Defined queryClient
+  const queryClient = useQueryClient();
 
   const form = useForm<RecurringTransactionFormValues>({
-    resolver: zodResolver(recurringTransactionSchema), // Fixed formSchema -> recurringTransactionSchema
+    resolver: zodResolver(recurringTransactionSchema),
     defaultValues: {
       description: initialData?.description || '',
       amount: initialData?.amount || 0,
       type: initialData?.type || 'expense',
       frequency: initialData?.frequency as RecurrenceType || 'monthly',
-      next_due_date: initialData?.next_due_date ? new Date(initialData.next_due_date) : new Date(),
+      next_due_date: initialData?.next_due_date ? parseISO(initialData.next_due_date) : new Date(),
       category_id: initialData?.category_id || '',
       account_id: initialData?.account_id || '',
       is_active: initialData?.is_active ?? true,
@@ -80,9 +79,8 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
       const payload = {
         ...data,
         user_id: userId,
-        next_due_date: format(convertToUtc(data.next_due_date)!, 'yyyy-MM-dd'), // Fixed start_date -> next_due_date
+        next_due_date: format(convertToUtc(data.next_due_date)!, 'yyyy-MM-dd'),
         category_id: data.category_id || null,
-        // client_id removed as it's not in schema
       };
 
       if (initialData?.id) {
@@ -95,7 +93,8 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
     },
     onSuccess: () => {
       showSuccess(`Recorrência ${initialData?.id ? 'atualizada' : 'adicionada'} com sucesso!`);
-      queryClient.invalidateQueries({ queryKey: ["recurringTransactions", userId] });
+      queryClient.invalidateQueries({ queryKey: ["companyRecurrences", userId] });
+      queryClient.invalidateQueries({ queryKey: ["personalRecurrences", userId] });
       onTransactionSaved();
     },
     onError: (error: any) => {
@@ -118,7 +117,51 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* ... (Type and Amount fields) */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Tipo (Receita/Despesa) */}
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="income">Receita</SelectItem>
+                    <SelectItem value="expense">Despesa</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Valor */}
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor (R$)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Descrição */}
         <FormField
@@ -139,7 +182,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           {/* Frequência */}
           <FormField
             control={form.control}
-            name="frequency" // Fixed recurrence_type -> frequency
+            name="frequency"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Frequência</FormLabel>
@@ -164,7 +207,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           {/* Próximo Vencimento */}
           <FormField
             control={form.control}
-            name="next_due_date" // Fixed start_date -> next_due_date
+            name="next_due_date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Próximo Vencimento</FormLabel>
@@ -243,6 +286,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
                     {filteredCategories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}

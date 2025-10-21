@@ -7,7 +7,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { isToday } from "date-fns";
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
 import { Task, TaskCurrentBoard } from "@/types/task";
-import { ListTodo, Loader2, AlertCircle } from "lucide-react";
+import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
 import ClientTasksBoard from "@/components/dashboard/ClientTasksBoard";
