@@ -9,6 +9,7 @@ import ClientList from '@/components/client/ClientList';
 import ClientFormDialog from '@/components/client/ClientFormDialog';
 import { Client } from '@/types/client'; // Importando o tipo Client
 import { showError } from '@/utils/toast'; // Importando showError
+import { Input } from '@/components/ui/input'; // Importação corrigida
 
 const ClientsPage: React.FC = () => {
   const { session } = useSession();
