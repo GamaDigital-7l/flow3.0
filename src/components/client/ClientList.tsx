@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Mail, Phone, Building, Users } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/integrations/supabase/auth';
-import { showSuccess, showError } from '@/utils/toast';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useSession } from "@/integrations/supabase/auth";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
 import ClientCard from './ClientCard'; // Importar o ClientCard atualizado
 import { Link } from 'react-router-dom';
@@ -15,34 +14,13 @@ import { Link } from 'react-router-dom';
 interface ClientListProps {
   clients: Client[];
   onEdit: (client: Client) => void;
+  onDelete: (clientId: string) => void;
 }
 
-const ClientList: React.FC<ClientListProps> = ({ clients, onEdit }) => {
+const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
-
-  const deleteMutation = useMutation({
-    mutationFn: async (clientId: string) => {
-      if (!window.confirm("Tem certeza que deseja deletar este cliente? Todas as tarefas e templates associados serão removidos.")) {
-        throw new Error("Exclusão cancelada.");
-      }
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId)
-        .eq('user_id', userId);
-
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      showSuccess('Cliente excluído com sucesso!');
-    },
-    onError: (err) => {
-      showError('Erro ao excluir cliente: ' + err.message);
-    },
-  });
 
   if (clients.length === 0) {
     return (
@@ -61,7 +39,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit }) => {
           <ClientCard 
             client={client} 
             onEdit={onEdit} 
-            onDelete={deleteMutation.mutate} 
+            onDelete={onDelete} 
           />
         </Link>
       ))}

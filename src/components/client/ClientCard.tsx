@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Target, Loader2 } from "lucide-react";
+import { Edit, Trash2, Building, Users } from 'lucide-react';
 import { Client } from "@/types/client";
 import { Progress } from "@/components/ui/progress";
 import { cn, getInitials } from "@/lib/utils";
