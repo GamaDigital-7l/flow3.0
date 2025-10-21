@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,11 +22,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { convertToSaoPauloTime, convertToUtc, formatDateTime } from '@/lib/utils'; // Importando as novas funções
 
 const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   amount: z.number().min(0.01, "O valor deve ser positivo."),
-  type: z.enum(["income", "expense"], { required_error: "O tipo é obrigatório." }),
+  type: z.enum(['income', 'expense']),
   start_date: z.date({ required_error: "A data de início é obrigatória." }),
   end_date: z.date({ required_error: "A data de fim é obrigatória." }),
   category_id: z.string().nullable().optional(),
@@ -47,7 +46,7 @@ interface BudgetFormProps {
 const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onClose, defaultScope }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const { categories, isLoading } = useFinancialData();
+  const { categories, accounts, isLoading: isDataLoading } = useFinancialData();
 
   const defaultValues: Partial<BudgetFormValues> = {
     name: initialData?.name || "",
@@ -55,7 +54,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
     type: initialData?.type || "expense",
     start_date: initialData?.start_date ? new Date(initialData.start_date) : new Date(),
     end_date: initialData?.end_date ? new Date(initialData.end_date) : new Date(),
-    category_id: initialData?.category_id || null,
+    category_id: initialData?.category_id || '',
     scope: initialData?.scope || defaultScope,
   };
 
@@ -83,8 +82,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
     const budgetData = {
       ...values,
       user_id: userId,
-      start_date: format(values.start_date, 'yyyy-MM-dd'),
-      end_date: format(values.end_date, 'yyyy-MM-dd'),
+      start_date: format(convertToUtc(values.start_date)!, 'yyyy-MM-dd'),
+      end_date: format(convertToUtc(values.end_date)!, 'yyyy-MM-dd'),
       // Ensure null value for optional field
       category_id: values.category_id === '__none__' ? null : values.category_id,
     };
@@ -110,7 +109,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
         if (error) throw error;
         showSuccess("Orçamento registrado com sucesso!");
       }
-      onBudgetSaved();
+      onGoalSaved();
       onClose();
     } catch (err: any) {
       showError("Erro ao salvar orçamento: " + err.message);
@@ -147,7 +146,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Tipo (Receita/Despesa) */}
           <FormField
             control={form.control}
             name="type"
@@ -170,6 +170,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
             )}
           />
 
+          {/* Valor */}
           <FormField
             control={form.control}
             name="amount"
@@ -191,7 +192,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Data de Início */}
           <FormField
             control={form.control}
             name="start_date"
@@ -209,7 +211,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(field.value, "PPP") : <span>Selecione uma data</span>}
+                        {field.value ? formatDateTime(field.value, false) : <span>Selecione uma data</span>}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -219,6 +221,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
                       selected={field.value}
                       onSelect={field.onChange}
                       initialFocus
+                      locale={ptBR}
                     />
                   </PopoverContent>
                 </Popover>
@@ -227,6 +230,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
             )}
           />
 
+          {/* Data de Fim */}
           <FormField
             control={form.control}
             name="end_date"
@@ -244,7 +248,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(field.value, "PPP") : <span>Selecione uma data</span>}
+                        {field.value ? formatDateTime(field.value, false) : <span>Selecione uma data</span>}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -254,6 +258,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
                       selected={field.value}
                       onSelect={field.onChange}
                       initialFocus
+                      locale={ptBR}
                     />
                   </PopoverContent>
                 </Popover>
@@ -263,42 +268,65 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="category_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Categoria (Opcional)</FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
-                value={field.value || '__none__'}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {/* FIX: Use a non-empty string for the optional/null value */}
-                  <SelectItem value="__none__">Todas as Categorias</SelectItem>
-                  {currentCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Categoria */}
+          <FormField
+            control={form.control}
+            name="category_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categoria (Opcional)</FormLabel>
+                <Select onValueChange={(value) => field.onChange(value === '__none__' ? null : value)} value={field.value || '__none__'}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {/* FIX: Use a non-empty string for the optional/null value */}
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
+                    {currentCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Escopo */}
+          <FormField
+            control={form.control}
+            name="scope"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Escopo</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o escopo" />
+                    </SelectTrigger>
+                  </FormControl>
+                    <SelectContent>
+                      <SelectItem value="company">Empresa</SelectItem>
+                      <SelectItem value="personal">Pessoal</SelectItem>
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? (
+          <Button type="submit" disabled={saveRecurringTransaction.isPending}>
+            {saveRecurringTransaction.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : initialData ? (
               "Salvar Alterações"
