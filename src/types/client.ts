@@ -17,7 +17,7 @@ export interface Client {
   email?: string;
   phone?: string;
   status?: string;
-  company?: string | null; // Adicionado
+  // company?: string | null; // Removido para resolver o erro de esquema
 }
 
 export interface ClientTask {

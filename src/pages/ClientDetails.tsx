@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 const fetchClientById = async (clientId: string): Promise<Client | null> => {
   const { data, error } = await supabase
     .from("clients")
-    .select("*")
+    .select("id, user_id, name, logo_url, description, color, type, monthly_delivery_goal, contact_email, contact_phone, created_at, updated_at")
     .eq("id", clientId)
     .single();
 
@@ -213,11 +213,11 @@ const ClientDetails: React.FC = () => {
               <CardTitle>Detalhes do Cliente</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {client.company && <p className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /> {client.company}</p>}
+              {/* {client.company && <p className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" /> {client.company}</p>} */}
               {client.contact_email && <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {client.contact_email}</p>}
               {client.contact_phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> {client.contact_phone}</p>}
               {client.description && <p className="text-muted-foreground">{client.description}</p>}
-              <p className="text-sm text-muted-foreground pt-2 border-t">Criado em: {format(new Date(client.created_at), "PPP")}</p> {/* FIX TS2554 */}
+              <p className="text-sm text-muted-foreground pt-2 border-t">Criado em: {format(new Date(client.created_at), "PPP")}</p>
             </CardContent>
           </Card>
         </TabsContent>

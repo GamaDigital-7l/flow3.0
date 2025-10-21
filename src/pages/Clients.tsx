@@ -23,10 +23,10 @@ const ClientsPage: React.FC = () => {
     queryFn: async () => {
       if (!userId) return [];
       
-      // Listando explicitamente as colunas para evitar problemas de cache de esquema com '*'
+      // Listando explicitamente as colunas, removendo 'company'
       let query = supabase
         .from('clients')
-        .select('id, user_id, name, logo_url, description, color, type, monthly_delivery_goal, contact_email, contact_phone, company, created_at, updated_at')
+        .select('id, user_id, name, logo_url, description, color, type, monthly_delivery_goal, contact_email, contact_phone, created_at, updated_at')
         .eq('user_id', userId)
         .order('name', { ascending: true });
 

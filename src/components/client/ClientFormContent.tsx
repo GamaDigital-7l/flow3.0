@@ -25,7 +25,7 @@ const clientSchema = z.object({
   name: z.string().min(2, { message: 'O nome é obrigatório.' }),
   email: z.string().email({ message: 'E-mail inválido.' }),
   phone: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
+  // company: z.string().optional().nullable(), // Removido
   monthly_delivery_goal: z.preprocess(
     (val) => (val === "" ? 0 : Number(val)),
     z.number().int().min(0, "A meta deve ser um número positivo.").default(0)
@@ -62,7 +62,7 @@ const ClientFormContent: React.FC<ClientFormContentProps> = ({
       name: initialData?.name || '',
       email: initialData?.contact_email || initialData?.email || '',
       phone: initialData?.contact_phone || initialData?.phone || '',
-      company: initialData?.company || '',
+      // company: initialData?.company || '', // Removido
       monthly_delivery_goal: initialData?.monthly_delivery_goal || 0,
       type: initialData?.type || 'fixed',
     },
@@ -79,7 +79,7 @@ const ClientFormContent: React.FC<ClientFormContentProps> = ({
         user_id: userId,
         contact_email: data.email,
         contact_phone: data.phone,
-        company: data.company || null,
+        // company: data.company || null, // Removido
         monthly_delivery_goal: data.monthly_delivery_goal,
         type: data.type,
       };
@@ -128,10 +128,10 @@ const ClientFormContent: React.FC<ClientFormContentProps> = ({
         <Input id="name" {...register('name')} />
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label htmlFor="company">Empresa (Opcional)</Label>
         <Input id="company" {...register('company')} />
-      </div>
+      </div> */}
       <div className="space-y-2">
         <Label htmlFor="email">E-mail de Contato</Label>
         <Input id="email" type="email" {...register('email')} />
