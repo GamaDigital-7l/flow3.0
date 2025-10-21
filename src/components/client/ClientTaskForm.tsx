@@ -14,12 +14,14 @@ import { cn, parseISO, sanitizeFilename, convertToUtc, formatDateTime } from "@/
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query"; // Adicionado useQuery
 import { ClientTask, ClientTaskStatus } from "@/types/client";
 import TagSelector from "../TagSelector";
 import { Checkbox } from "../ui/checkbox";
 import { ptBR } from "date-fns/locale/pt-BR";
 import TimePicker from "../TimePicker";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; // Adicionado Form components
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Adicionado Select components
 
 const clientTaskSchema = z.object({
   title: z.string().min(1, "O título da tarefa é obrigatório."),

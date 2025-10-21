@@ -16,7 +16,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FormControl } from "@/components/ui/form"; // Added FormControl
+import { FormControl, Form } from "@/components/ui/form"; // Added FormControl and Form
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select components
 
 const goalSchema = z.object({
@@ -107,103 +107,105 @@ const GoalForm: React.FC<GoalFormProps> = ({ initialData, onGoalSaved, onClose }
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl frosted-glass card-hover-effect">
-      <div>
-        <Label htmlFor="title">Título da Meta</Label>
-        <Input id="title" {...form.register("title")} placeholder="Ex: Aprender React" />
-        {form.formState.errors.title && <p className="text-red-500 text-sm mt-1">{form.formState.errors.title.message}</p>}
-      </div>
-      <div>
-        <Label htmlFor="description">Descrição (Opcional)</Label>
-        <Textarea id="description" {...form.register("description")} placeholder="Detalhes da meta..." />
-      </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl frosted-glass card-hover-effect">
+        <div>
+          <Label htmlFor="title">Título da Meta</Label>
+          <Input id="title" {...form.register("title")} placeholder="Ex: Aprender React" />
+          {form.formState.errors.title && <p className="text-red-500 text-sm mt-1">{form.formState.errors.title.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="description">Descrição (Opcional)</Label>
+          <Textarea id="description" {...form.register("description")} placeholder="Detalhes da meta..." />
+        </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="target_value">Valor Alvo</Label>
-          <Input
-            id="target_value"
-            type="number"
-            step="0.01"
-            {...form.register("target_value", { valueAsNumber: true })}
-            placeholder="100"
-          />
-          {form.formState.errors.target_value && <p className="text-red-500 text-sm mt-1">{form.formState.errors.target_value.message}</p>}
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="target_value">Valor Alvo</Label>
+            <Input
+              id="target_value"
+              type="number"
+              step="0.01"
+              {...form.register("target_value", { valueAsNumber: true })}
+              placeholder="100"
+            />
+            {form.formState.errors.target_value && <p className="text-red-500 text-sm mt-1">{form.formState.errors.target_value.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="current_value">Valor Atual</Label>
+            <Input
+              id="current_value"
+              type="number"
+              step="0.01"
+              {...form.register("current_value", { valueAsNumber: true })}
+              placeholder="0"
+            />
+            {form.formState.errors.current_value && <p className="text-red-500 text-sm mt-1">{form.formState.errors.current_value.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="unit">Unidade</Label>
+            <Input id="unit" {...form.register("unit")} placeholder="Ex: horas, livros, kg" />
+            {form.formState.errors.unit && <p className="text-red-500 text-sm mt-1">{form.formState.errors.unit.message}</p>}
+          </div>
         </div>
-        <div>
-          <Label htmlFor="current_value">Valor Atual</Label>
-          <Input
-            id="current_value"
-            type="number"
-            step="0.01"
-            {...form.register("current_value", { valueAsNumber: true })}
-            placeholder="0"
-          />
-          {form.formState.errors.current_value && <p className="text-red-500 text-sm mt-1">{form.formState.errors.current_value.message}</p>}
-        </div>
-        <div>
-          <Label htmlFor="unit">Unidade</Label>
-          <Input id="unit" {...form.register("unit")} placeholder="Ex: horas, livros, kg" />
-          {form.formState.errors.unit && <p className="text-red-500 text-sm mt-1">{form.formState.errors.unit.message}</p>}
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="target_date">Data Alvo (Opcional)</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
-                    !form.watch("target_date") && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                  {form.watch("target_date") ? (
-                    formatDateTime(form.watch("target_date")!, false)
-                  ) : (
-                    <span>Escolha uma data</span>
-                  )}
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-popover border-border rounded-md shadow-lg">
-              <Calendar
-                mode="single"
-                selected={form.watch("target_date") || undefined}
-                onSelect={(date) => form.setValue("target_date", date || null)}
-                initialFocus
-                locale={ptBR}
-              />
-            </PopoverContent>
-          </Popover>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="target_date">Data Alvo (Opcional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <FormControl>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
+                      !form.watch("target_date") && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                    {form.watch("target_date") ? (
+                      formatDateTime(form.watch("target_date")!, false)
+                    ) : (
+                      <span>Escolha uma data</span>
+                    )}
+                  </Button>
+                </FormControl>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-popover border-border rounded-md shadow-lg">
+                <Calendar
+                  mode="single"
+                  selected={form.watch("target_date") || undefined}
+                  onSelect={(date) => form.setValue("target_date", date || null)}
+                  initialFocus
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select
+              onValueChange={(value: 'pending' | 'in_progress' | 'completed' | 'archived') => form.setValue("status", value)}
+              value={form.watch("status")}
+            >
+              <SelectTrigger id="status">
+                <SelectValue placeholder="Selecionar status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="in_progress">Em Progresso</SelectItem>
+                <SelectItem value="completed">Concluída</SelectItem>
+                <SelectItem value="archived">Arquivada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select
-            onValueChange={(value: 'pending' | 'in_progress' | 'completed' | 'archived') => form.setValue("status", value)}
-            value={form.watch("status")}
-          >
-            <SelectTrigger id="status">
-              <SelectValue placeholder="Selecionar status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pendente</SelectItem>
-              <SelectItem value="in_progress">Em Progresso</SelectItem>
-              <SelectItem value="completed">Concluída</SelectItem>
-              <SelectItem value="archived">Arquivada</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveGoalMutation.isPending}>
-        {saveGoalMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (initialData ? "Atualizar Meta" : "Adicionar Meta")}
-      </Button>
-    </form>
+        <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveGoalMutation.isPending}>
+          {saveGoalMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (initialData ? "Atualizar Meta" : "Adicionar Meta")}
+        </Button>
+      </form>
+    </Form>
   );
 };
 
