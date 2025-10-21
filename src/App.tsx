@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/integrations/supabase/auth";
+import { SessionContextProvider, useSession } from "@/integrations/supabase/auth";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import { Toaster } from "@/components/ui/sonner";
@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 
-function App() {
+function AppContent() {
   const { session, isLoading } = useSession();
 
   if (isLoading) {
@@ -22,11 +22,19 @@ function App() {
   }
 
   return (
+    <main>
+      {!session ? <AuthPage /> : <DashboardPage />}
+    </main>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <main>
-          {!session ? <AuthPage /> : <DashboardPage />}
-        </main>
+        <SessionContextProvider>
+          <AppContent />
+        </SessionContextProvider>
         <Toaster richColors />
       </ThemeProvider>
     </QueryClientProvider>
