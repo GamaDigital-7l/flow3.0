@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -102,28 +102,6 @@ const PublicApprovalPage: React.FC = () => {
       showError("Erro ao atualizar status: " + err.message);
     },
   });
-
-  const handleApproveSelected = async () => {
-    if (selectedTasks.length === 0) {
-      showError("Selecione pelo menos uma tarefa para aprovar.");
-      return;
-    }
-    if (!window.confirm(`Tem certeza que deseja aprovar ${selectedTasks.length} tarefa(s)?`)) return;
-
-    setIsSubmitting(true);
-    try {
-      const approvalPromises = selectedTasks.map(taskId => 
-        updateTaskStatus.mutateAsync({ taskId, newStatus: 'approved' })
-      );
-      await Promise.all(approvalPromises);
-      showSuccess("Tarefas aprovadas com sucesso!");
-      setSelectedTasks([]);
-    } catch (e) {
-      // Erro já tratado na mutation
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleOpenEditModal = (task: TaskDisplay) => {
     setCurrentTaskToEdit(task);
@@ -436,7 +414,7 @@ const TaskApprovalItem: React.FC<TaskApprovalItemProps> = ({
         <CardContent className="p-3 pt-0 space-y-3 border-t border-border">
           {task.due_date && (
             <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <CalendarDays className="h-4 w-4" /> Vencimento: {format(new Date(task.due_date), 'PPP', { locale: ptBR })}
+              <CalendarDays className="h-3 w-3" /> Vencimento: {format(new Date(task.due_date), 'PPP', { locale: ptBR })}
             </p>
           )}
           {task.description && (

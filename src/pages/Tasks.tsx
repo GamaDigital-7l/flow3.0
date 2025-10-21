@@ -6,14 +6,15 @@ import { Task, TaskCurrentBoard, TaskOriginBoard, TaskRecurrenceType } from "@/t
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, Filter, CalendarDays } from "lucide-react";
-import { showError, showSuccess } from "@/utils/toast";
+import { showError } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { parseISO } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
+import { useLocation } from "react-router-dom";
 
 const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task[]> => {
   let query = supabase
@@ -33,11 +34,12 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
 
   const { data, error } = await query;
 
-  if (error) throw error;
-
-  return data.map(task => ({
+  if (error) {
+    throw error;
+  }
+  const mappedData = data?.map((task: any) => ({
     ...task,
-    tags: task.tags.map((t: any) => t.tags),
+    tags: task.task_tags.map((tt: any) => tt.tags),
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.tags.map((t: any) => t.tags),
@@ -62,6 +64,7 @@ const Tasks: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
+  const location = useLocation();
 
   const [activeBoard, setActiveBoard] = useState<TaskCurrentBoard>("today_high_priority");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -93,6 +96,12 @@ const Tasks: React.FC = () => {
     return TASK_BOARDS.find(b => b.id === boardId)?.title || boardId;
   };
 
+  React.useEffect(() => {
+    if (location.state?.openNewTaskForm) {
+      handleAddTask();
+    }
+  }, [location.state?.openNewTaskForm]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
@@ -121,7 +130,7 @@ const Tasks: React.FC = () => {
           <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
             <DialogHeader>
               <DialogTitle className="text-foreground">{editingTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
+              <DialogDescription>
                 {editingTask ? "Atualize os detalhes da sua tarefa." : "Defina uma nova tarefa para o seu dia."}
               </DialogDescription>
             </DialogHeader>
@@ -150,7 +159,7 @@ const Tasks: React.FC = () => {
         </div>
       </div>
 
-      <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="bg-card border-border shadow-lg frosted-glass">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard)}</CardTitle>
         </CardHeader>
