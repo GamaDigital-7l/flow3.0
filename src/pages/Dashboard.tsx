@@ -27,15 +27,13 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     .from("tasks")
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
-      last_successful_completion_date, origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-      template_task_id,
+      origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
       task_tags(
         tags(id, name, color)
       ),
       subtasks:tasks!parent_task_id(
         id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
-        last_successful_completion_date, origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-        template_task_id,
+        origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
         task_tags(
           tags(id, name, color)
         )
@@ -44,8 +42,6 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) {
-    // Se a coluna template_task_id não existir, a query falhará.
-    // Vamos tentar uma query mais segura se a primeira falhar, mas por enquanto, lançamos o erro.
     throw error;
   }
   const mappedData = data?.map((task: any) => ({

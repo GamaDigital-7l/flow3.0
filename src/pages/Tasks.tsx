@@ -19,7 +19,20 @@ import { useLocation } from "react-router-dom";
 const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task[]> => {
   let query = supabase
     .from("tasks")
-    .select("*, tags:task_tags(tags(id, name, color)), subtasks:tasks!parent_task_id(*, tags:task_tags(tags(id, name, color)))")
+    .select(`
+      id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+      origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+      task_tags(
+        tags(id, name, color)
+      ),
+      subtasks:tasks!parent_task_id(
+        id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+        origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+        task_tags(
+          tags(id, name, color)
+        )
+      )
+    `)
     .eq("user_id", userId)
     .eq("current_board", board)
     .is("parent_task_id", null);
@@ -35,8 +48,6 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
   const { data, error } = await query;
 
   if (error) {
-    // O erro 400 é provavelmente devido a colunas que não existem mais.
-    // Vamos tentar uma query mais segura se a primeira falhar, mas por enquanto, lançamos o erro.
     throw error;
   }
   const mappedData = data?.map((task: any) => ({
