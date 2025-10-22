@@ -12,9 +12,6 @@ import Goals from "./pages/Goals";
 import Study from "./pages/Study";
 import Health from "./pages/Health";
 import Notes from "./pages/Notes";
-import Clients from "./pages/Clients";
-import ClientDetails from "./pages/ClientDetails";
-import PublicApprovalPage from "./pages/PublicApprovalPage";
 import Results from "./pages/Results";
 import Settings from "./pages/Settings";
 import Finance from "./pages/Finance";
@@ -152,7 +149,7 @@ function AppContent() {
       <Routes>
         {/* Rotas Públicas */}
         <Route path="/login" element={<Login />} />
-        <Route path="/approval/:uniqueId" element={<PublicApprovalPage />} />
+        <Route path="/approval/:uniqueId" element={<NotFound />} />
         <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
 
         {/* Rotas Protegidas */}
@@ -166,8 +163,6 @@ function AppContent() {
             <Route path="/study" element={<Study />} />
             <Route path="/health" element={<Health />} />
             <Route path="/notes" element={<Notes />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/clients/:clientId" element={<ClientDetails />} />
             <Route path="/results" element={<Results />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/finance" element={<Finance />} />
