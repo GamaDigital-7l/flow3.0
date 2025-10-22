@@ -29,10 +29,10 @@ const FinanceLayout: React.FC = () => {
       <PeriodSelector currentPeriod={currentPeriod} onPeriodChange={setCurrentPeriod} />
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'company' | 'personal')} className="w-full mt-6">
-        {/* Removendo grid-cols-2 e adicionando flex-nowrap e overflow-x-auto */}
-        <TabsList className="flex w-full bg-muted text-muted-foreground overflow-x-auto flex-nowrap">
-          <TabsTrigger value="company" className="flex-shrink-0"><Briefcase className="mr-2 h-4 w-4" /> Empresa</TabsTrigger>
-          <TabsTrigger value="personal" className="flex-shrink-0"><User className="mr-2 h-4 w-4" /> Pessoal</TabsTrigger>
+        {/* Usando grid-cols-2 para garantir que as abas dividam o espaço igualmente */}
+        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground">
+          <TabsTrigger value="company"><Briefcase className="mr-2 h-4 w-4" /> Empresa</TabsTrigger>
+          <TabsTrigger value="personal"><User className="mr-2 h-4 w-4" /> Pessoal</TabsTrigger>
         </TabsList>
         
         <TabsContent value="company" className="mt-4">

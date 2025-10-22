@@ -40,8 +40,6 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 340 80% 51%; /* Gama Pink */
 
-    --radius: 0.75rem;
-
     /* Cores de status (Light) */
     --status-success: 140 70% 48%; /* #2ECC71 */
     --status-alert: 45 90% 50%; /* #F1C40F */
@@ -125,18 +123,18 @@
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden; /* Garantir que não haja overflow lateral */
-    /* Removendo padding-top/bottom/left/right aqui para que o Layout.tsx e Header/Sidebar gerenciem */
-    min-height: 100vh; /* Garante que o body ocupe a altura total */
+    overflow-x: hidden; /* CRÍTICO: Garante que não haja overflow lateral */
+    min-height: 100vh;
+    width: 100vw; /* CRÍTICO: Garante que o body tenha a largura exata da viewport */
   }
   
-  /* Adicionando padding de safe area ao elemento raiz para garantir que o conteúdo não fique sob a barra de navegação do iOS */
   #root {
     @apply min-h-screen flex flex-col;
     padding-top: var(--sat);
     padding-bottom: var(--sab);
     padding-left: var(--sal);
     padding-right: var(--sar);
+    width: 100%; /* Garante que o root não exceda 100% */
   }
 
   /* Para navegadores Webkit (Chrome, Safari) */
@@ -160,32 +158,32 @@
 
   /* Estilos globais para tipografia Inter */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-foreground; /* Alterado para 600 */
+    @apply font-semibold text-foreground;
   }
 
   h1 {
-    @apply text-2xl sm:text-3xl lg:text-4xl tracking-tight; /* Removido uppercase */
+    @apply text-2xl sm:text-3xl lg:text-4xl tracking-tight;
     letter-spacing: -0.5px;
   }
 
   h2 {
-    @apply text-xl sm:text-2xl lg:text-3xl tracking-tight; /* Removido uppercase */
+    @apply text-xl sm:text-2xl lg:text-3xl tracking-tight;
     letter-spacing: -0.5px;
   }
 
   /* Subtítulos / seções */
   .subtitle {
-    @apply font-normal text-[--muted-foreground] text-sm sm:text-base; /* Alterado para 400 */
+    @apply font-normal text-[--muted-foreground] text-sm sm:text-base;
   }
 
   /* Texto padrão / corpo */
   p, span, div {
-    @apply font-normal text-[--foreground] text-xs sm:text-sm; /* Mantido 400 */
+    @apply font-normal text-[--foreground] text-xs sm:text-sm;
   }
 
   /* Pequenos labels / legendas */
   .label-sm {
-    @apply font-medium text-[--muted-foreground] opacity-80 text-xs; /* Mantido xs */
+    @apply font-medium text-[--muted-foreground] opacity-80 text-xs;
   }
 
   /* Imagens responsivas por padrão */
@@ -195,10 +193,10 @@
 
   /* Efeito de Frosted Glass (vidro fosco) */
   .frosted-glass {
-    background-color: rgba(var(--card-rgb), 0.6); /* Fundo do card com transparência */
-    backdrop-filter: blur(10px) saturate(180%); /* Efeito de blur e saturação */
+    background-color: rgba(var(--card-rgb), 0.6);
+    backdrop-filter: blur(10px) saturate(180%);
     -webkit-backdrop-filter: blur(10px) saturate(180%);
-    border: 1px solid rgba(var(--border-rgb), 0.3); /* Borda sutil */
+    border: 1px solid rgba(var(--border-rgb), 0.3);
   }
 }
 
@@ -209,12 +207,12 @@
 
 /* Estilo para ícones monocromáticos */
 .icon-mono {
-  @apply text-foreground; /* Cor padrão branca */
+  @apply text-foreground;
 }
 
 /* Estilo para ícones com glow */
 .icon-glow {
-  @apply text-secondary; /* Cor azul neon */
+  @apply text-secondary;
   filter: drop-shadow(0 0 3px rgba(95, 119, 255, 0.7));
 }
 
@@ -263,7 +261,7 @@
 /* Estilos para links de navegação da Sidebar */
 @layer components {
   .nav-link-base {
-    @apply flex items-center gap-2 rounded-md px-3 py-2 transition-all text-sm; /* Mais compacto */
+    @apply flex items-center gap-2 rounded-md px-3 py-2 transition-all text-sm;
   }
 
   .nav-link-active {
@@ -304,7 +302,7 @@
 }
 
 .ql-editor {
-  @apply text-foreground text-sm; /* Ajustar tamanho da fonte no editor */
+  @apply text-foreground text-sm;
   min-height: 100px;
 }
 
@@ -316,12 +314,12 @@
 /* Ajustes para o layout principal */
 .main-content-area {
   /* Remove padding lateral no mobile, confiando no padding do #root */
-  @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-3 md:p-4 lg:p-6;
-  padding-left: 0;
-  padding-right: 0;
+  @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-0; /* Removendo padding aqui */
 }
 
 /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
 .page-content-wrapper {
   @apply p-3 md:p-4 lg:p-6;
+  width: 100%; /* Garante que o wrapper não exceda 100% */
+  box-sizing: border-box; /* Inclui padding e border na largura total */
 }

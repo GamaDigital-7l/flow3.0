@@ -262,7 +262,7 @@ const BookReaderFullScreen: React.FC = () => {
       <div className="flex items-center justify-between p-2 sm:p-4 bg-card border-b border-border shadow-sm gap-2 pt-[var(--sat)] flex-nowrap overflow-x-auto">
         
         {/* Grupo 1: Voltar e Título */}
-        <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-shrink"> {/* Usando flex-shrink para permitir que o título se contraia */}
           <Button variant="ghost" size="icon" onClick={() => navigate(`/books/${id}`)} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground flex-shrink-0">
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Voltar para Detalhes</span>
