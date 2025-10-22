@@ -42,12 +42,14 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+      template_task_id,
       task_tags(
         tags(id, name, color)
       ),
       subtasks:tasks!parent_task_id(
         id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
         origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+        template_task_id,
         task_tags(
           tags(id, name, color)
         )
@@ -76,19 +78,19 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
-      template_task_id: null, // Temporariamente forçando null
+      template_task_id: sub.template_task_id,
     })),
     // Ensure date fields are Date objects if needed for form/display logic
     due_date: task.due_date ? parseISO(task.due_date) : null,
-    template_task_id: null, // Forçando null
+    template_task_id: task.template_task_id,
   })) || [];
   return mappedData;
 };
 
 const fetchStandardTemplates = async (userId: string): Promise<StandardTaskTemplate[]> => {
-  // Usando o nome da tabela explícito 'public.standard_task_templates'
+  // Removendo a referência explícita ao esquema 'public.' que estava causando o erro
   const { data, error } = await supabase
-    .from("public.standard_task_templates")
+    .from("standard_task_templates")
     .select("id, user_id, title, description, recurrence_days, origin_board, is_active, created_at")
     .eq("user_id", userId)
     .order("title", { ascending: true });
@@ -168,7 +170,7 @@ const Tasks: React.FC = () => {
     mutationFn: async (templateId: string) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       const { error } = await supabase
-        .from("public.standard_task_templates") // Usando nome explícito
+        .from("standard_task_templates") // Usando nome correto
         .delete()
         .eq("id", templateId)
         .eq("user_id", userId);
