@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from 'date-fns';
-import { toUtc, toZonedTime } from 'date-fns-tz'; // Usando toUtc e toZonedTime
+import { toZonedTime } from 'date-fns-tz'; // Usando apenas toZonedTime
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -25,8 +25,9 @@ const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 export function convertToUtc(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
-  // Usando toUtc para converter data no fuso horário local (implícito) para UTC
-  return toUtc(dateObj, { timeZone: SAO_PAULO_TIME_ZONE }); 
+  // Convertendo a data (que é tratada como local) para UTC usando toZonedTime
+  // Nota: toZonedTime(date, 'UTC') é a forma mais segura se toUtc não for exportado.
+  return toZonedTime(dateObj, 'UTC'); 
 }
 
 export function convertToSaoPauloTime(date: Date | string | null | undefined): Date | null {
