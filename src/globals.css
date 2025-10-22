@@ -126,12 +126,19 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden; /* Garantir que não haja overflow lateral */
+    /* Removendo padding-top/bottom/left/right aqui para que o Layout.tsx e Header/Sidebar gerenciem */
+    min-height: 100vh; /* Garante que o body ocupe a altura total */
+  }
+  
+  /* Adicionando padding de safe area ao elemento raiz para garantir que o conteúdo não fique sob a barra de navegação do iOS */
+  #root {
+    @apply min-h-screen flex flex-col;
     padding-top: var(--sat);
     padding-bottom: var(--sab);
     padding-left: var(--sal);
     padding-right: var(--sar);
-    min-height: 100vh; /* Garante que o body ocupe a altura total */
   }
+
   /* Para navegadores Webkit (Chrome, Safari) */
   body::-webkit-scrollbar {
     width: 8px;
@@ -307,6 +314,14 @@
 }
 
 /* Ajustes para o layout principal */
-#root {
-  @apply min-h-screen flex flex-col;
+.main-content-area {
+  /* Remove padding lateral no mobile, confiando no padding do #root */
+  @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-3 md:p-4 lg:p-6;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
+.page-content-wrapper {
+  @apply p-3 md:p-4 lg:p-6;
 }

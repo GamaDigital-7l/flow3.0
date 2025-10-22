@@ -101,7 +101,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-3 md:p-4 lg:p-6 space-y-6">
+    <div className="page-content-wrapper space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>

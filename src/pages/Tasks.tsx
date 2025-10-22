@@ -216,7 +216,7 @@ const Tasks: React.FC = () => {
     // Se o erro for o 404 de tabela não encontrada, exibimos uma mensagem específica
     if (errorTemplates.message.includes('Could not find the table')) {
         return (
-            <div className="p-4 md:p-8">
+            <div className="page-content-wrapper">
                 <h1 className="text-3xl font-bold text-foreground mb-6">Templates Padrão</h1>
                 <p className="text-red-500">
                     Erro Crítico: A tabela 'standard_task_templates' não foi encontrada no esquema do banco de dados. 
@@ -231,7 +231,7 @@ const Tasks: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="page-content-wrapper">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <CalendarDays className="h-7 w-7 text-primary" /> Tarefas & Padrões

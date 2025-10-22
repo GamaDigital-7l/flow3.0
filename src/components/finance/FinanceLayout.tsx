@@ -19,7 +19,7 @@ const FinanceLayout: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="page-content-wrapper"> {/* Wrapper com padding lateral */}
       {/* Empilhando o título e a entrada rápida no mobile */}
       <div className="space-y-4 mb-6">
         <PageTitle title="Finanças" description="Gerencie as finanças pessoais e da empresa." />

@@ -51,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClic
       <div className="flex flex-col flex-1">
         <Header onMenuClick={() => setIsSidebarOpen(true)} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
         <OfflineIndicator isOnline={isOnline} />
-        <main className="flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-3 md:p-4 lg:p-6"> {/* Ajustado padding e mt */}
+        <main className="main-content-area"> {/* Usando a classe CSS ajustada */}
           <AnimatePresence>
             {isLoading && (
               <motion.div
@@ -64,6 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClic
               </motion.div>
             )}
           </AnimatePresence>
+          {/* O Outlet agora renderiza o conteúdo da página, que deve ter seu próprio padding interno */}
           <Outlet />
         </main>
         <QuickAddButton />
