@@ -86,13 +86,18 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
 };
 
 const fetchStandardTemplates = async (userId: string): Promise<StandardTaskTemplate[]> => {
+  // Usando select explícito para garantir que o Supabase não se confunda com o cache
   const { data, error } = await supabase
     .from("standard_task_templates")
-    .select("*")
+    .select("id, user_id, title, description, recurrence_days, origin_board, is_active, created_at")
     .eq("user_id", userId)
     .order("title", { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    // Se o erro for o 404 de tabela não encontrada, ele será capturado aqui.
+    console.error("Erro ao buscar templates padrão (fetchStandardTemplates):", error);
+    throw error;
+  }
   return data as StandardTaskTemplate[] || [];
 };
 
@@ -206,6 +211,19 @@ const Tasks: React.FC = () => {
   }
   
   if (errorTemplates && activeTab === "templates") {
+    // Se o erro for o 404 de tabela não encontrada, exibimos uma mensagem específica
+    if (errorTemplates.message.includes('Could not find the table')) {
+        return (
+            <div className="p-4 md:p-8">
+                <h1 className="text-3xl font-bold text-foreground mb-6">Templates Padrão</h1>
+                <p className="text-red-500">
+                    Erro Crítico: A tabela 'standard_task_templates' não foi encontrada no esquema do banco de dados. 
+                    Isso geralmente é um problema de cache persistente no Supabase. 
+                    Por favor, tente recarregar a página ou, se o problema persistir, entre em contato com o suporte.
+                </p>
+            </div>
+        );
+    }
     showError("Erro ao carregar templates padrão: " + errorTemplates.message);
     return <p className="text-red-500">Erro ao carregar templates padrão: {errorTemplates.message}</p>;
   }
