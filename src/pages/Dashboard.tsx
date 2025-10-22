@@ -91,6 +91,7 @@ const Dashboard: React.FC = () => {
   };
 
   const greeting = getGreeting();
+  // Filtra tarefas regulares (não diárias recorrentes e não tarefas de cliente)
   const regularTasks = allTasks.filter(task => !task.is_daily_recurring && task.current_board !== 'client_tasks');
   const overdueTasks = allTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
   const tasksForToday = allTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
@@ -117,7 +118,12 @@ const Dashboard: React.FC = () => {
           <TaskListBoard
             key={board.id}
             title={board.title}
-            tasks={regularTasks.filter(t => t.current_board === board.id && !t.is_completed)}
+            // Filtra tarefas: se for o board 'recurring', excluímos as diárias recorrentes, pois elas têm seu próprio board abaixo.
+            tasks={regularTasks.filter(t => 
+              t.current_board === board.id && 
+              !t.is_completed && 
+              !(board.id === 'recurring' && t.is_daily_recurring)
+            )}
             isLoading={isLoadingTasks}
             error={errorTasks}
             refetchTasks={handleTaskUpdated}

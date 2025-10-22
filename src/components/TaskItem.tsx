@@ -24,7 +24,12 @@ interface TaskItemProps {
 }
 
 const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
-  if (task.is_completed) {
+  // Se for recorrente diária e estiver concluída, usamos a lógica de hoje
+  if (task.is_daily_recurring && task.is_completed) {
+    return <Badge className="bg-status-completed text-foreground/80">Concluída Hoje</Badge>;
+  }
+  
+  if (task.is_completed && !task.is_daily_recurring) {
     return <Badge className="bg-status-completed text-foreground/80">Concluída</Badge>;
   }
   if (task.is_daily_recurring) {
@@ -54,7 +59,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
   }
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
-    let dateString = format(dueDate, "PPP"); // FIX TS2554
+    let dateString = format(dueDate, "PPP", { locale: ptBR });
     if (task.time) {
       dateString += ` às ${formatTime(task.time)}`;
     }
@@ -85,15 +90,21 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
       const todayISO = format(new Date(), 'yyyy-MM-dd');
 
       let newStreak = taskToUpdate.recurrence_streak;
-      let newFailureHistory = taskToUpdate.recurrence_failure_history;
+      let newFailureHistory = taskToUpdate.recurrence_failure_history || [];
       let lastCompletionDate = todayISO;
       let newCurrentBoard = task.current_board;
       let newOverdueStatus = task.overdue;
 
       if (isDailyRecurrent) {
+        // Se for recorrente diária, incrementamos o streak
         newStreak = (taskToUpdate.recurrence_streak || 0) + 1;
         newFailureHistory = taskToUpdate.recurrence_failure_history?.filter(d => d !== todayISO) || [];
+        newCurrentBoard = 'recurring'; // Garante que a tarefa diária concluída permaneça no board 'recurring'
       } else if (taskToUpdate.recurrence_type === "none") {
+        newCurrentBoard = "completed";
+        newOverdueStatus = false;
+      } else {
+        // Para outras recorrências (semanal, mensal), a tarefa é concluída e o backend deve gerar a próxima instância
         newCurrentBoard = "completed";
         newOverdueStatus = false;
       }
