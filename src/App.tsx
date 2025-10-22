@@ -24,6 +24,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
 import BriefingPage from "./pages/Briefing";
+import BriefingPublicView from "./pages/BriefingPublicView"; // Importando o novo componente
 import { showError } from "@/utils/toast";
 
 // Main App component wrapper for context providers
@@ -150,6 +151,7 @@ function AppContent() {
         {/* Rotas Públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/approval/:uniqueId" element={<NotFound />} />
+        <Route path="/briefing/:briefingId" element={<BriefingPublicView />} /> {/* Nova rota pública */}
         <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
 
         {/* Rotas Protegidas */}
