@@ -61,6 +61,7 @@ const StandardTaskForm: React.FC<StandardTaskFormProps> = ({ initialData, onTemp
     defaultValues: initialData ? {
       ...initialData,
       description: initialData.description || null,
+      recurrence_days: initialData.recurrence_days || "", // Garantir string vazia
     } : {
       title: "",
       description: null,
