@@ -22,7 +22,7 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 import { Calendar } from '@/components/ui/calendar'; // Added Calendar
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Added Popover components
 import { CalendarIcon, Loader2, Save } from 'lucide-react';
-import { cn, convertToSaoPauloTime, convertToUtc, formatDateTime, parseISO } from '@/lib/utils'; // Added cn, parseISO, utilities
+import { cn, convertToUtc, formatDateTime, parseISO } from '@/lib/utils'; // Added cn, parseISO, utilities
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const transactionSchema = z.object({

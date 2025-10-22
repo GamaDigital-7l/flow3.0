@@ -1,9 +1,9 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format } from 'date-fns/format';
-import { toZonedTime, utcToZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns'; // Importação padrão de format
+import { utcToZonedTime } from 'date-fns-tz'; // Importação correta de utcToZonedTime
 import { ptBR } from 'date-fns/locale';
-import { parseISO as dateFnsParseISO } from 'date-fns';
+import { parseISO as dateFnsParseISO } from 'date-fns'; // Importação correta de parseISO
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
 export function parseISO(dateString: string | Date): Date {

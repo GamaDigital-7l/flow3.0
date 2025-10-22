@@ -19,9 +19,9 @@ const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
     .select(`
-      id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+      id, user_id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-      recurrence_time,
+      recurrence_time, last_moved_to_overdue_at, recurrence_streak,
       task_tags(
         tags(id, name, color)
       )
@@ -38,7 +38,6 @@ const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
     tags: (task as any).task_tags.map((t: any) => t.tags),
     subtasks: [], 
     due_date: task.due_date ? parseISO(task.due_date) : null,
-    template_task_id: null, // Removendo referência ao campo inexistente
   })) as Task[];
 };
 

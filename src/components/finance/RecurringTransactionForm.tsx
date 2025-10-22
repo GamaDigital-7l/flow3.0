@@ -24,7 +24,7 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { cn, convertToSaoPauloTime, convertToUtc, formatDateTime, parseISO } from '@/lib/utils';
+import { cn, convertToUtc, formatDateTime, parseISO } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const RECURRENCE_OPTIONS = ['monthly', 'weekly', 'yearly', 'quarterly'] as const;

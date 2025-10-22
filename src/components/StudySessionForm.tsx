@@ -9,14 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
-import { FormControl, Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { format } from 'date-fns';
-import { cn, convertToSaoPauloTime, convertToUtc, formatDateTime, parseISO } from '@/lib/utils';
+import { cn, convertToUtc, formatDateTime, parseISO } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FormControl, Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const studySessionSchema = z.object({
   title: z.string().min(1, "O título da sessão é obrigatório."),
