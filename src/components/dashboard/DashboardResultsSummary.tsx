@@ -7,28 +7,50 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, CheckCircle2, Repeat, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 interface Profile {
   points: number;
 }
 
-const fetchProfile = async (userId: string): Promise<Profile | null> => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("points")
-    .eq("id", userId)
-    .single();
-  if (error && error.code !== 'PGRST116') throw error;
-  return data || null;
+interface TaskMetric {
+  id: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  recurrence_type: string;
+  recurrence_streak: number; // Assumindo que este campo existe no DB para o streak
+}
+
+const fetchMetrics = async (userId: string): Promise<{ profile: Profile | null, tasks: TaskMetric[] }> => {
+  const [profileResponse, tasksResponse] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("points")
+      .eq("id", userId)
+      .single(),
+    supabase
+      .from("tasks")
+      .select("id, is_completed, completed_at, recurrence_type, recurrence_streak")
+      .eq("user_id", userId)
+      .order("completed_at", { ascending: false, nullsFirst: true })
+  ]);
+
+  if (profileResponse.error && profileResponse.error.code !== 'PGRST116') throw profileResponse.error;
+  if (tasksResponse.error) throw tasksResponse.error;
+
+  return {
+    profile: profileResponse.data || null,
+    tasks: tasksResponse.data as TaskMetric[] || [],
+  };
 };
 
 const DashboardResultsSummary: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
 
-  const { data: profile, isLoading } = useQuery<Profile | null, Error>({
+  const { data, isLoading } = useQuery<{ profile: Profile | null, tasks: TaskMetric[] }, Error>({
     queryKey: ["profileDashboardSummary", userId],
-    queryFn: () => fetchProfile(userId!),
+    queryFn: () => fetchMetrics(userId!),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5,
   });
@@ -52,6 +74,17 @@ const DashboardResultsSummary: React.FC = () => {
     );
   }
 
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const completedToday = data?.tasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === today).length || 0;
+  
+  // Cálculo do maior streak (assumindo que recurrence_streak existe na tabela tasks)
+  const maxStreak = data?.tasks.reduce((max, t) => {
+    if (t.recurrence_type === 'daily' && t.recurrence_streak > max) {
+      return t.recurrence_streak;
+    }
+    return max;
+  }, 0) || 0;
+
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <Card className="frosted-glass">
@@ -60,7 +93,7 @@ const DashboardResultsSummary: React.FC = () => {
           <TrendingUp className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-foreground">{profile?.points || 0}</div>
+          <div className="text-2xl font-bold text-foreground">{data?.profile?.points || 0}</div>
           <p className="text-xs text-muted-foreground">Pontos acumulados.</p>
         </CardContent>
       </Card>
@@ -71,8 +104,8 @@ const DashboardResultsSummary: React.FC = () => {
           <CheckCircle2 className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-foreground">N/A</div>
-          <p className="text-xs text-muted-foreground">Métricas detalhadas em Resultados.</p>
+          <div className="text-2xl font-bold text-foreground">{completedToday}</div>
+          <p className="text-xs text-muted-foreground">Concluídas hoje.</p>
         </CardContent>
       </Card>
 
@@ -82,8 +115,8 @@ const DashboardResultsSummary: React.FC = () => {
           <Repeat className="h-4 w-4 text-orange-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-foreground">N/A</div>
-          <p className="text-xs text-muted-foreground">Acompanhe suas recorrentes.</p>
+          <div className="text-2xl font-bold text-foreground">{maxStreak}</div>
+          <p className="text-xs text-muted-foreground">Dias consecutivos.</p>
         </CardContent>
       </Card>
     </div>

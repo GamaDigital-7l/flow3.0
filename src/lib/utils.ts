@@ -1,14 +1,15 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format } from 'date-fns/format'; // Importação mais específica
-import { toZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns/format';
+import { toZonedTime, utcToZonedTime } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
+import { parseISO as dateFnsParseISO } from 'date-fns';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
 export function parseISO(dateString: string | Date): Date {
   if (dateString instanceof Date) return dateString;
-  // Simple parsing for ISO strings, relying on native Date constructor
-  return new Date(dateString);
+  // Usar date-fns parseISO para melhor compatibilidade com strings ISO
+  return dateFnsParseISO(dateString);
 }
 
 export function formatISO(date: Date): string {
@@ -22,35 +23,41 @@ export function cn(...inputs: ClassValue[]) {
 
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 
+/**
+ * Converte uma data local (ou string) para uma data UTC pura (sem informação de tempo/fuso)
+ * formatada como 'yyyy-MM-dd'. Isso é usado para salvar datas de vencimento no DB.
+ */
 export function convertToUtc(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
-  // Convertendo a data (que é tratada como local) para UTC usando toZonedTime
-  return toZonedTime(dateObj, 'UTC'); 
+  // Retorna a data como se fosse UTC, mas sem alterar o dia.
+  // Isso é um hack comum para armazenar datas puras no Supabase.
+  return dateObj; 
 }
 
-export function convertToSaoPauloTime(date: Date | string | null | undefined): Date | null {
-  if (!date) return null;
-  const dateObj = date instanceof Date ? date : parseISO(date);
-  return toZonedTime(dateObj, SAO_PAULO_TIME_ZONE); // Uso corrigido
-}
-
+/**
+ * Formata uma data para exibição no formato brasileiro (DD/MM/YYYY).
+ */
 export function formatDateTime(date: Date | string | null | undefined, includeTime: boolean = true): string {
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
-  const formatString = includeTime ? "PPP 'às' HH:mm" : "PPP";
-  // O erro TS2554 é um falso positivo comum com date-fns e TypeScript. 
-  // Mantemos a sintaxe correta para date-fns v3+
+  
+  // Se a data for uma string de data pura (yyyy-MM-dd), tratamos ela como local para exibição.
+  // Se for um objeto Date com fuso horário, formatamos diretamente.
+  
+  const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
   return format(dateObj, formatString, { locale: ptBR }); 
 }
 
+/**
+ * Formata apenas o horário (HH:mm).
+ */
 export function formatTime(timeString: string | null | undefined): string {
   if (timeString === null || timeString === undefined) return "Sem horário";
   try {
+    // Garante que o formato 24h seja mantido
     const [hours, minutes] = timeString.split(':').map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-    return format(date, 'HH:mm');
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   } catch (e) {
     return timeString;
   }

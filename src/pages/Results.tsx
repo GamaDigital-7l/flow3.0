@@ -20,11 +20,15 @@ interface Profile {
   points: number;
 }
 
-const fetchAllTasks = async (userId: string): Promise<Task[]> => {
+interface TaskMetric extends Task {
+  recurrence_streak: number; // Assumindo que este campo existe no DB
+}
+
+const fetchAllTasks = async (userId: string): Promise<TaskMetric[]> => {
   const { data, error } = await supabase
     .from("tasks")
     .select(`
-      id, title, is_completed, completed_at, due_date, recurrence_type, recurrence_details
+      id, title, is_completed, completed_at, due_date, recurrence_type, recurrence_details, recurrence_streak
     `)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -32,7 +36,7 @@ const fetchAllTasks = async (userId: string): Promise<Task[]> => {
     throw error;
   }
   // O tipo Task agora é mais simples, mas ainda precisamos garantir que a estrutura seja compatível.
-  return data.map(t => ({ ...t, template_task_id: null })) as Task[] || [];
+  return data as TaskMetric[] || [];
 };
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
@@ -49,7 +53,7 @@ const Results: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
 
-  const { data: allTasks = [], isLoading: isLoadingTasks, error: errorAllTasks } = useQuery<Task[], Error>({
+  const { data: allTasks = [], isLoading: isLoadingTasks, error: errorAllTasks } = useQuery<TaskMetric[], Error>({
     queryKey: ["allTasksResults", userId],
     queryFn: () => fetchAllTasks(userId!),
     enabled: !!userId,
@@ -69,27 +73,32 @@ const Results: React.FC = () => {
 
   // --- Métricas de Conclusão ---
   const today = new Date();
-  const startOfToday = format(today, 'yyyy-MM-dd');
-  const startOfThisWeek = format(startOfWeek(today, { weekStartsOn: 0 }), 'yyyy-MM-dd');
+  const startOfTodayStr = format(today, 'yyyy-MM-dd');
+  const startOfThisWeek = startOfWeek(today, { weekStartsOn: 0 }); // Domingo
+  const startOfThisMonth = startOfMonth(today);
   
+  const completedTasks = allTasks.filter(t => t.is_completed && t.completed_at);
+
   // Filtra tarefas concluídas hoje, esta semana e este mês
-  const completedToday = allTasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === startOfToday).length;
-  const completedThisWeek = allTasks.filter(t => t.completed_at && new Date(t.completed_at) >= new Date(startOfThisWeek)).length;
-  const completedThisMonth = allTasks.filter(t => t.completed_at && new Date(t.completed_at) >= new Date(startOfMonth(today))).length;
+  const completedToday = completedTasks.filter(t => format(new Date(t.completed_at!), 'yyyy-MM-dd') === startOfTodayStr).length;
+  const completedThisWeek = completedTasks.filter(t => new Date(t.completed_at!) >= startOfThisWeek).length;
+  const completedThisMonth = completedTasks.filter(t => new Date(t.completed_at!) >= startOfThisMonth).length;
   
   const totalTasks = allTasks.length;
-  const totalCompleted = allTasks.filter(t => t.is_completed).length;
+  const totalCompleted = completedTasks.length;
   const completionRate = totalTasks > 0 ? (totalCompleted / totalTasks) * 100 : 0;
 
-  // --- Métricas de Recorrência Diária (Simplificadas, pois os campos de streak foram removidos) ---
-  // Contamos apenas as tarefas que são templates diários
+  // --- Métricas de Recorrência Diária ---
   const dailyRecurringTemplates = allTasks.filter(t => t.recurrence_type === 'daily');
   const totalDailyTemplates = dailyRecurringTemplates.length;
   
-  // Não podemos calcular o streak ou conclusão diária precisa sem os campos de DB.
-  // Usaremos placeholders ou métricas mais simples.
-  const dailyTasksCompletedToday = 0; // Placeholder
-  const dailyCompletionRateToday = 0; // Placeholder
+  // Maior streak (usando o campo recurrence_streak)
+  const maxStreak = allTasks.reduce((max, t) => {
+    if (t.recurrence_type === 'daily' && t.recurrence_streak > max) {
+      return t.recurrence_streak;
+    }
+    return max;
+  }, 0);
 
   // --- Renderização ---
   if (isLoading) {
@@ -121,7 +130,7 @@ const Results: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{profile?.points || 0}</div>
-            <p className="text-xs text-muted-foreground">Recompensas por concluir tarefas.</p>
+            <p className="text-xs text-muted-foreground">Pontos acumulados.</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border shadow-sm frosted-glass card-hover-effect">
@@ -136,14 +145,14 @@ const Results: React.FC = () => {
         </Card>
         <Card className="bg-card border-border shadow-sm frosted-glass card-hover-effect">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Templates Diários</CardTitle>
+            <CardTitle className="text-sm font-medium">Maior Streak Diário</CardTitle>
             <Repeat className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold text-foreground`}>
-              {totalDailyTemplates}
+            <div className="text-2xl font-bold text-foreground">
+              {maxStreak}
             </div>
-            <p className="text-xs text-muted-foreground">Templates de tarefas diárias.</p>
+            <p className="text-xs text-muted-foreground">Dias consecutivos.</p>
           </CardContent>
         </Card>
       </div>
@@ -180,7 +189,7 @@ const Results: React.FC = () => {
         </Card>
       </div>
 
-      {/* Tarefas Recorrentes Diárias (Streaks) - Removido o cálculo de streak */}
+      {/* Tarefas Recorrentes Diárias (Streaks) */}
       <h2 className="text-2xl font-bold text-foreground mb-4">Templates Recorrentes Diários</h2>
       <div className="space-y-3">
         {dailyRecurringTemplates.length > 0 ? (
@@ -196,7 +205,7 @@ const Results: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge className="bg-orange-500 text-white">Template</Badge>
+                <Badge className="bg-orange-500 text-white">Streak: {task.recurrence_streak}</Badge>
               </div>
             </Card>
           ))

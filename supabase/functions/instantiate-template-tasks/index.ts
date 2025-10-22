@@ -58,7 +58,7 @@ serve(async (req) => {
         `)
         .eq('user_id', userId)
         .neq('recurrence_type', 'none')
-        .is('template_task_id', null); // Apenas templates (tarefas que não são instâncias)
+        .is('parent_task_id', null); // Apenas templates (tarefas que não são instâncias)
 
       if (fetchTemplatesError) throw fetchTemplatesError;
 
@@ -72,7 +72,16 @@ serve(async (req) => {
         if (template.recurrence_type === 'daily') {
           shouldInstantiate = true;
         } else if (template.recurrence_type === 'weekly' && template.recurrence_details) {
-          const days = template.recurrence_details.split(',').map(Number); // Detalhes agora são números (0-6)
+          // Detalhes são strings de dias da semana separados por vírgula (ex: "1,3,5")
+          const days = template.recurrence_details.split(',').map(day => {
+            // Mapeamento de string de dia (Monday, Tuesday) para número (1, 2)
+            const dayMap: { [key: string]: number } = {
+              "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3,
+              "Thursday": 4, "Friday": 5, "Saturday": 6
+            };
+            return dayMap[day] !== undefined ? dayMap[day] : parseInt(day);
+          }).filter(n => !isNaN(n));
+          
           shouldInstantiate = days.includes(currentDayOfWeek);
         } else if (template.recurrence_type === 'monthly' && template.recurrence_details) {
           shouldInstantiate = template.recurrence_details === currentDayOfMonth;
@@ -83,7 +92,7 @@ serve(async (req) => {
           const { data: existingInstance, error: checkExistingError } = await supabase
             .from('tasks')
             .select('id')
-            .eq('template_task_id', template.id)
+            .eq('parent_task_id', template.id) // Instâncias usam o ID do template como parent_task_id
             .eq('due_date', todayInUserTimezoneString)
             .limit(1);
 
@@ -115,7 +124,7 @@ serve(async (req) => {
             origin_board: template.origin_board,
             current_board: 'recurring', // Todas as instâncias vão para o quadro 'recurring'
             client_name: template.client_name,
-            template_task_id: template.id, // Link para o template
+            parent_task_id: template.id, // Link para o template (usando parent_task_id para instâncias)
             created_at: nowUtc.toISOString(),
             updated_at: nowUtc.toISOString(),
           });
