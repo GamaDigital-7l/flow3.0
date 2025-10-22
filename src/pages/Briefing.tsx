@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Trash2, Edit, Copy } from 'lucide-react';
+import { PlusCircle, Loader2, Trash2, Edit, Copy, LayoutList, Zap } from 'lucide-react';
 import {
   Card,
   CardContent,
-  CardDescription, // Importação adicionada
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -13,10 +13,9 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle, // Importação adicionada para acessibilidade
+  DialogTitle,
   DialogTrigger,
-  DialogDescription, // Importação adicionada para acessibilidade
-  DialogFooter
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,16 +26,30 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface Briefing {
   id: string;
   title: string;
   description: string | null;
-  questions: any[];
+  form_structure: any[]; // Renomeado de 'questions' para 'form_structure'
   created_at: string;
   updated_at: string;
-  user_id: string;
+  created_by: string; // Usando created_by
+  display_mode: 'all_questions' | 'one_by_one';
 }
+
+const fetchBriefings = async (userId: string): Promise<Briefing[]> => {
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from('briefing_forms') // Tabela correta
+    .select('*')
+    .eq('created_by', userId)
+    .order('updated_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data as Briefing[];
+};
 
 const BriefingPage: React.FC = () => {
   const { session } = useSession();
@@ -45,29 +58,19 @@ const BriefingPage: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBriefing, setEditingBriefing] = useState<Briefing | null>(null);
 
-  const { data: briefings, isLoading, error } = useQuery<Briefing[]>({
+  const { data: briefings, isLoading, error, refetch } = useQuery<Briefing[], Error>({
     queryKey: ['briefings', userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const { data, error } = await supabase
-        .from('briefings')
-        .select('*')
-        .eq('user_id', userId)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
+    queryFn: () => fetchBriefings(userId!),
     enabled: !!userId,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (briefingId: string) => {
       const { error } = await supabase
-        .from('briefings')
+        .from('briefing_forms')
         .delete()
         .eq('id', briefingId)
-        .eq('user_id', userId);
+        .eq('created_by', userId);
 
       if (error) throw new Error(error.message);
     },
@@ -93,30 +96,33 @@ const BriefingPage: React.FC = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingBriefing(null);
+    refetch(); // Refetch após salvar/fechar
   };
 
   const handleCopyLink = (briefingId: string) => {
-    const publicUrl = `${window.location.origin}/briefing/${briefingId}`; // Ajustar se necessário
+    const publicUrl = `${window.location.origin}/briefing/${briefingId}`; // URL pública para o formulário
     navigator.clipboard.writeText(publicUrl);
     showSuccess('Link do briefing copiado para a área de transferência!');
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full">
+      <div className="flex justify-center items-center h-full p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-destructive">Erro ao carregar briefings: {error.message}</div>;
+    return <div className="text-destructive p-8">Erro ao carregar briefings: {error.message}</div>;
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Meus Briefings</h1>
+    <div className="page-content-wrapper space-y-6">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <LayoutList className="h-7 w-7 text-primary" /> Meus Briefings
+        </h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleNewBriefing} className="bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -125,40 +131,50 @@ const BriefingPage: React.FC = () => {
           </DialogTrigger>
           <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
             <DialogHeader>
-              <DialogTitle>{editingBriefing ? 'Editar Briefing' : 'Criar Novo Briefing'}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-foreground">{editingBriefing ? 'Editar Briefing' : 'Criar Novo Briefing'}</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 {editingBriefing ? 'Ajuste os detalhes e perguntas do seu briefing.' : 'Crie um novo formulário de briefing para seus clientes.'}
               </DialogDescription>
             </DialogHeader>
             <BriefingForm
-              initialData={editingBriefing}
+              initialData={editingBriefing ? { ...editingBriefing, questions: editingBriefing.form_structure } as any : undefined}
               onBriefingSaved={handleCloseDialog}
               onClose={handleCloseDialog}
             />
           </DialogContent>
         </Dialog>
       </div>
+      <p className="text-lg text-muted-foreground">
+        Crie formulários de briefing personalizados para coletar informações de clientes.
+      </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {briefings && briefings.length > 0 ? (
           briefings.map((briefing) => (
-            <Card key={briefing.id} className="flex flex-col justify-between card-hover-effect">
+            <Card key={briefing.id} className="flex flex-col justify-between card-hover-effect bg-card border border-border rounded-xl shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">{briefing.title}</CardTitle>
+                <CardTitle className="text-lg text-foreground line-clamp-2">{briefing.title}</CardTitle>
                 <CardDescription className="text-muted-foreground text-sm line-clamp-2">
                   {briefing.description || 'Sem descrição.'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                <p>Perguntas: {briefing.questions.length}</p>
-                <p>Atualizado em: {format(new Date(briefing.updated_at), 'dd/MM/yyyy')}</p> {/* FIX TS2554 */}
+              <CardContent className="text-sm text-muted-foreground space-y-1">
+                <p className="flex items-center gap-1">
+                  <LayoutList className="h-3 w-3 text-primary" /> Perguntas: {briefing.form_structure.length}
+                </p>
+                <p className="flex items-center gap-1">
+                  <Zap className="h-3 w-3 text-blue-500" /> Modo: {briefing.display_mode === 'one_by_one' ? 'Passo a Passo' : 'Completo'}
+                </p>
+                <p className="text-xs pt-2 border-t border-border/50">
+                  Atualizado em: {format(new Date(briefing.updated_at), 'dd/MM/yyyy')}
+                </p>
               </CardContent>
-              <CardFooter className="flex justify-between gap-2">
+              <CardFooter className="flex justify-between gap-2 pt-4">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => handleEdit(briefing)}
-                  className="flex-1"
+                  className="flex-1 bg-secondary hover:bg-secondary-hover text-secondary-foreground"
                 >
                   <Edit className="h-4 w-4 mr-2" /> Editar
                 </Button>
@@ -187,7 +203,7 @@ const BriefingPage: React.FC = () => {
             </Card>
           ))
         ) : (
-          <p className="col-span-full text-center text-muted-foreground p-8 border border-dashed rounded-lg">
+          <p className="col-span-full text-center text-muted-foreground p-8 border border-dashed rounded-lg bg-card">
             Nenhum briefing encontrado. Clique em "Novo Briefing" para começar.
           </p>
         )}

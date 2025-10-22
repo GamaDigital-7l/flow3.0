@@ -8,9 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -26,40 +23,20 @@ import {
   FormLabel,
   FormMessage
 } from "@/components/ui/form";
-import { PlusCircle, Trash2 } from 'lucide-react';
-import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { Checkbox } from "@/components/ui/checkbox";
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useNavigate } from 'react-router-dom'; // Usar useNavigate do react-router-dom
+import { useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
-
-const questionTypes = [
-  "text",
-  "textarea",
-  "select",
-  "checkbox",
-  "number",
-  "date",
-  "email",
-  "phone",
-  "url",
-] as const;
+import QuestionBuilder, { questionSchema } from './QuestionBuilder'; // Importando QuestionBuilder e schema
 
 const briefingSchema = z.object({
   title: z.string().min(1, "O título do briefing é obrigatório."),
-  description: z.string().optional(),
-  questions: z.array(
-    z.object({
-      text: z.string().min(1, "O texto da pergunta é obrigatório."),
-      type: z.enum(questionTypes).default("text"),
-      required: z.boolean().default(false),
-      label: z.string().optional(),
-      placeholder: z.string().optional(),
-      options: z.array(z.string()).optional(),
-    })
-  ).optional(),
+  description: z.string().optional().nullable(),
+  // Usando o schema de pergunta importado
+  questions: z.array(questionSchema).optional(),
+  display_mode: z.enum(["all_questions", "one_by_one"]).default("all_questions"),
 });
 
 type BriefingFormValues = z.infer<typeof briefingSchema>;
@@ -73,14 +50,15 @@ interface BriefingFormProps {
 const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const navigate = useNavigate(); // Usar useNavigate
+  const navigate = useNavigate();
 
   const form = useForm<BriefingFormValues>({
     resolver: zodResolver(briefingSchema),
-    defaultValues: initialData || {
-      title: "",
-      description: "",
-      questions: [],
+    defaultValues: {
+      title: initialData?.title || "",
+      description: initialData?.description || null,
+      questions: initialData?.questions || [],
+      display_mode: initialData?.display_mode || "all_questions",
     },
   });
 
@@ -103,23 +81,25 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
       const dataToSave = {
         title: values.title,
         description: values.description || null,
-        questions: values.questions || [],
+        form_structure: values.questions || [], // Renomeado para form_structure no DB
+        display_mode: values.display_mode,
         updated_at: new Date().toISOString(),
       };
 
       if (initialData?.id) {
         const { error } = await supabase
-          .from("briefings")
+          .from("briefing_forms")
           .update(dataToSave)
           .eq("id", initialData.id)
-          .eq("user_id", userId);
+          .eq("created_by", userId); // Usando created_by como user_id
 
         if (error) throw error;
         showSuccess("Briefing atualizado com sucesso!");
       } else {
-        const { error } = await supabase.from("briefings").insert({
+        const { error } = await supabase.from("briefing_forms").insert({
           ...dataToSave,
-          user_id: userId,
+          created_by: userId,
+          workspace_id: null, // Assumindo workspace_id nulo por enquanto
         });
 
         if (error) throw error;
@@ -135,102 +115,10 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
     }
   };
 
-  const renderQuestionInput = (index: number, questionType: string) => {
-    switch (questionType) {
-      case "textarea":
-        return (
-          <FormField
-            control={form.control}
-            name={`questions.${index}.text`}
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Textarea
-                    placeholder="Digite a pergunta"
-                    className="bg-input border-border text-foreground focus-visible:ring-ring"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-      case "select":
-        return (
-          <FormField
-            control={form.control}
-            name={`questions.${index}.options`}
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input
-                    placeholder="Opção 1, Opção 2, Opção 3"
-                    className="bg-input border-border text-foreground focus-visible:ring-ring"
-                    {...field}
-                    value={field.value?.join(', ') || ''}
-                    onChange={(e) => {
-                      const optionsArray = e.target.value.split(',').map(o => o.trim());
-                      field.onChange(optionsArray);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-      case "checkbox":
-        return (
-          <FormField
-            control={form.control}
-            name={`questions.${index}.text`}
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input
-                    placeholder="Digite a pergunta"
-                    className="bg-input border-border text-foreground focus-visible:ring-ring"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-      case "number":
-      case "date":
-      case "email":
-      case "phone":
-      case "url":
-      case "text":
-      default:
-        return (
-          <FormField
-            control={form.control}
-            name={`questions.${index}.text`}
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input
-                    type={questionType === "number" ? "number" : questionType === "date" ? "date" : questionType === "email" ? "email" : questionType === "phone" ? "tel" : questionType === "url" ? "url" : "text"}
-                    placeholder="Digite a pergunta"
-                    className="bg-input border-border text-foreground focus-visible:ring-ring"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-    }
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Informações Básicas */}
         <div>
           <Label htmlFor="title" className="text-foreground">Título do Briefing</Label>
           <Input
@@ -255,156 +143,47 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
           />
         </div>
 
+        {/* Modo de Exibição */}
+        <FormField
+          control={form.control}
+          name="display_mode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground">Modo de Exibição</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
+                    <SelectValue placeholder="Selecionar modo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
+                  <SelectItem value="all_questions">Todas as perguntas de uma vez</SelectItem>
+                  <SelectItem value="one_by_one">Uma pergunta por vez (Melhor para mobile)</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Construtor de Perguntas */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground">Perguntas</h3>
+          <h3 className="text-lg font-semibold text-foreground border-t border-border pt-4">Perguntas ({fields.length})</h3>
           {fields.map((item, index) => (
-            <div key={item.id} className="p-3 border border-border rounded-md space-y-3">
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => remove(index)}
-                  className="text-red-500 hover:bg-red-500/10 h-8 w-8"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">Remover Pergunta</span>
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name={`questions.${index}.type`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Resposta</FormLabel>
-                      <FormControl>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecionar tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="text">Texto Curto</SelectItem>
-                            <SelectItem value="textarea">Texto Longo</SelectItem>
-                            <SelectItem value="select">Múltipla Escolha</SelectItem>
-                            <SelectItem value="checkbox">Checkbox</SelectItem>
-                            <SelectItem value="number">Número</SelectItem>
-                            <SelectItem value="date">Data</SelectItem>
-                            <SelectItem value="email">E-mail</SelectItem>
-                            <SelectItem value="phone">Telefone</SelectItem>
-                            <SelectItem value="url">URL</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`questions.${index}.required`}
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-foreground">Obrigatória</FormLabel>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name={`questions.${index}.text`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pergunta</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Qual é a sua pergunta?"
-                        className="bg-input border-border text-foreground focus-visible:ring-ring"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name={`questions.${index}.label`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor={`question-${index}-label`}>Rótulo do Campo (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        id={`question-${index}-label`}
-                        placeholder="Ex: Nome do Projeto"
-                        className="bg-input border-border text-foreground focus-visible:ring-ring"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name={`questions.${index}.placeholder`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor={`question-${index}-placeholder`}>Placeholder (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        id={`question-${index}-placeholder`}
-                        placeholder="Ex: Digite aqui..."
-                        className="bg-input border-border text-foreground focus-visible:ring-ring"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {item.type === 'select' && (
-                <FormField
-                  control={form.control}
-                  name={`questions.${index}.options`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel htmlFor={`question-${index}-options`}>Opções (Separadas por vírgula)</FormLabel>
-                      <FormControl>
-                        <Input
-                          id={`question-${index}-options`}
-                          placeholder="Opção 1, Opção 2, Opção 3"
-                          className="bg-input border-border text-foreground focus-visible:ring-ring"
-                          value={field.value?.join(', ') || ''}
-                          onChange={(e) => {
-                            const optionsArray = e.target.value.split(',').map(o => o.trim());
-                            field.onChange(optionsArray);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
+            <QuestionBuilder
+              key={item.id}
+              form={form}
+              index={index}
+              onRemove={remove}
+            />
           ))}
-          <Button type="button" variant="outline" onClick={handleAddQuestion} className="w-full justify-start">
+          <Button type="button" variant="outline" onClick={handleAddQuestion} className="w-full justify-start border-dashed border-primary text-primary hover:bg-primary/10">
             <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Pergunta
           </Button>
         </div>
 
         <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-          Salvar Briefing
+          {initialData?.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin hidden group-hover:inline" /> Atualizar Briefing</> : <><PlusCircle className="mr-2 h-4 w-4" /> Salvar Briefing</>}
         </Button>
       </form>
     </Form>
