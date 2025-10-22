@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
-import { formatDateTime, convertToSaoPauloTime, convertToUtc, formatISO, parseISO } from "@/lib/utils";
+import { formatDateTime, convertToUtc, formatISO, parseISO } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
@@ -123,7 +123,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
         const { data, error } = await supabase.from("tasks").insert({
           ...dataToSave,
           user_id: userId,
-          created_at: formatISO(convertToSaoPauloTime(new Date())!),
+          created_at: formatISO(new Date()), // Usando formatISO do utils
         }).select("id").single();
 
         if (error) throw error;
