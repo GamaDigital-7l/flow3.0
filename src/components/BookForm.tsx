@@ -69,6 +69,10 @@ const BookForm: React.FC<BookFormProps> = ({ onBookAdded, onClose, initialData }
   const { session } = useSession();
   const userId = session?.user?.id;
 
+  const isEditing = !!initialData;
+  const hasExistingPdf = isEditing && !!initialData?.pdf_url;
+  const hasExistingContent = isEditing && !!initialData?.content && initialData.content.trim() !== "" && initialData.content !== "<p><br></p>";
+
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookSchema),
     defaultValues: initialData ? {
@@ -88,16 +92,11 @@ const BookForm: React.FC<BookFormProps> = ({ onBookAdded, onClose, initialData }
     },
   });
 
-  const [hasPdfFileSelected, setHasPdfFileSelected] = useState(false);
-  const [hasContentInEditor, setHasContentInEditor] = useState(false);
+  const [hasPdfFileSelected, setHasPdfFileSelected] = useState(hasExistingPdf);
+  const [hasContentInEditor, setHasContentInEditor] = useState(hasExistingContent);
 
-  // Initialize state based on initialData
-  React.useEffect(() => {
-    if (initialData) {
-      setHasPdfFileSelected(!!initialData.pdf_url);
-      setHasContentInEditor(!!initialData.content && initialData.content.trim() !== "" && initialData.content !== "<p><br></p>");
-    }
-  }, [initialData]);
+  // Se estiver editando e já tiver PDF ou Conteúdo, desabilitamos a edição/upload
+  const isContentLocked = hasExistingPdf || hasExistingContent;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -132,38 +131,77 @@ const BookForm: React.FC<BookFormProps> = ({ onBookAdded, onClose, initialData }
       let pdfUrl: string | null = initialData?.pdf_url || null;
       let bookContent: string | null = values.content || null;
 
-      // Prioritize PDF if a new file is uploaded
-      if (values.pdf_file) {
-        const file = values.pdf_file;
-        const sanitizedFilename = sanitizeFilename(file.name);
-        const filePath = `public/${Date.now()}-${sanitizedFilename}`;
+      // Lógica de upload/preservação
+      if (isEditing) {
+        // Se estiver editando, preservamos o PDF/Conteúdo existente, a menos que um novo PDF seja enviado (o que não deve acontecer se o campo estiver desabilitado)
+        if (hasExistingPdf) {
+          pdfUrl = initialData!.pdf_url!;
+          bookContent = null;
+        } else if (hasExistingContent) {
+          pdfUrl = null;
+          bookContent = initialData!.content!;
+        } else if (values.pdf_file) {
+          // Caso de edição onde o livro não tinha PDF/Conteúdo, mas um novo PDF foi adicionado
+          const file = values.pdf_file;
+          const sanitizedFilename = sanitizeFilename(file.name);
+          const filePath = `public/${Date.now()}-${sanitizedFilename}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("book-pdfs")
-          .upload(filePath, file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("book-pdfs")
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: false,
+            });
 
-        if (uploadError) {
-          throw new Error("Erro ao fazer upload do PDF: " + uploadError.message);
+          if (uploadError) {
+            throw new Error("Erro ao fazer upload do PDF: " + uploadError.message);
+          }
+
+          const { data: publicUrlData } = supabase.storage
+            .from("book-pdfs")
+            .getPublicUrl(filePath);
+          
+          pdfUrl = publicUrlData.publicUrl;
+          bookContent = null;
+        } else if (bookContent && bookContent.trim() !== "" && bookContent !== "<p><br></p>") {
+          // Caso de edição onde o livro não tinha PDF/Conteúdo, mas um novo conteúdo foi adicionado
+          pdfUrl = null;
+        } else {
+          pdfUrl = null;
+          bookContent = null;
         }
-
-        const { data: publicUrlData } = supabase.storage
-          .from("book-pdfs")
-          .getPublicUrl(filePath);
-        
-        pdfUrl = publicUrlData.publicUrl;
-        bookContent = null; // Clear content if PDF is uploaded
-      } else if (bookContent && bookContent.trim() !== "" && bookContent !== "<p><br></p>") {
-        pdfUrl = null; // Clear PDF URL if content is present
       } else {
-        bookContent = null; // Ensure content is null if empty
-        // If no new PDF and no content, keep existing PDF URL if any
-        if (!hasPdfFileSelected && !initialData?.pdf_url) {
-            pdfUrl = null; // If no PDF was ever selected/uploaded, ensure it's null
+        // Lógica de criação (mantida)
+        if (values.pdf_file) {
+          const file = values.pdf_file;
+          const sanitizedFilename = sanitizeFilename(file.name);
+          const filePath = `public/${Date.now()}-${sanitizedFilename}`;
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("book-pdfs")
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) {
+            throw new Error("Erro ao fazer upload do PDF: " + uploadError.message);
+          }
+
+          const { data: publicUrlData } = supabase.storage
+            .from("book-pdfs")
+            .getPublicUrl(filePath);
+          
+          pdfUrl = publicUrlData.publicUrl;
+          bookContent = null;
+        } else if (bookContent && bookContent.trim() !== "" && bookContent !== "<p><br></p>") {
+          pdfUrl = null;
+        } else {
+          pdfUrl = null;
+          bookContent = null;
         }
       }
+
 
       const dataToSave = {
         title: values.title,
@@ -293,42 +331,57 @@ const BookForm: React.FC<BookFormProps> = ({ onBookAdded, onClose, initialData }
           </p>
         )}
       </div>
-      <div>
-        <Label htmlFor="pdf_file" className="text-foreground">Arquivo PDF (Opcional)</Label>
-        <Input
-          id="pdf_file"
-          type="file"
-          accept="application/pdf"
-          onChange={handleFileChange}
-          className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-          disabled={hasContentInEditor} // Disable if content is being edited
-        />
-        {form.formState.errors.pdf_file && (
-          <p className="text-red-500 text-sm mt-1">
-            {form.formState.errors.pdf_file.message}
-          </p>
-        )}
-        {hasPdfFileSelected && <p className="text-xs text-muted-foreground mt-1">PDF selecionado. O conteúdo de texto será ignorado.</p>}
+      
+      {/* Seção de PDF/Conteúdo - Desabilitada se já houver conteúdo */}
+      <div className={cn("space-y-4", isContentLocked && "opacity-50 pointer-events-none")}>
+        <div className="border-t border-border pt-4">
+          <h3 className="text-lg font-semibold text-foreground mb-2">Conteúdo do Livro</h3>
+          {isContentLocked && (
+            <p className="text-sm text-red-500 mb-2">
+              O conteúdo (PDF ou texto) não pode ser alterado durante a edição.
+            </p>
+          )}
+        </div>
+        
+        <div>
+          <Label htmlFor="pdf_file" className="text-foreground">Arquivo PDF (Opcional)</Label>
+          <Input
+            id="pdf_file"
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+            disabled={isContentLocked || hasContentInEditor}
+          />
+          {form.formState.errors.pdf_file && (
+            <p className="text-red-500 text-sm mt-1">
+              {form.formState.errors.pdf_file.message}
+            </p>
+          )}
+          {(hasPdfFileSelected || hasExistingPdf) && <p className="text-xs text-muted-foreground mt-1">PDF {hasExistingPdf ? 'existente' : 'selecionado'}. O conteúdo de texto será ignorado.</p>}
+        </div>
+        
+        <div>
+          <Label htmlFor="content" className="text-foreground">Conteúdo do Livro (Opcional)</Label>
+          <ReactQuill
+            theme="snow"
+            value={form.watch("content")}
+            onChange={handleContentChange}
+            modules={modules}
+            formats={formats}
+            placeholder="Escreva o conteúdo do livro aqui..."
+            className="bg-transparent text-foreground"
+            readOnly={isContentLocked || hasPdfFileSelected}
+          />
+          {form.formState.errors.content && (
+            <p className="text-red-500 text-sm mt-1">
+              {form.formState.errors.content.message}
+            </p>
+          )}
+          {(hasContentInEditor || hasExistingContent) && <p className="text-xs text-muted-foreground mt-1">Conteúdo de texto {hasExistingContent ? 'existente' : 'adicionado'}. O arquivo PDF será ignorado.</p>}
+        </div>
       </div>
-      <div>
-        <Label htmlFor="content" className="text-foreground">Conteúdo do Livro (Opcional)</Label>
-        <ReactQuill
-          theme="snow"
-          value={form.watch("content")}
-          onChange={handleContentChange}
-          modules={modules}
-          formats={formats}
-          placeholder="Escreva o conteúdo do livro aqui..."
-          className="bg-transparent text-foreground"
-          readOnly={hasPdfFileSelected} // Disable if PDF is selected
-        />
-        {form.formState.errors.content && (
-          <p className="text-red-500 text-sm mt-1">
-            {form.formState.errors.content.message}
-          </p>
-        )}
-        {hasContentInEditor && <p className="text-xs text-muted-foreground mt-1">Conteúdo de texto adicionado. O arquivo PDF será ignorado.</p>}
-      </div>
+
       <div>
         <Label htmlFor="read_status" className="text-foreground">Status de Leitura</Label>
         <Select
@@ -347,7 +400,7 @@ const BookForm: React.FC<BookFormProps> = ({ onBookAdded, onClose, initialData }
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Adicionar Livro</Button>
+      <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">{isEditing ? "Atualizar Livro" : "Adicionar Livro"}</Button>
     </form>
   );
 };

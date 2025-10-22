@@ -194,11 +194,13 @@ const Books: React.FC = () => {
           {books.map((book) => (
             <Card key={book.id} className="flex flex-col overflow-hidden h-full bg-card border border-border rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 frosted-glass card-hover-effect">
               <Link to={`/books/${book.id}`} className="block">
-                <img
-                  src={book.cover_image_url || "/placeholder.svg"}
-                  alt={book.title}
-                  className="w-full h-48 object-cover"
-                />
+                <div className="w-full h-48 flex items-center justify-center bg-secondary/50 overflow-hidden">
+                  <img
+                    src={book.cover_image_url || "/placeholder.svg"}
+                    alt={book.title}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
               </Link>
               <CardHeader>
                 <CardTitle className="text-lg line-clamp-2 text-foreground break-words">{book.title}</CardTitle>
