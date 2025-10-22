@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Repeat, Loader2, PlusCircle, CalendarDays } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { parseISO } from "@/lib/utils";

@@ -29,7 +29,7 @@ const fetchClients = async (userId: string) => {
 const TaskCategorization: React.FC<TaskCategorizationProps> = ({ form }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const isDailyRecurring = form.watch("is_daily_recurring");
+  // isDailyRecurring foi removido do schema
   const selectedTagIds = form.watch("selected_tag_ids") || [];
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
@@ -50,7 +50,7 @@ const TaskCategorization: React.FC<TaskCategorizationProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-foreground">Quadro de Origem</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value} disabled={isDailyRecurring}>
+            <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
                 <SelectTrigger className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
                   <SelectValue placeholder="Selecionar quadro" />
@@ -79,7 +79,7 @@ const TaskCategorization: React.FC<TaskCategorizationProps> = ({ form }) => {
                 checked={field.value}
                 onCheckedChange={field.onChange}
                 className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-                disabled={isDailyRecurring}
+                // disabled={isDailyRecurring} // Removido disabled
               />
             </FormControl>
             <div className="space-y-1 leading-none">

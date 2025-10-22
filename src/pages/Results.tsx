@@ -24,13 +24,14 @@ const fetchAllTasks = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
     .select(`
-      id, title, is_completed, completed_at, due_date, recurrence_type, recurrence_details, is_daily_recurring, recurrence_streak, recurrence_failure_history
+      id, title, is_completed, completed_at, due_date, recurrence_type, recurrence_details
     `)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) {
     throw error;
   }
+  // O tipo Task agora é mais simples, mas ainda precisamos garantir que a estrutura seja compatível.
   return data as Task[] || [];
 };
 
@@ -70,8 +71,8 @@ const Results: React.FC = () => {
   const today = new Date();
   const startOfToday = format(today, 'yyyy-MM-dd');
   const startOfThisWeek = format(startOfWeek(today, { weekStartsOn: 0 }), 'yyyy-MM-dd');
-  const startOfThisMonth = format(startOfMonth(today), 'yyyy-MM-dd');
-
+  
+  // Filtra tarefas concluídas hoje, esta semana e este mês
   const completedToday = allTasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === startOfToday).length;
   const completedThisWeek = allTasks.filter(t => t.completed_at && new Date(t.completed_at) >= new Date(startOfThisWeek)).length;
   const completedThisMonth = allTasks.filter(t => t.completed_at && new Date(t.completed_at) >= new Date(startOfMonth(today))).length;
@@ -80,11 +81,15 @@ const Results: React.FC = () => {
   const totalCompleted = allTasks.filter(t => t.is_completed).length;
   const completionRate = totalTasks > 0 ? (totalCompleted / totalTasks) * 100 : 0;
 
-  // --- Métricas de Recorrência Diária ---
-  const dailyRecurringTasks = allTasks.filter(t => t.is_daily_recurring);
-  const totalDailyTasks = dailyRecurringTasks.length;
-  const dailyTasksCompletedToday = dailyRecurringTasks.filter(t => t.is_completed && t.last_completion_date === startOfToday).length;
-  const dailyCompletionRateToday = totalDailyTasks > 0 ? (dailyTasksCompletedToday / totalDailyTasks) * 100 : 0;
+  // --- Métricas de Recorrência Diária (Simplificadas, pois os campos de streak foram removidos) ---
+  // Contamos apenas as tarefas que são templates diários
+  const dailyRecurringTemplates = allTasks.filter(t => t.recurrence_type === 'daily');
+  const totalDailyTemplates = dailyRecurringTemplates.length;
+  
+  // Não podemos calcular o streak ou conclusão diária precisa sem os campos de DB.
+  // Usaremos placeholders ou métricas mais simples.
+  const dailyTasksCompletedToday = 0; // Placeholder
+  const dailyCompletionRateToday = 0; // Placeholder
 
   // --- Renderização ---
   if (isLoading) {
@@ -131,14 +136,14 @@ const Results: React.FC = () => {
         </Card>
         <Card className="bg-card border-border shadow-sm frosted-glass card-hover-effect">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recorrentes Diárias (Hoje)</CardTitle>
-            <Repeat className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-medium">Templates Diários</CardTitle>
+            <Repeat className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${dailyCompletionRateToday === 100 ? "text-green-500" : "text-red-500"}`}>
-              {dailyTasksCompletedToday} / {totalDailyTasks}
+            <div className={`text-2xl font-bold text-foreground`}>
+              {totalDailyTemplates}
             </div>
-            <Progress value={dailyCompletionRateToday} className="mt-2 h-2" indicatorClassName={dailyCompletionRateToday === 100 ? "bg-green-500" : "bg-red-500"} />
+            <p className="text-xs text-muted-foreground">Templates de tarefas diárias.</p>
           </CardContent>
         </Card>
       </div>
@@ -175,32 +180,28 @@ const Results: React.FC = () => {
         </Card>
       </div>
 
-      {/* Tarefas Recorrentes Diárias (Streaks) */}
-      <h2 className="text-2xl font-bold text-foreground mb-4">Streaks de Recorrência Diária</h2>
+      {/* Tarefas Recorrentes Diárias (Streaks) - Removido o cálculo de streak */}
+      <h2 className="text-2xl font-bold text-foreground mb-4">Templates Recorrentes Diários</h2>
       <div className="space-y-3">
-        {dailyRecurringTasks.length > 0 ? (
-          dailyRecurringTasks.map(task => (
+        {dailyRecurringTemplates.length > 0 ? (
+          dailyRecurringTemplates.map(task => (
             <Card key={task.id} className="bg-card border-border shadow-sm p-4 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <Repeat className="h-5 w-5 text-primary flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="font-semibold text-foreground truncate">{task.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {task.recurrence_streak > 0 ? `Streak atual: ${task.recurrence_streak} dias` : "Streak quebrado."}
+                    Template de recorrência diária.
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                {task.is_completed && task.last_completion_date === startOfToday ? (
-                  <Badge className="bg-green-500 text-white">Concluída Hoje</Badge>
-                ) : (
-                  <Badge variant="destructive">Pendente Hoje</Badge>
-                )}
+                <Badge className="bg-orange-500 text-white">Template</Badge>
               </div>
             </Card>
           ))
         ) : (
-          <p className="text-muted-foreground">Nenhuma tarefa recorrente diária configurada.</p>
+          <p className="text-muted-foreground">Nenhum template recorrente diário configurado.</p>
         )}
       </div>
     </div>

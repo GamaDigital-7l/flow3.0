@@ -63,7 +63,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
     // Para instâncias, mostramos a data de vencimento (que é a data de criação)
     if (task.due_date) {
       const dueDate = parseISO(task.due_date);
-      let dateString = format(dueDate, "PPP", { locale: ptBR });
+      let dateString = format(dueDate, "PPP", { locale: ptBR }); // Corrigido locale
       if (task.time) {
         dateString += ` às ${formatTime(task.time)}`;
       }
@@ -74,7 +74,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
 
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
-    let dateString = format(dueDate, "PPP", { locale: ptBR });
+    let dateString = format(dueDate, "PPP", { locale: ptBR }); // Corrigido locale
     if (task.time) {
       dateString += ` às ${formatTime(task.time)}`;
     }

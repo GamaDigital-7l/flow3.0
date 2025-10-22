@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import TaskForm from "../TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Client } from "@/types/client"; // Mantido o import para evitar erros de referência, mas o uso será removido
+// import { Client } from "@/types/client"; // Removido
 
 interface QuickAddTaskInputProps {
   originBoard: TaskOriginBoard;

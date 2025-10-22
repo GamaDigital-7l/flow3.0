@@ -10,28 +10,29 @@ import { TaskFormValues } from "@/components/TaskForm";
 import { TaskRecurrenceType } from "@/types/task";
 
 const DAYS_OF_WEEK = [
-  { value: "Sunday", label: "Dom" },
-  { value: "Monday", label: "Seg" },
-  { value: "Tuesday", label: "Ter" },
-  { value: "Wednesday", label: "Qua" },
-  { value: "Thursday", label: "Qui" },
-  { value: "Friday", label: "Sex" },
-  { value: "Saturday", label: "Sáb" },
+  { value: "Sunday", label: "Domingo" },
+  { value: "Monday", label: "Segunda-feira" },
+  { value: "Tuesday", label: "Terça-feira" },
+  { value: "Wednesday", label: "Quarta-feira" },
+  { value: "Thursday", label: "Quinta-feira" },
+  { value: "Friday", label: "Sexta-feira" },
+  { value: "Saturday", label: "Sábado" },
 ];
 
-interface TaskSchedulingProps {
+interface TaskRecurrenceProps {
   form: UseFormReturn<TaskFormValues>;
 }
 
-const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
+const TaskRecurrence: React.FC<TaskRecurrenceProps> = ({ form }) => {
   const recurrenceType = form.watch("recurrence_type");
+  // isDailyRecurring foi removido do schema
   const watchedRecurrenceDetails = form.watch("recurrence_details");
 
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   useEffect(() => {
     if (recurrenceType === "weekly" && watchedRecurrenceDetails) {
-      setSelectedDays(watchedRecurrenceDetails.split(',').filter(d => d !== ''));
+      setSelectedDays(watchedRecurrenceDetails.split(','));
     } else {
       setSelectedDays([]);
     }
@@ -60,10 +61,6 @@ const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
                 field.onChange(value);
                 form.setValue("recurrence_details", null);
                 form.setValue("recurrence_time", null);
-                // Garantir que is_daily_recurring seja removido, se existir no form
-                if ('is_daily_recurring' in form.getValues()) {
-                    form.setValue("is_daily_recurring", false as any);
-                }
                 setSelectedDays([]);
               }}
               value={field.value}
@@ -86,28 +83,38 @@ const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
         )}
       />
 
-      {/* Campo de Horário de Recorrência */}
-      {recurrenceType !== "none" && (
+      {/* O campo is_daily_recurring foi removido, pois agora usamos o modelo de template/instância */}
+      {/* {recurrenceType === "daily" && (
         <FormField
           control={form.control}
-          name="recurrence_time"
+          name="is_daily_recurring"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-foreground">Horário de Recorrência (Opcional)</FormLabel>
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
               <FormControl>
-                <TimePicker
-                  value={field.value || null}
-                  onChange={(time) => field.onChange(time || null)}
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    if (checked) {
+                      form.setValue('recurrence_type', 'daily');
+                      form.setValue('due_date', null);
+                    }
+                  }}
+                  className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
                 />
               </FormControl>
-              <FormDescription className="text-muted-foreground">
-                Se definido, a tarefa será instanciada com este horário.
-              </FormDescription>
-              <FormMessage />
+              <div className="space-y-1 leading-none">
+                <FormLabel className="text-foreground">
+                  Recorrente Diária Inegociável
+                </FormLabel>
+                <FormDescription className="text-muted-foreground">
+                  Esta tarefa aparecerá no Dashboard Recorrentes todos os dias e rastreará seu streak.
+                </FormDescription>
+              </div>
             </FormItem>
           )}
         />
-      )}
+      )} */}
 
       {recurrenceType === "weekly" && (
         <FormItem>
@@ -158,4 +165,4 @@ const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
   );
 };
 
-export default TaskScheduling;
+export default TaskRecurrence;

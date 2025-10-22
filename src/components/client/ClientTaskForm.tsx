@@ -15,13 +15,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { useQueryClient, useQuery } from "@tanstack/react-query"; // Adicionado useQuery
-import { ClientTask, ClientTaskStatus } from "@/types/client";
+// import { ClientTask, ClientTaskStatus } from "@/types/client"; // Removido
 import TagSelector from "../TagSelector";
 import { Checkbox } from "../ui/checkbox";
 import { ptBR } from "date-fns/locale/pt-BR";
 import TimePicker from "../TimePicker";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Adicionado FormDescription
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Adicionado Select components
+
+// Tipos simplificados para evitar dependência de '@/types/client'
+type ClientTaskStatus = "pending" | "in_progress" | "under_review" | "approved" | "rejected" | "completed" | "edit_requested" | "posted";
+interface ClientTask {
+  id: string;
+  title: string;
+  description: string | null;
+  status: ClientTaskStatus;
+  due_date: string | null;
+  time: string | null;
+  responsible_id: string | null;
+  image_urls: string[] | null;
+  public_approval_enabled: boolean;
+  tags?: { id: string; name: string; color: string }[];
+}
 
 const clientTaskSchema = z.object({
   title: z.string().min(1, "O título da tarefa é obrigatório."),
@@ -252,7 +267,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                         {field.value ? (
-                          format(field.value, "PPP") // FIX TS2554
+                          format(field.value, "PPP", { locale: ptBR })
                         ) : (
                           <span>Escolha uma data</span>
                         )}

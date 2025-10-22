@@ -19,7 +19,7 @@ export interface Task {
   recurrence_type: TaskRecurrenceType; // Tipo de recorrência (se for template)
   recurrence_details: string | null;
   recurrence_time: string | null;
-  last_successful_completion_date: string | null; // ISO Date string
+  // last_successful_completion_date: string | null; // Removido
   origin_board: TaskOriginBoard;
   current_board: TaskCurrentBoard;
   is_priority: boolean;

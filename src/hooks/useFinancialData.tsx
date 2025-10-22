@@ -4,12 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { FinancialCategory, FinancialAccount } from '@/types/finance';
-import { Client } from '@/types/client';
+// import { Client } from '@/types/client'; // Removido
 
 interface FinancialData {
   categories: FinancialCategory[];
   accounts: FinancialAccount[];
-  clients: Partial<Client>[];
+  clients: { id: string; name: string }[]; // Tipo simplificado
   isLoading: boolean;
   error: Error | null;
 }

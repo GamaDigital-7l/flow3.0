@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ClientTask, PublicApprovalLink, ClientTaskStatus } from '@/types/client';
+// import { ClientTask, PublicApprovalLink, ClientTaskStatus } from '@/types/client'; // Removido
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send } from 'lucide-react';
@@ -16,7 +16,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
-interface TaskDisplay extends ClientTask {
+// Tipos simplificados para evitar dependência de '@/types/client'
+interface PublicApprovalLink {
+  id: string;
+  unique_id: string;
+  client_id: string;
+  user_id: string;
+  month_year_reference: string;
+  expires_at: string;
+  is_active: boolean;
+}
+
+interface ClientTask {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  due_date: string | null;
+  time: string | null;
+  image_urls: string[] | null;
+  public_approval_enabled: boolean;
+  edit_reason: string | null;
   is_selected: boolean;
 }
 

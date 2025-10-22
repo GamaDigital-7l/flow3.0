@@ -17,8 +17,8 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
-  { id: "general", title: "Geral" },
-  { id: "recurring", title: "Recorrentes" }, // Agora exibe instâncias de recorrência
+  { id: "general", title: "Geral", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
+  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Adicionado icon e color
   { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
 ];
 
@@ -28,6 +28,7 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+      template_task_id,
       task_tags(
         tags(id, name, color)
       ),

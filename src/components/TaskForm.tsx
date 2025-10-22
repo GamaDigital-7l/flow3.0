@@ -20,7 +20,7 @@ import TagSelector from "./TagSelector";
 import TimePicker from "./TimePicker";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { TaskRecurrenceType, TaskOriginBoard, Task } from "@/types/task";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Importando FormDescription
 import TaskScheduling from "./task/TaskScheduling";
 import TaskBasicInfo from "./task/TaskBasicInfo";
 import TaskCategorization from "./task/TaskCategorization";
@@ -37,7 +37,6 @@ const taskSchema = z.object({
   origin_board: z.enum(["general", "today_high_priority", "today_medium_priority", "urgent", "completed", "recurring", "overdue", "week_low_priority", "client_tasks"]).default("general"),
   current_board: z.enum(["general", "today_high_priority", "today_medium_priority", "urgent", "completed", "recurring", "overdue", "week_low_priority", "client_tasks"]).default("general"),
   is_priority: z.boolean().default(false),
-  // is_daily_recurring foi removido do schema
   client_name: z.string().nullable().optional(),
   parent_task_id: z.string().nullable().optional(),
   selected_tag_ids: z.array(z.string()).optional(),
@@ -72,7 +71,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       origin_board: initialData?.origin_board || initialOriginBoard || "general",
       current_board: initialData?.current_board || initialOriginBoard || "general",
       is_priority: initialData?.is_priority || false,
-      // is_daily_recurring foi removido
       client_name: initialData?.client_name || null,
       parent_task_id: initialData?.parent_task_id || parentTaskId || null,
       selected_tag_ids: initialData?.tags?.map(tag => tag.id) || [],
@@ -189,7 +187,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
                     >
                       <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                       {field.value ? (
-                        format(field.value, "PPP")
+                        format(field.value, "PPP", { locale: ptBR }) // Corrigido locale
                       ) : (
                         <span>Escolha uma data</span>
                       )}
@@ -233,7 +231,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
           )}
         />
 
-        <TaskScheduling form={form as any} /> {/* Passando o form ajustado */}
+        <TaskScheduling form={form as any} />
         <TaskCategorization form={form} />
 
         <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveTaskMutation.isPending}>
