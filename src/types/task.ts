@@ -31,7 +31,8 @@ export interface Task {
   tags: Tag[];
   created_at: string;
   updated_at: string;
-
+  route_to_origin_board: boolean; // NOVO CAMPO
+  
   // NOVO CAMPO PARA RECORRÊNCIA (Se for uma instância, aponta para o template)
   template_task_id: string | null; // Mantido para compatibilidade com a lógica de filtragem, mas forçado a null nas consultas
   

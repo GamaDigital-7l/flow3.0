@@ -18,7 +18,7 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Geral", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
-  // { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Removido
+  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Reintroduzido
   { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
 ];
 
@@ -28,12 +28,14 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+      template_task_id, route_to_origin_board,
       task_tags(
         tags(id, name, color)
       ),
       subtasks:tasks!parent_task_id(
         id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
         origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+        template_task_id, route_to_origin_board,
         task_tags(
           tags(id, name, color)
         )
@@ -50,9 +52,9 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
-      template_task_id: null, // Forçando null
+      template_task_id: sub.template_task_id,
     })),
-    template_task_id: null, // Forçando null
+    template_task_id: task.template_task_id,
   })) || [];
   return mappedData;
 };
@@ -78,14 +80,9 @@ const Dashboard: React.FC = () => {
     refetchTasks();
   };
   
-  // As tarefas do dashboard são todas as tarefas que não são templates (recurrence_type === 'none')
-  // E as instâncias recorrentes (que têm template_task_id !== null, mas que agora não podemos confiar)
-  // Como a Edge Function agora define o current_board para o origin_board, filtramos apenas as tarefas que não são templates.
-  // As instâncias recorrentes terão recurrence_type: 'none' e aparecerão no board correto.
+  // Filtramos apenas tarefas que não são templates (recurrence_type === 'none')
+  // e que não estão concluídas.
   const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none');
-
-  const overdueTasks = dashboardTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
-  const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
 
   if (isLoadingTasks) {
     return (
