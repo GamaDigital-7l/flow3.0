@@ -36,21 +36,24 @@ serve(async (req) => {
       const userId = user.id;
       const userTimezone = user.timezone || 'America/Sao_Paulo';
       const nowUtc = new Date();
-      const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
-      const todayInUserTimezone = format(nowInUserTimezone, "yyyy-MM-dd", { timeZone: userTimezone });
-      const yesterdayInUserTimezone = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd", { timeZone: userTimezone });
+      
+      // Calcular o início do dia de HOJE no fuso horário do usuário, e converter de volta para UTC para a query
+      const startOfTodayInUserTimezone = startOfDay(utcToZonedTime(nowUtc, userTimezone));
+      const startOfTodayUtc = zonedTimeToUtc(startOfTodayInUserTimezone, userTimezone);
+      const todayInUserTimezoneString = format(startOfTodayInUserTimezone, "yyyy-MM-dd");
+      const yesterdayInUserTimezoneString = format(subDays(startOfTodayInUserTimezone, 1), "yyyy-MM-dd");
 
-      console.log(`[User ${userId}] Executando daily-reset para o dia: ${todayInUserTimezone} no fuso horário ${userTimezone}.`);
+      console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString}. Comparando com datas anteriores a: ${todayInUserTimezoneString}`);
 
       // --- 1. Processar Tarefas Atrasadas (Overdue) ---
-      // Buscar tarefas não concluídas, não recorrentes diárias, com due_date anterior a hoje
+      // Buscar tarefas não concluídas, não recorrentes diárias, com due_date anterior a HOJE (yyyy-MM-dd)
       const { data: pendingTasks, error: pendingTasksError } = await supabase
         .from('tasks')
         .select('id, due_date, current_board, is_completed, is_daily_recurring')
         .eq('user_id', userId)
         .eq('is_completed', false)
         .eq('is_daily_recurring', false)
-        .lt('due_date', todayInUserTimezone); // Data de vencimento anterior a hoje
+        .lt('due_date', todayInUserTimezoneString); // Comparação de string ISO (yyyy-MM-dd)
 
       if (pendingTasksError) {
         console.error(`[User ${userId}] Erro ao buscar tarefas pendentes:`, pendingTasksError);
@@ -89,7 +92,7 @@ serve(async (req) => {
 
       const recurrenceUpdates = dailyRecurringTasks.map(task => {
         const lastCompletionDateStr = task.last_completion_date;
-        const wasCompletedYesterday = lastCompletionDateStr === yesterdayInUserTimezone;
+        const wasCompletedYesterday = lastCompletionDateStr === yesterdayInUserTimezoneString;
 
         let newStreak = task.recurrence_streak;
         let newFailureHistory = task.recurrence_failure_history || [];
@@ -104,8 +107,8 @@ serve(async (req) => {
           }
           newStreak = 0;
           // Adicionar falha se ainda não estiver no histórico de falhas de ontem
-          if (task.is_completed === false && !newFailureHistory.includes(yesterdayInUserTimezone)) {
-             newFailureHistory = [...newFailureHistory, yesterdayInUserTimezone];
+          if (task.is_completed === false && !newFailureHistory.includes(yesterdayInUserTimezoneString)) {
+             newFailureHistory = [...newFailureHistory, yesterdayInUserTimezoneString];
           }
         }
 
