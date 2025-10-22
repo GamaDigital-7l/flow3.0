@@ -1,7 +1,8 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format, parseISO as dateFnsParseISO } from 'date-fns'; // Importação correta de format e parseISO
-import { utcToZonedTime } from 'date-fns-tz'; // Importação correta de utcToZonedTime
+import { format } from 'date-fns';
+import { parseISO as dateFnsParseISO } from 'date-fns/parseISO'; // Importação correta de parseISO
+import { toZonedTime } from 'date-fns-tz'; // Usando toZonedTime
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -45,6 +46,7 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   // Se for um objeto Date com fuso horário, formatamos diretamente.
   
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
+  // Corrigindo a chamada de format para a sintaxe da v3
   return format(dateObj, formatString, { locale: ptBR }); 
 }
 
