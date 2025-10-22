@@ -16,14 +16,14 @@ export interface Task {
   due_date: string | null; // ISO Date string
   time: string | null; // Time string (HH:MM:SS)
   is_completed: boolean;
-  recurrence_type: TaskRecurrenceType;
+  recurrence_type: TaskRecurrenceType; // Tipo de recorrência (se for template)
   recurrence_details: string | null;
+  recurrence_time: string | null;
   last_successful_completion_date: string | null; // ISO Date string
   origin_board: TaskOriginBoard;
   current_board: TaskCurrentBoard;
   is_priority: boolean;
   overdue: boolean;
-  recurrence_time: string | null;
   completed_at: string | null;
   last_moved_to_overdue_at: string | null;
   parent_task_id: string | null;
@@ -32,11 +32,9 @@ export interface Task {
   created_at: string;
   updated_at: string;
 
-  // NOVOS CAMPOS PARA RECORRÊNCIA DIÁRIA
-  is_daily_recurring: boolean;
-  recurrence_streak: number;
-  last_completion_date: string | null;
-  recurrence_failure_history: string[] | null;
+  // NOVO CAMPO PARA RECORRÊNCIA (Se for uma instância, aponta para o template)
+  template_task_id: string | null; 
+  
   subtasks?: Task[]; // Adicionado para a árvore de tarefas
 }
 

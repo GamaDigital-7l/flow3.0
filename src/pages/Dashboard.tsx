@@ -11,15 +11,14 @@ import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp }
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
 import DashboardFinanceSummary from "@/components/dashboard/DashboardFinanceSummary";
-import DailyRecurrencesBoard from "@/components/dashboard/DailyRecurrencesBoard";
-import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary";
+import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary"; // Componente de resultados de produtividade
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Geral" },
-  { id: "recurring", title: "Recorrentes" },
+  { id: "recurring", title: "Recorrentes" }, // Agora exibe instâncias de recorrência
   { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
 ];
 
@@ -29,14 +28,14 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       last_successful_completion_date, origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-      is_daily_recurring, recurrence_streak, recurrence_failure_history,
+      template_task_id,
       task_tags(
         tags(id, name, color)
       ),
       subtasks:tasks!parent_task_id(
         id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
         last_successful_completion_date, origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-        is_daily_recurring, recurrence_streak, recurrence_failure_history,
+        template_task_id,
         task_tags(
           tags(id, name, color)
         )
@@ -91,10 +90,17 @@ const Dashboard: React.FC = () => {
   };
 
   const greeting = getGreeting();
-  // Filtra tarefas regulares (não diárias recorrentes e não tarefas de cliente)
-  const regularTasks = allTasks.filter(task => !task.is_daily_recurring && task.current_board !== 'client_tasks');
-  const overdueTasks = allTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
-  const tasksForToday = allTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
+  // Filtra tarefas que não são templates e não são tarefas de cliente
+  const displayableTasks = allTasks.filter(task => task.recurrence_type === 'none' && task.template_task_id === null && task.current_board !== 'client_tasks');
+  
+  // Filtra instâncias recorrentes (que têm template_task_id)
+  const recurringInstances = allTasks.filter(task => task.template_task_id !== null);
+
+  // Combina tarefas regulares e instâncias recorrentes para o dashboard
+  const dashboardTasks = [...displayableTasks, ...recurringInstances];
+
+  const overdueTasks = dashboardTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
+  const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
 
   if (isLoadingTasks) {
     return (
@@ -118,17 +124,16 @@ const Dashboard: React.FC = () => {
           <TaskListBoard
             key={board.id}
             title={board.title}
-            // Filtra tarefas: se for o board 'recurring', excluímos as diárias recorrentes, pois elas têm seu próprio board abaixo.
-            tasks={regularTasks.filter(t => 
+            // Filtra tarefas: se for o board 'recurring', usa as instâncias. Caso contrário, usa as tarefas regulares.
+            tasks={dashboardTasks.filter(t => 
               t.current_board === board.id && 
-              !t.is_completed && 
-              !(board.id === 'recurring' && t.is_daily_recurring)
+              !t.is_completed
             )}
             isLoading={isLoadingTasks}
             error={errorTasks}
             refetchTasks={handleTaskUpdated}
             quickAddTaskInput={
-              board.id !== "overdue" && (
+              board.id !== "overdue" && board.id !== "recurring" && (
                 <QuickAddTaskInput
                   originBoard={board.id}
                   onTaskAdded={handleTaskUpdated}
@@ -140,10 +145,6 @@ const Dashboard: React.FC = () => {
             selectedDate={new Date()}
           />
         ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DailyRecurrencesBoard refetchAllTasks={handleTaskUpdated} />
       </div>
 
       <DashboardResultsSummary />

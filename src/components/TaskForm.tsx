@@ -37,7 +37,7 @@ const taskSchema = z.object({
   origin_board: z.enum(["general", "today_high_priority", "today_medium_priority", "urgent", "completed", "recurring", "overdue", "week_low_priority", "client_tasks"]).default("general"),
   current_board: z.enum(["general", "today_high_priority", "today_medium_priority", "urgent", "completed", "recurring", "overdue", "week_low_priority", "client_tasks"]).default("general"),
   is_priority: z.boolean().default(false),
-  is_daily_recurring: z.boolean().default(false),
+  // is_daily_recurring foi removido do schema
   client_name: z.string().nullable().optional(),
   parent_task_id: z.string().nullable().optional(),
   selected_tag_ids: z.array(z.string()).optional(),
@@ -64,7 +64,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
     defaultValues: {
       title: initialData?.title || "",
       description: initialData?.description || null,
-      // FIX: Ensure due_date is a Date object if it comes from the DB as a string
       due_date: initialData?.due_date ? parseISO(initialData.due_date) : initialDueDate || null,
       time: initialData?.time || null,
       recurrence_type: initialData?.recurrence_type || "none",
@@ -73,7 +72,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       origin_board: initialData?.origin_board || initialOriginBoard || "general",
       current_board: initialData?.current_board || initialOriginBoard || "general",
       is_priority: initialData?.is_priority || false,
-      is_daily_recurring: initialData?.is_daily_recurring || false,
+      // is_daily_recurring foi removido
       client_name: initialData?.client_name || null,
       parent_task_id: initialData?.parent_task_id || parentTaskId || null,
       selected_tag_ids: initialData?.tags?.map(tag => tag.id) || [],
@@ -84,27 +83,28 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
     mutationFn: async (values: TaskFormValues) => {
       if (!userId) throw new Error("Usuário não autenticado.");
 
-      const isDailyRecurrent = values.is_daily_recurring;
+      const isRecurrentTemplate = values.recurrence_type !== 'none';
 
       const dataToSave = {
         title: values.title,
         description: values.description || null,
-        due_date: isDailyRecurrent ? null : (values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null),
+        // Se for template, due_date é nulo. Se não for, usa a data.
+        due_date: isRecurrentTemplate ? null : (values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null),
         time: values.time || null,
         recurrence_type: values.recurrence_type,
         recurrence_details: values.recurrence_details || null,
         recurrence_time: values.recurrence_time || null,
         origin_board: values.origin_board,
-        current_board: isDailyRecurrent ? 'recurring' : values.current_board,
+        // Se for template, o board atual é 'recurring'. Caso contrário, usa o board selecionado.
+        current_board: isRecurrentTemplate ? 'recurring' : values.current_board,
         is_priority: values.is_priority,
-        is_daily_recurring: isDailyRecurrent,
         client_name: values.client_name || null,
         parent_task_id: values.parent_task_id || null,
         updated_at: new Date().toISOString(),
-        // Reset completion status if it's a new recurrence cycle or a new task
         is_completed: false,
         completed_at: null,
         overdue: false,
+        // template_task_id é mantido se for uma instância, mas não é definido aqui no form principal
       };
 
       let taskId: string;
@@ -149,7 +149,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       queryClient.invalidateQueries({ queryKey: ["tasks", userId] });
       queryClient.invalidateQueries({ queryKey: ["allTasks", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks", userId] });
-      queryClient.invalidateQueries({ queryKey: ["dailyRecurringTasks", userId] });
+      queryClient.invalidateQueries({ queryKey: ["dailyRecurringTasks", userId] }); // Manter para invalidar o cache antigo
       onTaskSaved();
       onClose();
     },
@@ -162,6 +162,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
   const onSubmit = (values: TaskFormValues) => {
     saveTaskMutation.mutate(values);
   };
+
+  const isRecurrentTemplate = form.watch("recurrence_type") !== 'none';
 
   return (
     <Form {...form}>
@@ -183,11 +185,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
                         "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
                         !field.value && "text-muted-foreground"
                       )}
-                      disabled={form.watch("is_daily_recurring")}
+                      disabled={isRecurrentTemplate} // Desabilita se for template
                     >
                       <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                       {field.value ? (
-                        format(field.value, "PPP") // FIX TS2554
+                        format(field.value, "PPP")
                       ) : (
                         <span>Escolha uma data</span>
                       )}
@@ -205,6 +207,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
                 </PopoverContent>
               </Popover>
               <FormMessage />
+              {isRecurrentTemplate && (
+                <FormDescription className="text-red-500">
+                  Data de Vencimento é ignorada para tarefas recorrentes (templates).
+                </FormDescription>
+              )}
             </FormItem>
           )}
         />
@@ -226,7 +233,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
           )}
         />
 
-        <TaskScheduling form={form} />
+        <TaskScheduling form={form as any} /> {/* Passando o form ajustado */}
         <TaskCategorization form={form} />
 
         <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveTaskMutation.isPending}>

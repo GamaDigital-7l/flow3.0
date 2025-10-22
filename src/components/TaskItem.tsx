@@ -20,20 +20,18 @@ import { formatDateTime, formatTime, parseISO } from "@/lib/utils";
 interface TaskItemProps {
   task: Task;
   refetchTasks: () => void;
-  isDailyRecurringView?: boolean; // Novo prop para a view de recorrentes diárias
+  isDailyRecurringView?: boolean; // Mantido, mas agora se refere ao board 'recurring'
 }
 
 const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
-  // Se for recorrente diária e estiver concluída, usamos a lógica de hoje
-  if (task.is_daily_recurring && task.is_completed) {
-    return <Badge className="bg-status-completed text-foreground/80">Concluída Hoje</Badge>;
-  }
-  
-  if (task.is_completed && !task.is_daily_recurring) {
+  const isRecurrentInstance = task.template_task_id !== null;
+
+  if (task.is_completed) {
     return <Badge className="bg-status-completed text-foreground/80">Concluída</Badge>;
   }
-  if (task.is_daily_recurring) {
-    return <Badge className="bg-status-recurring text-white">Recorrente Diária</Badge>;
+  
+  if (isRecurrentInstance) {
+    return <Badge className="bg-status-recurring text-white">Recorrente</Badge>;
   }
   if (task.overdue) {
     return <Badge variant="destructive" className="bg-status-overdue text-white">Atrasada</Badge>;
@@ -54,9 +52,17 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
 };
 
 const getTaskDueDateDisplay = (task: Task): string => {
-  if (task.is_daily_recurring) {
-    return task.recurrence_time ? `Diariamente às ${formatTime(task.recurrence_time)}` : "Diariamente";
+  const isRecurrentTemplate = task.recurrence_type !== 'none';
+  const isRecurrentInstance = task.template_task_id !== null;
+
+  if (isRecurrentTemplate) {
+    return `Template: ${task.recurrence_type} ${task.recurrence_time ? `às ${formatTime(task.recurrence_time)}` : ''}`;
   }
+  
+  if (isRecurrentInstance) {
+    return task.recurrence_time ? `Recorrente às ${formatTime(task.recurrence_time)}` : "Recorrente";
+  }
+
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
     let dateString = format(dueDate, "PPP", { locale: ptBR });
@@ -75,37 +81,34 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
   const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false);
 
   const isClientTaskMirrored = task.current_board === "client_tasks";
+  const isRecurrentTemplate = task.recurrence_type !== 'none';
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
       const { data: taskToUpdate, error: fetchTaskError } = await supabase
         .from("tasks")
-        .select("recurrence_type, is_daily_recurring, recurrence_streak, recurrence_failure_history")
+        .select("recurrence_type, template_task_id")
         .eq("id", taskId)
         .single();
 
       if (fetchTaskError) throw fetchTaskError;
 
-      const isDailyRecurrent = taskToUpdate.is_daily_recurring;
-      const todayISO = format(new Date(), 'yyyy-MM-dd');
-
-      let newStreak = taskToUpdate.recurrence_streak;
-      let newFailureHistory = taskToUpdate.recurrence_failure_history || [];
-      let lastCompletionDate = todayISO;
+      const isRecurrentInstance = taskToUpdate.template_task_id !== null;
+      
       let newCurrentBoard = task.current_board;
       let newOverdueStatus = task.overdue;
 
-      if (isDailyRecurrent) {
-        // Se for recorrente diária, incrementamos o streak
-        newStreak = (taskToUpdate.recurrence_streak || 0) + 1;
-        newFailureHistory = taskToUpdate.recurrence_failure_history?.filter(d => d !== todayISO) || [];
-        newCurrentBoard = 'recurring'; // Garante que a tarefa diária concluída permaneça no board 'recurring'
-      } else if (taskToUpdate.recurrence_type === "none") {
+      if (!isRecurrentInstance && taskToUpdate.recurrence_type === "none") {
         newCurrentBoard = "completed";
         newOverdueStatus = false;
+      } else if (isRecurrentInstance) {
+        // Se for uma instância de recorrência, ela é marcada como concluída e permanece no board 'recurring'
+        newCurrentBoard = 'recurring';
+        newOverdueStatus = false;
       } else {
-        // Para outras recorrências (semanal, mensal), a tarefa é concluída e o backend deve gerar a próxima instância
-        newCurrentBoard = "completed";
+        // Se for um template de recorrência (o que não deveria ser marcado como concluído diretamente)
+        // Vamos permitir que templates sejam marcados como concluídos, mas eles não se movem para 'completed'
+        newCurrentBoard = task.current_board;
         newOverdueStatus = false;
       }
 
@@ -114,13 +117,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
         .update({
           is_completed: true,
           updated_at: new Date().toISOString(),
-          last_successful_completion_date: lastCompletionDate,
           completed_at: new Date().toISOString(),
           current_board: newCurrentBoard,
           overdue: newOverdueStatus,
-          recurrence_streak: newStreak,
-          last_completion_date: lastCompletionDate,
-          recurrence_failure_history: newFailureHistory,
+          // Campos de streak e last_completion_date removidos
         })
         .eq("id", taskId);
 
@@ -149,7 +149,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
       refetchTasks();
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks"] });
       queryClient.invalidateQueries({ queryKey: ["allTasks"] });
-      queryClient.invalidateQueries({ queryKey: ["dailyRecurringTasks"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
     onError: (err: any) => {
       showError("Erro ao concluir tarefa: " + err.message);
@@ -164,8 +164,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
           is_completed: false,
           updated_at: new Date().toISOString(),
           completed_at: null,
-          // Para recorrentes diárias, o streak será corrigido pelo daily-reset se a data de conclusão for anterior a hoje.
-          // Por enquanto, apenas removemos o status de conclusão.
         })
         .eq("id", taskId);
 
@@ -176,7 +174,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
       refetchTasks();
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks"] });
       queryClient.invalidateQueries({ queryKey: ["allTasks"] });
-      queryClient.invalidateQueries({ queryKey: ["dailyRecurringTasks"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
     onError: (err: any) => {
       showError("Erro ao reverter conclusão: " + err.message);
@@ -198,7 +196,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
         refetchTasks();
         queryClient.invalidateQueries({ queryKey: ["dashboardTasks"] });
         queryClient.invalidateQueries({ queryKey: ["allTasks"] });
-        queryClient.invalidateQueries({ queryKey: ["dailyRecurringTasks"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
       } catch (err: any) {
         showError("Erro ao deletar tarefa: " + err.message);
       }
@@ -215,7 +213,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
     setIsSubtaskFormOpen(true);
   };
 
-  const isCompleted = getAdjustedTaskCompletionStatus(task);
+  // Usamos is_completed diretamente, pois a lógica de reset está no backend
+  const isCompleted = task.is_completed; 
 
   return (
     <Card className={cn(
@@ -266,18 +265,13 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
             <CalendarDays className="h-3 w-3 flex-shrink-0" /> {getTaskDueDateDisplay(task)}
           </p>
-          {task.recurrence_streak !== undefined && isDailyRecurringView && (
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <Repeat className="h-3 w-3 flex-shrink-0" /> Streak: {task.recurrence_streak} dias
-            </p>
-          )}
         </div>
         <div className="flex-shrink-0 flex gap-1">
           <Button variant="ghost" size="icon" onClick={() => handleEditTask(task)} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
             <Edit className="h-4 w-4" />
             <span className="sr-only">Editar Tarefa</span>
           </Button>
-          {!isDailyRecurringView && (
+          {!isRecurrentTemplate && ( // Não permite subtarefas em templates
             <Button variant="ghost" size="icon" onClick={handleAddSubtask} className="h-7 w-7 text-green-500 hover:bg-green-500/10">
               <PlusCircle className="h-4 w-4" />
               <span className="sr-only">Adicionar Subtarefa</span>
@@ -315,7 +309,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
               </DialogDescription>
             </DialogHeader>
             <TaskForm
-              initialData={{ ...editingTask, due_date: editingTask?.due_date ? parseISO(editingTask.due_date) : undefined } as any} // FIX TS2322
+              initialData={{ ...editingTask, due_date: editingTask?.due_date ? parseISO(editingTask.due_date) : undefined } as any}
               onTaskSaved={refetchTasks}
               onClose={() => setIsFormOpen(false)}
             />
@@ -340,7 +334,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
                 origin_board: task.origin_board,
                 current_board: task.current_board,
                 due_date: task.due_date ? parseISO(task.due_date) : undefined,
-              } as any} // FIX TS2322
+              } as any}
               parentTaskId={task.id}
               onTaskSaved={refetchTasks}
               onClose={() => setIsSubtaskFormOpen(false)}

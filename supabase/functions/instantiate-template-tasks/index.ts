@@ -1,16 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { format, getDay, parseISO, isToday, setHours, setMinutes, isPast } from "https://esm.sh/date-fns@3.6.0";
-import { utcToZonedTime, zonedTimeToUtc } from "https://esm.sh/date-fns-tz@3.0.1";
+import { format, getDay, parseISO, isToday, setHours, setMinutes, isPast, startOfDay, isSameDay, addDays } from "https://esm.sh/date-fns@3.6.0";
+import { utcToZonedTime } from "https://esm.sh/date-fns-tz@3.0.1";
 
 const allowedOrigins = ['http://localhost:32100', 'https://nexusflow.vercel.app'];
 
 serve(async (req) => {
-  const origin = req.headers.get("origin");
-  const isAllowedOrigin = allowedOrigins.includes(origin!);
-
   const corsHeaders = {
-    'Access-Control-Allow-Origin': isAllowedOrigin ? origin! : '*',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Credentials': 'true',
@@ -26,7 +23,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Obter todos os usuários para processar por fuso horário
     const { data: users, error: fetchUsersError } = await supabase
       .from('profiles')
       .select('id, timezone');
@@ -35,19 +31,18 @@ serve(async (req) => {
 
     for (const user of users || []) {
       const userId = user.id;
-      const userTimezone = user.timezone || "America/Sao_Paulo"; // Fallback timezone
-
+      const userTimezone = user.timezone || "America/Sao_Paulo";
       const nowUtc = new Date();
       const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
-      const todayInUserTimezone = format(nowInUserTimezone, "yyyy-MM-dd", { timeZone: userTimezone });
-      const currentDayOfWeekInUserTimezone = getDay(nowInUserTimezone); // 0 para domingo, 1 para segunda, etc.
-      const currentDayOfMonthInUserTimezone = nowInUserTimezone.getDate().toString();
+      const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd");
+      const currentDayOfWeek = getDay(nowInUserTimezone); // 0=Dom, 1=Seg...
+      const currentDayOfMonth = nowInUserTimezone.getDate().toString();
 
-      console.log(`[User ${userId}] Executando instantiate-template-tasks para o dia: ${todayInUserTimezone} no fuso horário ${userTimezone}`);
+      console.log(`[User ${userId}] Executando instantiate-template-tasks para o dia: ${todayInUserTimezoneString} no fuso horário ${userTimezone}`);
 
-      // 1. Buscar todas as tarefas padrão para o usuário
+      // 1. Buscar todos os templates de recorrência ATIVOS para o usuário
       const { data: templateTasks, error: fetchTemplatesError } = await supabase
-        .from('template_tasks')
+        .from('tasks')
         .select(`
           id,
           user_id,
@@ -57,9 +52,13 @@ serve(async (req) => {
           recurrence_details,
           recurrence_time,
           origin_board,
-          template_task_tags (tag_id)
+          is_priority,
+          client_name,
+          task_tags (tag_id)
         `)
-        .eq('user_id', userId); // Filtrar por usuário
+        .eq('user_id', userId)
+        .neq('recurrence_type', 'none')
+        .is('template_task_id', null); // Apenas templates (tarefas que não são instâncias)
 
       if (fetchTemplatesError) throw fetchTemplatesError;
 
@@ -69,63 +68,60 @@ serve(async (req) => {
       for (const template of templateTasks || []) {
         let shouldInstantiate = false;
 
-        // Verifica se a tarefa já foi instanciada hoje para este usuário
-        const { data: existingTask, error: checkExistingError } = await supabase
-          .from('tasks')
-          .select('id')
-          .eq('user_id', template.user_id)
-          .eq('title', template.title) // Uma verificação simples para evitar duplicatas
-          .eq('due_date', todayInUserTimezone)
-          .limit(1);
-
-        if (checkExistingError) {
-          console.error(`[User ${userId}] Erro ao verificar tarefa existente para o template ${template.id}:`, checkExistingError);
-          continue;
-        }
-        if (existingTask && existingTask.length > 0) {
-          console.log(`[User ${userId}] Tarefa "${template.title}" (template ${template.id}) já instanciada para hoje.`);
-          continue; // Já existe uma tarefa para hoje, pular
-        }
-
-        const DAYS_OF_WEEK_MAP: { [key: string]: number } = {
-          "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3,
-          "Thursday": 4, "Friday": 5, "Saturday": 6
-        };
-
+        // Lógica de recorrência
         if (template.recurrence_type === 'daily') {
           shouldInstantiate = true;
         } else if (template.recurrence_type === 'weekly' && template.recurrence_details) {
-          const days = template.recurrence_details.split(',');
-          shouldInstantiate = days.some(day => DAYS_OF_WEEK_MAP[day] === currentDayOfWeekInUserTimezone);
+          const days = template.recurrence_details.split(',').map(Number); // Detalhes agora são números (0-6)
+          shouldInstantiate = days.includes(currentDayOfWeek);
         } else if (template.recurrence_type === 'monthly' && template.recurrence_details) {
-          shouldInstantiate = template.recurrence_details === currentDayOfMonthInUserTimezone;
+          shouldInstantiate = template.recurrence_details === currentDayOfMonth;
         }
 
         if (shouldInstantiate) {
-          const newTaskId = crypto.randomUUID(); // Gerar UUID para a nova tarefa
+          // 2. Verificar se a instância já existe para HOJE
+          const { data: existingInstance, error: checkExistingError } = await supabase
+            .from('tasks')
+            .select('id')
+            .eq('template_task_id', template.id)
+            .eq('due_date', todayInUserTimezoneString)
+            .limit(1);
+
+          if (checkExistingError) {
+            console.error(`[User ${userId}] Erro ao verificar instância existente para o template ${template.id}:`, checkExistingError);
+            continue;
+          }
+          if (existingInstance && existingInstance.length > 0) {
+            console.log(`[User ${userId}] Instância de "${template.title}" (template ${template.id}) já existe para hoje.`);
+            continue;
+          }
+
+          // 3. Criar a nova instância
+          const newTaskId = crypto.randomUUID();
 
           tasksToInsert.push({
             id: newTaskId,
             user_id: template.user_id,
             title: template.title,
             description: template.description,
-            due_date: todayInUserTimezone, // A data de vencimento é sempre hoje para tarefas instanciadas
-            time: template.recurrence_time || null, // Usar recurrence_time do template
+            due_date: todayInUserTimezoneString, // A data de vencimento é sempre hoje
+            time: template.recurrence_time || null,
             is_completed: false,
-            is_priority: template.origin_board === 'today_priority', // Definir prioridade com base no board de origem
-            overdue: false, // Nova tarefa não começa como atrasada
-            recurrence_type: 'none', // A tarefa instanciada não é recorrente por si só
+            is_priority: template.is_priority,
+            overdue: false,
+            recurrence_type: 'none', // A instância não é recorrente
             recurrence_details: null,
-            recurrence_time: template.recurrence_time || null, // Manter o recurrence_time para notificação
+            recurrence_time: template.recurrence_time || null,
             origin_board: template.origin_board,
-            current_board: template.origin_board, // current_board é o mesmo que origin_board na criação
+            current_board: 'recurring', // Todas as instâncias vão para o quadro 'recurring'
+            client_name: template.client_name,
+            template_task_id: template.id, // Link para o template
             created_at: nowUtc.toISOString(),
             updated_at: nowUtc.toISOString(),
-            parent_task_id: null, // Tarefas padrão não geram subtarefas diretamente
           });
 
-          // Coletar tags para inserção posterior
-          const templateTags = template.template_task_tags.map((ttt: any) => ttt.tag_id);
+          // Coletar tags
+          const templateTags = template.task_tags.map((ttt: any) => ttt.tag_id);
           templateTags.forEach((tagId: string) => {
             taskTagsToInsert.push({
               task_id: newTaskId,
@@ -149,9 +145,9 @@ serve(async (req) => {
           if (insertTaskTagsError) throw insertTaskTagsError;
         }
 
-        console.log(`[User ${userId}] Instanciadas ${tasksToInsert.length} tarefas a partir de templates.`);
+        console.log(`[User ${userId}] Instanciadas ${tasksToInsert.length} tarefas recorrentes.`);
       } else {
-        console.log(`[User ${userId}] Nenhuma tarefa padrão para instanciar hoje.`);
+        console.log(`[User ${userId}] Nenhuma tarefa recorrente para instanciar hoje.`);
       }
     }
 

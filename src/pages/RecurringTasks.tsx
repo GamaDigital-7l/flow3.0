@@ -8,31 +8,28 @@ import { Button } from "@/components/ui/button";
 import { Repeat, Loader2, PlusCircle, CalendarDays } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { parseISO } from "@/lib/utils";
 import { format } from "date-fns";
 
-const fetchDailyRecurringTasks = async (userId: string): Promise<Task[]> => {
+const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
-    .select("*, tags:task_tags(tags(id, name, color)), subtasks:tasks!parent_task_id(*, tags:task_tags(tags(id, name, color)))")
+    .select("*, tags:task_tags(tags(id, name, color))")
     .eq("user_id", userId)
-    .eq("is_daily_recurring", true)
-    .is("parent_task_id", null)
+    .neq("recurrence_type", "none") // Apenas templates
+    .is("template_task_id", null) // Garantir que não é uma instância
     .order("title", { ascending: true });
 
   if (error) throw error;
 
   return data.map(task => ({
     ...task,
-    tags: task.tags.map((t: any) => t.tags),
-    subtasks: task.subtasks.map((sub: any) => ({
-      ...sub,
-      tags: sub.tags.map((t: any) => t.tags),
-    })),
-    // Ensure date fields are Date objects if needed for form/display logic
+    tags: task.task_tags.map((t: any) => t.tags),
+    // Subtasks não são relevantes para templates aqui
+    subtasks: [], 
     due_date: task.due_date ? parseISO(task.due_date) : null,
   })) as Task[];
 };
@@ -42,9 +39,9 @@ const RecurringTasks: React.FC = () => {
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
 
-  const { data: tasks, isLoading, error, refetch } = useQuery<Task[], Error>({
-    queryKey: ["dailyRecurringTasks", userId],
-    queryFn: () => fetchDailyRecurringTasks(userId!),
+  const { data: templates, isLoading, error, refetch } = useQuery<Task[], Error>({
+    queryKey: ["recurringTemplates", userId],
+    queryFn: () => fetchRecurringTemplates(userId!),
     enabled: !!userId,
   });
 
@@ -65,46 +62,41 @@ const RecurringTasks: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Carregando tarefas recorrentes...
+        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Carregando templates recorrentes...
       </div>
     );
   }
 
   if (error) {
-    showError("Erro ao carregar tarefas recorrentes: " + error.message);
-    return <p className="text-red-500">Erro ao carregar tarefas recorrentes.</p>;
+    showError("Erro ao carregar templates recorrentes: " + error.message);
+    return <p className="text-red-500">Erro ao carregar templates recorrentes.</p>;
   }
-
-  const activeTasks = tasks?.filter(t => !t.is_completed) || [];
-  const completedTasks = tasks?.filter(t => t.is_completed) || [];
 
   return (
     <div className="p-4 md:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-          <Repeat className="h-7 w-7 text-orange-500" /> Tarefas Diárias Recorrentes
+          <Repeat className="h-7 w-7 text-orange-500" /> Templates Recorrentes
         </h1>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingTask(undefined)} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
-              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Recorrência
+              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Template
             </Button>
           </DialogTrigger>
           <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
             <DialogHeader>
-              <DialogTitle className="text-foreground">{editingTask ? "Editar Recorrência" : "Adicionar Nova Recorrência Diária"}</DialogTitle>
+              <DialogTitle className="text-foreground">{editingTask ? "Editar Template" : "Adicionar Novo Template Recorrente"}</DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                Defina uma tarefa que se repete diariamente.
+                Defina uma tarefa que será instanciada automaticamente.
               </DialogDescription>
             </DialogHeader>
             <TaskForm
               initialData={editingTask ? { 
                 ...editingTask, 
-                due_date: editingTask.due_date || undefined, // due_date já é Date ou null
-                is_daily_recurring: true,
-                recurrence_type: 'daily',
-              } as any : { // FIX TS2322
-                is_daily_recurring: true,
+                due_date: editingTask.due_date || undefined,
+                recurrence_type: editingTask.recurrence_type,
+              } as any : {
                 recurrence_type: 'daily',
                 origin_board: 'recurring',
                 current_board: 'recurring',
@@ -116,38 +108,25 @@ const RecurringTasks: React.FC = () => {
         </Dialog>
       </div>
       <p className="text-lg text-muted-foreground mb-8">
-        Tarefas que devem ser realizadas todos os dias. O status de conclusão é resetado diariamente.
+        Estes são os modelos que geram tarefas automaticamente no quadro "Recorrentes" do seu Dashboard.
       </p>
 
       <Card className="mb-8 bg-card border-border shadow-lg frosted-glass card-hover-effect">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-foreground">Pendentes ({activeTasks.length})</CardTitle>
+          <CardTitle className="text-xl font-semibold text-foreground">Templates Ativos ({templates?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {activeTasks.length > 0 ? (
-            activeTasks.map(task => (
-              <TaskItem key={task.id} task={task} refetchTasks={refetch} isDailyRecurringView={true} />
+          {templates && templates.length > 0 ? (
+            templates.map(task => (
+              <div key={task.id} onClick={() => handleEditTask(task)} className="cursor-pointer">
+                <TaskItem key={task.id} task={task} refetchTasks={refetch} />
+              </div>
             ))
           ) : (
-            <p className="text-muted-foreground">Todas as tarefas diárias foram concluídas hoje. Bom trabalho!</p>
+            <p className="text-muted-foreground">Nenhum template recorrente configurado.</p>
           )}
         </CardContent>
       </Card>
-
-      {completedTasks.length > 0 && (
-        <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-green-600 flex items-center gap-2">
-              Concluídas Hoje ({completedTasks.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {completedTasks.map(task => (
-              <TaskItem key={task.id} task={task} refetchTasks={refetch} isDailyRecurringView={true} />
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

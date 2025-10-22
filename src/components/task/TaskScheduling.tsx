@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -8,42 +8,43 @@ import { Label } from "@/components/ui/label";
 import TimePicker from "@/components/TimePicker";
 import { TaskFormValues } from "@/components/TaskForm";
 import { TaskRecurrenceType } from "@/types/task";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
+
+const DAYS_OF_WEEK = [
+  { value: "Sunday", label: "Dom" },
+  { value: "Monday", label: "Seg" },
+  { value: "Tuesday", label: "Ter" },
+  { value: "Wednesday", label: "Qua" },
+  { value: "Thursday", label: "Qui" },
+  { value: "Friday", label: "Sex" },
+  { value: "Saturday", label: "Sáb" },
+];
 
 interface TaskSchedulingProps {
   form: UseFormReturn<TaskFormValues>;
 }
 
-const DAYS_OF_WEEK = [
-  { label: "Dom", value: 0 },
-  { label: "Seg", value: 1 },
-  { label: "Ter", value: 2 },
-  { label: "Qua", value: 3 },
-  { label: "Qui", value: 4 },
-  { label: "Sex", value: 5 },
-  { label: "Sáb", value: 6 },
-];
-
 const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
   const recurrenceType = form.watch("recurrence_type");
-  const isDailyRecurring = form.watch("is_daily_recurring");
+  const watchedRecurrenceDetails = form.watch("recurrence_details");
 
-  // Logic for weekly recurrence details
-  const initialRecurrenceDetails = form.watch("recurrence_details") || "";
-  const initialDays = initialRecurrenceDetails.split(',').map(Number).filter(n => !isNaN(n));
-  const [selectedDays, setSelectedDays] = useState<number[]>(initialDays);
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   useEffect(() => {
-    form.setValue("recurrence_details", selectedDays.join(','));
-  }, [selectedDays, form]);
+    if (recurrenceType === "weekly" && watchedRecurrenceDetails) {
+      setSelectedDays(watchedRecurrenceDetails.split(',').filter(d => d !== ''));
+    } else {
+      setSelectedDays([]);
+    }
+  }, [recurrenceType, watchedRecurrenceDetails]);
 
-  const handleDayToggle = (dayValue: number) => {
-    setSelectedDays(prev => 
-      prev.includes(dayValue) 
-        ? prev.filter(d => d !== dayValue) 
-        : [...prev, dayValue].sort((a, b) => a - b)
-    );
+  const handleDayToggle = (dayValue: string) => {
+    setSelectedDays(prev => {
+      const newDays = prev.includes(dayValue)
+        ? prev.filter(d => d !== dayValue)
+        : [...prev, dayValue];
+      form.setValue("recurrence_details", newDays.join(','), { shouldDirty: true });
+      return newDays;
+    });
   };
 
   return (
@@ -58,10 +59,14 @@ const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
               onValueChange={(value: TaskRecurrenceType) => {
                 field.onChange(value);
                 form.setValue("recurrence_details", null);
-                form.setValue("is_daily_recurring", value === "daily" ? form.getValues("is_daily_recurring") : false);
+                form.setValue("recurrence_time", null);
+                // Garantir que is_daily_recurring seja removido, se existir no form
+                if ('is_daily_recurring' in form.getValues()) {
+                    form.setValue("is_daily_recurring", false as any);
+                }
+                setSelectedDays([]);
               }}
               value={field.value}
-              disabled={isDailyRecurring}
             >
               <FormControl>
                 <SelectTrigger className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
@@ -81,33 +86,24 @@ const TaskScheduling: React.FC<TaskSchedulingProps> = ({ form }) => {
         )}
       />
 
-      {recurrenceType === "daily" && (
+      {/* Campo de Horário de Recorrência */}
+      {recurrenceType !== "none" && (
         <FormField
           control={form.control}
-          name="is_daily_recurring"
+          name="recurrence_time"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
+            <FormItem>
+              <FormLabel className="text-foreground">Horário de Recorrência (Opcional)</FormLabel>
               <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked);
-                    if (checked) {
-                      form.setValue('recurrence_type', 'daily');
-                      form.setValue('due_date', null);
-                    }
-                  }}
-                  className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
+                <TimePicker
+                  value={field.value || null}
+                  onChange={(time) => field.onChange(time || null)}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel className="text-foreground">
-                  Recorrente Diária Inegociável
-                </FormLabel>
-                <FormDescription className="text-muted-foreground">
-                  Esta tarefa aparecerá no Dashboard Recorrentes todos os dias e rastreará seu streak.
-                </FormDescription>
-              </div>
+              <FormDescription className="text-muted-foreground">
+                Se definido, a tarefa será instanciada com este horário.
+              </FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />
