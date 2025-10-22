@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -27,7 +25,6 @@ interface TaskRecurrenceProps {
 
 const TaskRecurrence: React.FC<TaskRecurrenceProps> = ({ form }) => {
   const recurrenceType = form.watch("recurrence_type");
-  const isDailyRecurring = form.watch("is_daily_recurring");
   const watchedRecurrenceDetails = form.watch("recurrence_details");
 
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -62,11 +59,10 @@ const TaskRecurrence: React.FC<TaskRecurrenceProps> = ({ form }) => {
               onValueChange={(value: TaskRecurrenceType) => {
                 field.onChange(value);
                 form.setValue("recurrence_details", null);
-                form.setValue("is_daily_recurring", value === "daily" ? form.getValues("is_daily_recurring") : false);
+                form.setValue("recurrence_time", null);
                 setSelectedDays([]);
               }}
               value={field.value}
-              disabled={isDailyRecurring}
             >
               <FormControl>
                 <SelectTrigger className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
@@ -86,37 +82,7 @@ const TaskRecurrence: React.FC<TaskRecurrenceProps> = ({ form }) => {
         )}
       />
 
-      {recurrenceType === "daily" && (
-        <FormField
-          control={form.control}
-          name="is_daily_recurring"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked);
-                    if (checked) {
-                      form.setValue('recurrence_type', 'daily');
-                      form.setValue('due_date', null);
-                    }
-                  }}
-                  className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel className="text-foreground">
-                  Recorrente Diária Inegociável
-                </FormLabel>
-                <FormDescription className="text-muted-foreground">
-                  Esta tarefa aparecerá no Dashboard Recorrentes todos os dias e rastreará seu streak.
-                </FormDescription>
-              </div>
-            </FormItem>
-          )}
-        />
-      )}
+      {/* O campo is_daily_recurring foi removido, pois agora usamos o modelo de template/instância */}
 
       {recurrenceType === "weekly" && (
         <FormItem>

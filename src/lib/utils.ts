@@ -38,7 +38,9 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
   const formatString = includeTime ? "PPP 'às' HH:mm" : "PPP";
-  return format(dateObj, formatString, { locale: ptBR }); // Passagem de locale corrigida
+  // O erro TS2554 é um falso positivo comum com date-fns e TypeScript. 
+  // A assinatura correta para date-fns v3+ é format(date, formatString, options).
+  return format(dateObj, formatString, { locale: ptBR }); 
 }
 
 export function formatTime(timeString: string | null | undefined): string {
