@@ -258,7 +258,7 @@ const BookReaderFullScreen: React.FC = () => {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background text-foreground z-50">
-      {/* Barra de Controle Compacta e Responsiva (FORÇADA A UMA LINHA) */}
+      {/* Barra de Controle Compacta e Responsiva */}
       <div className="flex items-center justify-between p-2 sm:p-4 bg-card border-b border-border shadow-sm gap-2 pt-[var(--sat)] flex-nowrap overflow-x-auto">
         
         {/* Grupo 1: Voltar e Título */}
@@ -267,7 +267,8 @@ const BookReaderFullScreen: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Voltar para Detalhes</span>
           </Button>
-          <h1 className="text-base font-bold text-foreground truncate max-w-[150px] sm:max-w-none">{book.title}</h1>
+          {/* Removido max-w para permitir que o truncate funcione com base no espaço restante */}
+          <h1 className="text-base font-bold text-foreground truncate min-w-0">{book.title}</h1>
         </div>
 
         {/* Grupo 2: Controles de Zoom e Página (Compacto) */}
