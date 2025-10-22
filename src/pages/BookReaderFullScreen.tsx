@@ -259,10 +259,10 @@ const BookReaderFullScreen: React.FC = () => {
   return (
     <div className="fixed inset-0 flex flex-col bg-background text-foreground z-50">
       {/* Barra de Controle Compacta e Responsiva */}
-      <div className="flex flex-col sm:flex-row items-center justify-between p-2 sm:p-4 bg-card border-b border-border shadow-sm gap-2 pt-[var(--sat)]">
+      <div className="flex items-center justify-between p-2 sm:p-4 bg-card border-b border-border shadow-sm gap-2 pt-[var(--sat)] flex-wrap sm:flex-nowrap">
         
-        {/* Linha 1: Título e Botão Voltar */}
-        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0 flex-shrink-0 sm:flex-shrink">
+        {/* Grupo 1: Voltar e Título */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/books/${id}`)} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground flex-shrink-0">
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Voltar para Detalhes</span>
@@ -270,8 +270,8 @@ const BookReaderFullScreen: React.FC = () => {
           <h1 className="text-base font-bold text-foreground truncate flex-1 min-w-0">{book.title}</h1>
         </div>
 
-        {/* Linha 2 (Controles) - Forçando alinhamento horizontal e compactação */}
-        <div className="flex items-center justify-between w-full sm:w-auto flex-shrink-0 gap-2">
+        {/* Grupo 2: Controles de Zoom e Página (Forçado a ficar em uma linha) */}
+        <div className="flex items-center justify-end w-full sm:w-auto flex-shrink-0 gap-2">
           
           {/* Controles de Zoom */}
           <div className="flex items-center gap-1 flex-shrink-0">
