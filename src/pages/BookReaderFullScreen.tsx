@@ -267,7 +267,7 @@ const BookReaderFullScreen: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Voltar para Detalhes</span>
           </Button>
-          {/* Removido max-w para permitir que o truncate funcione com base no espaço restante */}
+          {/* O título agora é flexível e truncado */}
           <h1 className="text-base font-bold text-foreground truncate min-w-0">{book.title}</h1>
         </div>
 
