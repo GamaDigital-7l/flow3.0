@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz'; // Importação corrigida
+import { toUtc, toZonedTime } from 'date-fns-tz'; // Usando toUtc e toZonedTime
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -25,13 +25,14 @@ const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 export function convertToUtc(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
-  return zonedTimeToUtc(dateObj, SAO_PAULO_TIME_ZONE); // Uso corrigido
+  // Usando toUtc para converter data no fuso horário local (implícito) para UTC
+  return toUtc(dateObj, { timeZone: SAO_PAULO_TIME_ZONE }); 
 }
 
 export function convertToSaoPauloTime(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
-  return utcToZonedTime(dateObj, SAO_PAULO_TIME_ZONE); // Uso corrigido
+  return toZonedTime(dateObj, SAO_PAULO_TIME_ZONE); // Uso corrigido
 }
 
 export function formatDateTime(date: Date | string | null | undefined, includeTime: boolean = true): string {
@@ -39,7 +40,7 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   const dateObj = date instanceof Date ? date : parseISO(date);
   const formatString = includeTime ? "PPP 'às' HH:mm" : "PPP";
   // O erro TS2554 é um falso positivo comum com date-fns e TypeScript. 
-  // A assinatura correta para date-fns v3+ é format(date, formatString, options).
+  // Mantemos a sintaxe correta para date-fns v3+
   return format(dateObj, formatString, { locale: ptBR }); 
 }
 

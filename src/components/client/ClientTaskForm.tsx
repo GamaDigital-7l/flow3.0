@@ -267,7 +267,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                         {field.value ? (
-                          format(field.value, "PPP", { locale: ptBR })
+                          formatDateTime(field.value, false) // Usando formatDateTime
                         ) : (
                           <span>Escolha uma data</span>
                         )}

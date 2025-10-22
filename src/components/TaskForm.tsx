@@ -187,7 +187,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
                     >
                       <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                       {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR }) // Corrigido locale
+                        formatDateTime(field.value, false) // Usando formatDateTime
                       ) : (
                         <span>Escolha uma data</span>
                       )}
