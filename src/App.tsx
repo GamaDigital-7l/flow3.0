@@ -25,6 +25,7 @@ import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
 import BriefingPage from "./pages/Briefing";
 import BriefingPublicView from "./pages/BriefingPublicView"; // Importando o novo componente
+import BriefingResponses from "./pages/BriefingResponses"; // Importando o novo componente
 import { showError } from "@/utils/toast";
 
 // Main App component wrapper for context providers
@@ -173,6 +174,7 @@ function AppContent() {
             <Route path="/books" element={<Books />} />
             <Route path="/books/:id" element={<BookDetails />} />
             <Route path="/briefing" element={<BriefingPage />} />
+            <Route path="/briefing/:briefingId/responses" element={<BriefingResponses />} /> {/* Rota de Respostas */}
           </Route>
         </Route>
         

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Trash2, Edit, Copy, LayoutList, Zap } from 'lucide-react';
+import { PlusCircle, Loader2, Trash2, Edit, Copy, LayoutList, Zap, MessageSquare } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -25,7 +25,7 @@ import BriefingForm from '@/components/briefing/BriefingForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Importando Link
 import { cn } from '@/lib/utils';
 
 interface Briefing {
@@ -169,36 +169,47 @@ const BriefingPage: React.FC = () => {
                   Atualizado em: {format(new Date(briefing.updated_at), 'dd/MM/yyyy')}
                 </p>
               </CardContent>
-              <CardFooter className="flex justify-between gap-2 pt-4">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleEdit(briefing)}
-                  className="flex-1 bg-secondary hover:bg-secondary-hover text-secondary-foreground"
-                >
-                  <Edit className="h-4 w-4 mr-2" /> Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCopyLink(briefing.id)}
-                  className="text-primary hover:bg-primary/10"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => deleteMutation.mutate(briefing.id)}
-                  disabled={deleteMutation.isPending}
-                  className="text-destructive hover:bg-destructive/10"
-                >
-                  {deleteMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
+              <CardFooter className="flex flex-col gap-2 pt-4">
+                <Link to={`/briefing/${briefing.id}/responses`} className="w-full">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full bg-secondary hover:bg-secondary-hover text-secondary-foreground"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" /> Ver Respostas
+                  </Button>
+                </Link>
+                <div className="flex justify-between gap-2 w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(briefing)}
+                    className="flex-1 text-blue-500 hover:bg-blue-500/10"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopyLink(briefing.id)}
+                    className="flex-1 text-primary hover:bg-primary/10"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteMutation.mutate(briefing.id)}
+                    disabled={deleteMutation.isPending}
+                    className="flex-1 text-destructive hover:bg-destructive/10"
+                  >
+                    {deleteMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
           ))
