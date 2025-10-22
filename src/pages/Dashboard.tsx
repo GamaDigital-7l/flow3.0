@@ -50,9 +50,9 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
-      template_task_id: null, // Temporariamente forçando null
+      template_task_id: null, // Forçando null
     })),
-    template_task_id: null, // Temporariamente forçando null
+    template_task_id: null, // Forçando null
   })) || [];
   return mappedData;
 };
@@ -91,14 +91,15 @@ const Dashboard: React.FC = () => {
 
   const greeting = getGreeting();
   
-  // Filtra tarefas que não são templates e não são tarefas de cliente
-  const displayableTasks = allTasks.filter(task => task.recurrence_type === 'none' && task.template_task_id === null && task.current_board !== 'client_tasks');
+  // Filtra tarefas que são templates (recurrence_type != 'none')
+  const templateTasks = allTasks.filter(task => task.recurrence_type !== 'none');
   
-  // Filtra instâncias recorrentes (que têm template_task_id)
-  const recurringInstances = allTasks.filter(task => task.template_task_id !== null);
+  // Filtra tarefas que são instâncias ou tarefas regulares (recurrence_type == 'none')
+  const regularAndInstanceTasks = allTasks.filter(task => task.recurrence_type === 'none');
 
-  // Combina tarefas regulares e instâncias recorrentes para o dashboard
-  const dashboardTasks = [...displayableTasks, ...recurringInstances];
+  // As tarefas do dashboard são todas as tarefas que não são templates (pois templates são gerenciados na página /recurring)
+  // E as instâncias recorrentes (que têm current_board: 'recurring')
+  const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none' || task.current_board === 'recurring');
 
   const overdueTasks = dashboardTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
   const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
