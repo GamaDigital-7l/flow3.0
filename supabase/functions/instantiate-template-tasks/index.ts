@@ -72,7 +72,15 @@ serve(async (req) => {
         if (template.recurrence_type === 'daily') {
           shouldInstantiate = true;
         } else if (template.recurrence_type === 'weekly' && template.recurrence_details) {
-          const days = template.recurrence_details.split(',').map(Number); // Detalhes agora são números (0-6)
+          // Detalhes são strings de dias da semana separados por vírgula (ex: "Monday,Tuesday")
+          const days = template.recurrence_details.split(',').map(dayName => {
+            // Mapear nome do dia para número (0-6)
+            const dayMap: { [key: string]: number } = {
+              "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3,
+              "Thursday": 4, "Friday": 5, "Saturday": 6
+            };
+            return dayMap[dayName];
+          }).filter(day => day !== undefined);
           shouldInstantiate = days.includes(currentDayOfWeek);
         } else if (template.recurrence_type === 'monthly' && template.recurrence_details) {
           shouldInstantiate = template.recurrence_details === currentDayOfMonth;
@@ -113,7 +121,7 @@ serve(async (req) => {
             recurrence_details: null,
             recurrence_time: template.recurrence_time || null,
             origin_board: template.origin_board,
-            current_board: 'recurring', // Todas as instâncias vão para o quadro 'recurring'
+            current_board: template.origin_board, // AGORA USA O BOARD DE ORIGEM DO TEMPLATE
             client_name: template.client_name,
             template_task_id: template.id, // Link para o template
             created_at: nowUtc.toISOString(),

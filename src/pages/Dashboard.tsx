@@ -18,7 +18,7 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Geral", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
-  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Adicionado icon e color
+  // { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Removido
   { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
 ];
 
@@ -57,8 +57,6 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   return mappedData;
 };
 
-// Função getGreeting removida
-
 const Dashboard: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -80,15 +78,11 @@ const Dashboard: React.FC = () => {
     refetchTasks();
   };
   
-  // Filtra tarefas que são templates (recurrence_type != 'none')
-  const templateTasks = allTasks.filter(task => task.recurrence_type !== 'none');
-  
-  // Filtra tarefas que são instâncias ou tarefas regulares (recurrence_type == 'none')
-  const regularAndInstanceTasks = allTasks.filter(task => task.recurrence_type === 'none');
-
-  // As tarefas do dashboard são todas as tarefas que não são templates (pois templates são gerenciados na página /recurring)
-  // E as instâncias recorrentes (que têm current_board: 'recurring')
-  const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none' || task.current_board === 'recurring');
+  // As tarefas do dashboard são todas as tarefas que não são templates (recurrence_type === 'none')
+  // E as instâncias recorrentes (que têm template_task_id !== null, mas que agora não podemos confiar)
+  // Como a Edge Function agora define o current_board para o origin_board, filtramos apenas as tarefas que não são templates.
+  // As instâncias recorrentes terão recurrence_type: 'none' e aparecerão no board correto.
+  const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none');
 
   const overdueTasks = dashboardTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
   const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
@@ -125,7 +119,7 @@ const Dashboard: React.FC = () => {
             error={errorTasks}
             refetchTasks={handleTaskUpdated}
             quickAddTaskInput={
-              board.id !== "overdue" && board.id !== "recurring" && (
+              board.id !== "overdue" && (
                 <QuickAddTaskInput
                   originBoard={board.id}
                   onTaskAdded={handleTaskUpdated}
