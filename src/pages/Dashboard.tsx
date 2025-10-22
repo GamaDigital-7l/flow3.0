@@ -57,16 +57,7 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   return mappedData;
 };
 
-const getGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) {
-    return "Bom dia";
-  }
-  if (hour >= 12 && hour < 18) {
-    return "Boa tarde";
-  }
-  return "Boa noite";
-};
+// Função getGreeting removida
 
 const Dashboard: React.FC = () => {
   const { session } = useSession();
@@ -88,8 +79,6 @@ const Dashboard: React.FC = () => {
   const handleTaskUpdated = () => {
     refetchTasks();
   };
-
-  const greeting = getGreeting();
   
   // Filtra tarefas que são templates (recurrence_type != 'none')
   const templateTasks = allTasks.filter(task => task.recurrence_type !== 'none');
@@ -115,22 +104,10 @@ const Dashboard: React.FC = () => {
   return (
     <div className="p-3 md:p-4 lg:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{greeting}, {userName}!</h1>
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
         <p className="text-muted-foreground">
-          Hoje você tem {tasksForToday.length} tarefas agendadas e {overdueTasks.length} pendências. Vamos organizar o dia!
+          Seu resumo de tarefas e fluxo de trabalho.
         </p>
-      </div>
-
-      {/* Seção de Resumos (Financeiro e Produtividade) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 xl:col-span-2">
-          <h2 className="text-xl font-bold text-foreground mb-3">Resumo Financeiro do Mês</h2>
-          <DashboardFinanceSummary />
-        </div>
-        <div className="xl:col-span-1">
-          <h2 className="text-xl font-bold text-foreground mb-3">Produtividade</h2>
-          <DashboardResultsSummary />
-        </div>
       </div>
 
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
@@ -160,6 +137,19 @@ const Dashboard: React.FC = () => {
             selectedDate={new Date()}
           />
         ))}
+      </div>
+
+      {/* Seção de Resumos (Financeiro e Produtividade) - MOVIDA PARA O FINAL */}
+      <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Resumos e Métricas</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 xl:col-span-2">
+          <h3 className="text-lg font-bold text-foreground mb-3">Resumo Financeiro do Mês</h3>
+          <DashboardFinanceSummary />
+        </div>
+        <div className="xl:col-span-1">
+          <h3 className="text-lg font-bold text-foreground mb-3">Produtividade</h3>
+          <DashboardResultsSummary />
+        </div>
       </div>
     </div>
   );
