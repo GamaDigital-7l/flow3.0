@@ -60,7 +60,16 @@ const getTaskDueDateDisplay = (task: Task): string => {
   }
   
   if (isRecurrentInstance) {
-    return task.recurrence_time ? `Recorrente às ${formatTime(task.recurrence_time)}` : "Recorrente";
+    // Para instâncias, mostramos a data de vencimento (que é a data de criação)
+    if (task.due_date) {
+      const dueDate = parseISO(task.due_date);
+      let dateString = format(dueDate, "PPP", { locale: ptBR });
+      if (task.time) {
+        dateString += ` às ${formatTime(task.time)}`;
+      }
+      return dateString;
+    }
+    return "Recorrente";
   }
 
   if (task.due_date) {
@@ -103,11 +112,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
         newOverdueStatus = false;
       } else if (isRecurrentInstance) {
         // Se for uma instância de recorrência, ela é marcada como concluída e permanece no board 'recurring'
-        newCurrentBoard = 'recurring';
+        newCurrentBoard = 'completed'; // Move instâncias concluídas para 'completed'
         newOverdueStatus = false;
       } else {
-        // Se for um template de recorrência (o que não deveria ser marcado como concluído diretamente)
-        // Vamos permitir que templates sejam marcados como concluídos, mas eles não se movem para 'completed'
+        // Se for um template de recorrência, não deve ser concluído diretamente
         newCurrentBoard = task.current_board;
         newOverdueStatus = false;
       }
@@ -120,7 +128,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
           completed_at: new Date().toISOString(),
           current_board: newCurrentBoard,
           overdue: newOverdueStatus,
-          // Campos de streak e last_completion_date removidos
         })
         .eq("id", taskId);
 
@@ -164,6 +171,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
           is_completed: false,
           updated_at: new Date().toISOString(),
           completed_at: null,
+          current_board: task.origin_board, // Volta para o board de origem
+          overdue: false, // Remove overdue ao reverter
         })
         .eq("id", taskId);
 
@@ -213,7 +222,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
     setIsSubtaskFormOpen(true);
   };
 
-  // Usamos is_completed diretamente, pois a lógica de reset está no backend
+  // Usamos is_completed diretamente
   const isCompleted = task.is_completed; 
 
   return (

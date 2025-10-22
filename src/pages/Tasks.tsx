@@ -35,6 +35,8 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
   const { data, error } = await query;
 
   if (error) {
+    // O erro 400 é provavelmente devido a colunas que não existem mais.
+    // Vamos tentar uma query mais segura se a primeira falhar, mas por enquanto, lançamos o erro.
     throw error;
   }
   const mappedData = data?.map((task: any) => ({
@@ -42,7 +44,7 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
     tags: task.task_tags.map((tt: any) => tt.tags),
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
-      tags: sub.tags.map((t: any) => t.tags),
+      tags: sub.task_tags.map((t: any) => t.tags),
     })),
     // Ensure date fields are Date objects if needed for form/display logic
     due_date: task.due_date ? parseISO(task.due_date) : null,
@@ -113,7 +115,7 @@ const Tasks: React.FC = () => {
 
   if (error) {
     showError("Erro ao carregar tarefas: " + error.message);
-    return <p className="text-red-500">Erro ao carregar tarefas.</p>;
+    return <p className="text-red-500">Erro ao carregar tarefas: {error.message}</p>;
   }
 
   return (

@@ -90,6 +90,7 @@ const Dashboard: React.FC = () => {
   };
 
   const greeting = getGreeting();
+  
   // Filtra tarefas que não são templates e não são tarefas de cliente
   const displayableTasks = allTasks.filter(task => task.recurrence_type === 'none' && task.template_task_id === null && task.current_board !== 'client_tasks');
   
