@@ -37,7 +37,7 @@ const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
     ...task,
     tags: (task as any).task_tags.map((t: any) => t.tags),
     subtasks: [], 
-    due_date: task.due_date ? parseISO(task.due_date) : null,
+    // due_date é mantido como string | null
   })) as Task[];
 };
 
@@ -101,7 +101,7 @@ const RecurringTasks: React.FC = () => {
             <TaskForm
               initialData={editingTask ? { 
                 ...editingTask, 
-                due_date: editingTask.due_date || undefined,
+                due_date: editingTask.due_date ? parseISO(editingTask.due_date) : undefined, // Converte string para Date aqui
                 recurrence_type: editingTask.recurrence_type,
               } as any : {
                 recurrence_type: 'daily',
