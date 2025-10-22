@@ -97,8 +97,13 @@ const BookReaderFullScreen: React.FC = () => {
 
           const page = await pdfDocument.getPage(1);
           const viewport = page.getViewport({ scale: 1 });
-          const calculatedScale = readerRef.current.clientWidth / viewport.width;
+          let calculatedScale = readerRef.current.clientWidth / viewport.width;
           
+          // Aplicar margem de 5% no mobile
+          if (isMobile) {
+            calculatedScale *= 0.95;
+          }
+
           startTransition(() => { // Wrap these state updates as well
             setInitialScale(calculatedScale);
             setScale(calculatedScale);
@@ -111,7 +116,7 @@ const BookReaderFullScreen: React.FC = () => {
       }
     };
     initializeReaderState();
-  }, [pdfDocument, containerWidth, numPages, book?.current_page, initialScale]);
+  }, [pdfDocument, containerWidth, numPages, book?.current_page, initialScale, isMobile]);
 
   useEffect(() => {
     if (initialScale !== null && containerWidth !== null && pdfDocument) {
@@ -119,8 +124,13 @@ const BookReaderFullScreen: React.FC = () => {
         try {
           const page = await pdfDocument.getPage(1);
           const viewport = page.getViewport({ scale: 1 });
-          const newInitialScale = containerWidth / viewport.width;
+          let newInitialScale = containerWidth / viewport.width;
           
+          // Aplicar margem de 5% no mobile
+          if (isMobile) {
+            newInitialScale *= 0.95;
+          }
+
           if (initialScale !== newInitialScale) {
             startTransition(() => { // Wrap these state updates
               const currentZoomFactor = scale / initialScale;
@@ -134,7 +144,7 @@ const BookReaderFullScreen: React.FC = () => {
       };
       adjustScale();
     }
-  }, [containerWidth, pdfDocument, initialScale, scale]); // Added initialScale and scale to dependencies
+  }, [containerWidth, pdfDocument, initialScale, scale, isMobile]); // Adicionado isMobile às dependências
 
   const updateCurrentPageInDb = async (newPage: number) => {
     if (!id) return;
