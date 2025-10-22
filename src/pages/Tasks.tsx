@@ -46,7 +46,8 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
     })),
     // Ensure date fields are Date objects if needed for form/display logic
     due_date: task.due_date ? parseISO(task.due_date) : null,
-  })) as Task[];
+  })) || [];
+  return mappedData;
 };
 
 const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
