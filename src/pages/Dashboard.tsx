@@ -120,12 +120,25 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Seção de Resumos (Financeiro e Produtividade) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 xl:col-span-2">
+          <h2 className="text-xl font-bold text-foreground mb-3">Resumo Financeiro do Mês</h2>
+          <DashboardFinanceSummary />
+        </div>
+        <div className="xl:col-span-1">
+          <h2 className="text-xl font-bold text-foreground mb-3">Produtividade</h2>
+          <DashboardResultsSummary />
+        </div>
+      </div>
+
+      {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
+      <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {BOARD_DEFINITIONS.map((board) => (
           <TaskListBoard
             key={board.id}
             title={board.title}
-            // Filtra tarefas: se for o board 'recurring', usa as instâncias. Caso contrário, usa as tarefas regulares.
             tasks={dashboardTasks.filter(t => 
               t.current_board === board.id && 
               !t.is_completed
@@ -146,13 +159,6 @@ const Dashboard: React.FC = () => {
             selectedDate={new Date()}
           />
         ))}
-      </div>
-
-      <DashboardResultsSummary />
-      
-      <div className="mt-6">
-        <h2 className="text-2xl font-bold text-foreground mb-4">Resumo Financeiro do Mês</h2>
-        <DashboardFinanceSummary />
       </div>
     </div>
   );
