@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import TaskForm from "../TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Client } from "@/types/client";
+import { Client } from "@/types/client"; // Mantido o import para evitar erros de referência, mas o uso será removido
 
 interface QuickAddTaskInputProps {
   originBoard: TaskOriginBoard;
@@ -22,15 +22,7 @@ interface QuickAddTaskInputProps {
   dueDate?: Date;
 }
 
-const fetchClients = async (userId: string): Promise<Pick<Client, 'id' | 'name'>[]> => {
-  const { data, error } = await supabase
-    .from("clients")
-    .select("id, name")
-    .eq("user_id", userId)
-    .order("name", { ascending: true });
-  if (error) throw error;
-  return data || [];
-};
+// Removendo fetchClients, pois não precisamos mais de clientes aqui.
 
 const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTaskAdded, dueDate }) => {
   const { session } = useSession();
@@ -40,13 +32,6 @@ const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTa
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-
-  const { data: clients, isLoading: isLoadingClients } = useQuery({
-    queryKey: ["clientsListForQuickAdd", userId],
-    queryFn: () => fetchClients(userId!),
-    enabled: !!userId,
-  });
 
   const handleAddTask = async () => {
     if (input.trim() === "" || isLoading || !userId) return;
@@ -54,57 +39,20 @@ const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTa
     setIsLoading(true);
 
     try {
-      if (selectedClientId) {
-        // --- Lógica para Tarefa de Cliente ---
-        const monthYearRef = format(dueDate || new Date(), "yyyy-MM");
-        const clientName = clients?.find(c => c.id === selectedClientId)?.name;
+      // --- Lógica para Tarefa Geral ---
+      const { data: newTask, error: insertError } = await supabase.from("tasks").insert({
+        user_id: userId,
+        title: input,
+        due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
+        origin_board: originBoard,
+        current_board: originBoard,
+        is_priority: originBoard === "today_high_priority",
+      }).select("id").single();
 
-        // 1. Criar a tarefa principal no dashboard
-        const { data: mainTask, error: mainTaskError } = await supabase.from("tasks").insert({
-          user_id: userId,
-          title: `[CLIENTE] ${input}`,
-          due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
-          origin_board: "client_tasks",
-          current_board: "client_tasks",
-          client_name: clientName || null,
-        }).select("id").single();
-
-        if (mainTaskError) throw mainTaskError;
-
-        // 2. Criar a tarefa do cliente, vinculada à tarefa principal
-        const { error: clientTaskError } = await supabase.from("client_tasks").insert({
-          client_id: selectedClientId,
-          user_id: userId,
-          title: input,
-          month_year_reference: monthYearRef,
-          status: 'in_progress',
-          due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
-          is_standard_task: true,
-          main_task_id: mainTask.id,
-        });
-
-        if (clientTaskError) throw clientTaskError;
-
-        showSuccess(`Tarefa adicionada para o cliente ${clientName}!`);
-        queryClient.invalidateQueries({ queryKey: ["clientTasks", selectedClientId, userId] });
-        queryClient.invalidateQueries({ queryKey: ["dashboardTasks", "client_tasks", userId] });
-      } else {
-        // --- Lógica para Tarefa Geral (existente) ---
-        const { data: newTask, error: insertError } = await supabase.from("tasks").insert({
-          user_id: userId,
-          title: input,
-          due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
-          origin_board: originBoard,
-          current_board: originBoard,
-          is_priority: originBoard === "today_high_priority",
-        }).select("id").single();
-
-        if (insertError) throw insertError;
-        showSuccess("Tarefa adicionada com sucesso!");
-      }
+      if (insertError) throw insertError;
+      showSuccess("Tarefa adicionada com sucesso!");
 
       setInput("");
-      setSelectedClientId(null);
       onTaskAdded();
     } catch (err: any) {
       showError("Erro ao adicionar tarefa: " + err.message);
@@ -131,21 +79,10 @@ const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTa
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Select onValueChange={(value) => setSelectedClientId(value === "general" ? null : value)} value={selectedClientId || "general"}>
-          <SelectTrigger className="w-full sm:w-[150px] bg-input border-border text-foreground focus-visible:ring-ring flex-shrink-0">
-            <SelectValue placeholder="Selecionar..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="general">Tarefa Geral</SelectItem>
-            {clients?.map(client => (
-              <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex gap-2">
         <Input
           type="text"
-          placeholder="Adicionar tarefa rápida (Ex: Comprar leite)"
+          placeholder="Adicionar tarefa rápida (Shift+Enter para detalhes)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}

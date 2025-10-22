@@ -10,7 +10,7 @@ serve(async (req) => {
   const isAllowedOrigin = allowedOrigins.includes(origin!);
 
   const corsHeaders = {
-    'Access-Control-Allow-Origin': isAllowedOrigin ? origin! : '*',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Credentials': 'true',
@@ -21,13 +21,11 @@ serve(async (req) => {
   }
 
   try {
-    // Usar a chave de serviço para acesso irrestrito (necessário para processar todos os usuários)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Obter todos os usuários para processar por fuso horário
     const { data: users, error: fetchUsersError } = await supabase
       .from('profiles')
       .select('id, timezone');
@@ -36,30 +34,60 @@ serve(async (req) => {
 
     for (const user of users || []) {
       const userId = user.id;
-      const userTimezone = user.timezone || 'America/Sao_Paulo'; // Fallback para São Paulo
-
+      const userTimezone = user.timezone || 'America/Sao_Paulo';
       const nowUtc = new Date();
       const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
       const todayInUserTimezone = format(nowInUserTimezone, "yyyy-MM-dd", { timeZone: userTimezone });
       const yesterdayInUserTimezone = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd", { timeZone: userTimezone });
-      const currentDayOfWeekInUserTimezone = getDay(nowInUserTimezone); // 0 para domingo, 1 para segunda, etc.
-      const currentDayOfMonthInUserTimezone = nowInUserTimezone.getDate().toString();
-      const previousMonthYearRef = format(subDays(nowInUserTimezone, 1), "yyyy-MM", { timeZone: userTimezone });
-      const currentMonthYearRef = format(nowInUserTimezone, "yyyy-MM", { timeZone: userTimezone });
 
+      console.log(`[User ${userId}] Executando daily-reset para o dia: ${todayInUserTimezone} no fuso horário ${userTimezone}.`);
 
-      console.log(`[User ${userId}] Executando daily-task-processor para o dia: ${format(nowInUserTimezone, "yyyy-MM-dd")} no fuso horário ${userTimezone}. Verificando tarefas de: ${yesterdayInUserTimezone}`);
+      // --- 1. Processar Tarefas Atrasadas (Overdue) ---
+      // Buscar tarefas não concluídas, não recorrentes diárias, com due_date anterior a hoje
+      const { data: pendingTasks, error: pendingTasksError } = await supabase
+        .from('tasks')
+        .select('id, due_date, current_board, is_completed, is_daily_recurring')
+        .eq('user_id', userId)
+        .eq('is_completed', false)
+        .eq('is_daily_recurring', false)
+        .lt('due_date', todayInUserTimezone); // Data de vencimento anterior a hoje
 
-      // 1. Processar Recorrentes Diárias Inegociáveis
+      if (pendingTasksError) {
+        console.error(`[User ${userId}] Erro ao buscar tarefas pendentes:`, pendingTasksError);
+        continue;
+      }
+
+      const overdueUpdates = pendingTasks
+        .filter(task => task.current_board !== 'overdue') // Apenas tarefas que ainda não estão no quadro de atrasadas
+        .map(task => ({
+          id: task.id,
+          overdue: true,
+          current_board: 'overdue',
+          last_moved_to_overdue_at: nowUtc.toISOString(),
+        }));
+
+      if (overdueUpdates.length > 0) {
+        const { error: updateOverdueError } = await supabase
+          .from('tasks')
+          .upsert(overdueUpdates, { onConflict: 'id' });
+
+        if (updateOverdueError) console.error(`[User ${userId}] Erro ao atualizar tarefas atrasadas:`, updateOverdueError);
+        else console.log(`[User ${userId}] Movidas ${overdueUpdates.length} tarefas para 'overdue'.`);
+      }
+
+      // --- 2. Resetar Recorrentes Diárias Inegociáveis ---
       const { data: dailyRecurringTasks, error: recurringError } = await supabase
         .from('tasks')
-        .select('id, user_id, is_completed, recurrence_streak, last_completion_date, recurrence_failure_history')
+        .select('id, is_completed, recurrence_streak, last_completion_date, recurrence_failure_history')
         .eq('user_id', userId)
         .eq('is_daily_recurring', true);
 
-      if (recurringError) throw recurringError;
+      if (recurringError) {
+        console.error(`[User ${userId}] Erro ao buscar recorrentes diárias:`, recurringError);
+        continue;
+      }
 
-      const updates = dailyRecurringTasks.map(task => {
+      const recurrenceUpdates = dailyRecurringTasks.map(task => {
         const lastCompletionDateStr = task.last_completion_date;
         const wasCompletedYesterday = lastCompletionDateStr === yesterdayInUserTimezone;
 
@@ -68,7 +96,7 @@ serve(async (req) => {
 
         if (task.is_completed && wasCompletedYesterday) {
           // Se a tarefa foi concluída ontem, o streak já foi atualizado no frontend.
-          // Não fazemos nada com o streak aqui, apenas garantimos o reset do status.
+          // Apenas garantimos o reset do status para o novo dia.
         } else if (!task.is_completed && !wasCompletedYesterday) {
           // FALHA: Não foi concluída ontem (e não está marcada como concluída hoje)
           if (task.recurrence_streak > 0) {
@@ -76,8 +104,8 @@ serve(async (req) => {
           }
           newStreak = 0;
           // Adicionar falha se ainda não estiver no histórico de falhas de ontem
-          if (!newFailureHistory.includes(yesterdayInUserTimezone)) {
-            newFailureHistory = [...newFailureHistory, yesterdayInUserTimezone];
+          if (task.is_completed === false && !newFailureHistory.includes(yesterdayInUserTimezone)) {
+             newFailureHistory = [...newFailureHistory, yesterdayInUserTimezone];
           }
         }
 
@@ -91,22 +119,23 @@ serve(async (req) => {
       });
 
       // Executar updates em lote
-      if (updates.length > 0) {
+      if (recurrenceUpdates.length > 0) {
         const { error: updateRecurrenceError } = await supabase
           .from('tasks')
-          .upsert(updates, { onConflict: 'id' });
+          .upsert(recurrenceUpdates, { onConflict: 'id' });
 
         if (updateRecurrenceError) console.error(`[User ${userId}] Erro ao atualizar recorrentes:`, updateRecurrenceError);
+        else console.log(`[User ${userId}] Resetadas ${recurrenceUpdates.length} recorrentes diárias.`);
       }
     }
 
     return new Response(
-      JSON.stringify({ message: "Daily task processing complete." }),
+      JSON.stringify({ message: "Daily task processing and overdue check complete." }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
 
   } catch (error) {
-    console.error("Erro na Edge Function daily-task-processor:", error);
+    console.error("Erro na Edge Function daily-reset:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
