@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz'; // Usando apenas toZonedTime
+import { format } from 'date-fns/format'; // Importação mais específica
+import { toZonedTime } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -26,7 +26,6 @@ export function convertToUtc(date: Date | string | null | undefined): Date | nul
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
   // Convertendo a data (que é tratada como local) para UTC usando toZonedTime
-  // Nota: toZonedTime(date, 'UTC') é a forma mais segura se toUtc não for exportado.
   return toZonedTime(dateObj, 'UTC'); 
 }
 
