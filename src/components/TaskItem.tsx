@@ -24,13 +24,13 @@ interface TaskItemProps {
 }
 
 const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
-  const isRecurrentInstance = task.template_task_id !== null;
+  const isRecurrent = task.recurrence_type !== 'none';
 
   if (task.is_completed) {
     return <Badge className="bg-status-completed text-foreground/80">Concluída</Badge>;
   }
   
-  if (isRecurrentInstance) {
+  if (isRecurrent) {
     return <Badge className="bg-status-recurring text-white">Recorrente</Badge>;
   }
   if (task.overdue) {
@@ -53,25 +53,11 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
 
 const getTaskDueDateDisplay = (task: Task): string => {
   const isRecurrentTemplate = task.recurrence_type !== 'none';
-  const isRecurrentInstance = task.template_task_id !== null;
 
   if (isRecurrentTemplate) {
-    return `Template: ${task.recurrence_type} ${task.recurrence_time ? `às ${formatTime(task.recurrence_time)}` : ''}`;
+    return `Recorrência: ${task.recurrence_type} ${task.recurrence_time ? `às ${formatTime(task.recurrence_time)}` : ''}`;
   }
   
-  if (isRecurrentInstance) {
-    // Para instâncias, mostramos a data de vencimento (que é a data de criação)
-    if (task.due_date) {
-      const dueDate = parseISO(task.due_date);
-      let dateString = formatDateTime(dueDate, false); // Usando formatDateTime
-      if (task.time) {
-        dateString += ` às ${formatTime(task.time)}`;
-      }
-      return dateString;
-    }
-    return "Recorrente";
-  }
-
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
     let dateString = formatDateTime(dueDate, false); // Usando formatDateTime
@@ -94,30 +80,24 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      // Selecionando explicitamente template_task_id
+      // Simplificando a query de fetch, pois template_task_id foi removido
       const { data: taskToUpdate, error: fetchTaskError } = await supabase
         .from("tasks")
-        .select("recurrence_type, template_task_id")
+        .select("recurrence_type")
         .eq("id", taskId)
         .single();
 
       if (fetchTaskError) throw fetchTaskError;
 
-      const isRecurrentInstance = taskToUpdate.template_task_id !== null;
-      
       let newCurrentBoard = task.current_board;
       let newOverdueStatus = task.overdue;
 
-      if (!isRecurrentInstance && taskToUpdate.recurrence_type === "none") {
+      if (taskToUpdate.recurrence_type === "none") {
         newCurrentBoard = "completed";
         newOverdueStatus = false;
-      } else if (isRecurrentInstance) {
-        // Se for uma instância de recorrência, ela é marcada como concluída e permanece no board 'recurring'
-        newCurrentBoard = 'completed'; // Move instâncias concluídas para 'completed'
-        newOverdueStatus = false;
       } else {
-        // Se for um template de recorrência, não deve ser concluído diretamente
-        newCurrentBoard = task.current_board;
+        // Se for recorrente, ela é marcada como concluída e permanece no board 'recurring'
+        newCurrentBoard = 'completed'; 
         newOverdueStatus = false;
       }
 

@@ -19,7 +19,6 @@ export interface Task {
   recurrence_type: TaskRecurrenceType; // Tipo de recorrência (se for template)
   recurrence_details: string | null;
   recurrence_time: string | null;
-  // last_successful_completion_date: string | null; // Removido
   origin_board: TaskOriginBoard;
   current_board: TaskCurrentBoard;
   is_priority: boolean;
@@ -31,9 +30,6 @@ export interface Task {
   tags: Tag[];
   created_at: string;
   updated_at: string;
-
-  // NOVO CAMPO PARA RECORRÊNCIA (Se for uma instância, aponta para o template)
-  template_task_id: string | null; // Mantido para compatibilidade com a lógica de filtragem, mas forçado a null nas consultas
   
   subtasks?: Task[]; // Adicionado para a árvore de tarefas
 }

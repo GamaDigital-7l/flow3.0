@@ -54,9 +54,9 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
-      template_task_id: null, // Forçando null
+      template_task_id: null, // Removendo referência ao campo inexistente
     })),
-    template_task_id: null, // Forçando null
+    template_task_id: null, // Removendo referência ao campo inexistente
   })) || [];
   return mappedData;
 };

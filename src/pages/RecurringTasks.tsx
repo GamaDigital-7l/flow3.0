@@ -36,10 +36,9 @@ const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
   return data.map(task => ({
     ...task,
     tags: (task as any).task_tags.map((t: any) => t.tags),
-    // Subtasks não são relevantes para templates aqui
     subtasks: [], 
     due_date: task.due_date ? parseISO(task.due_date) : null,
-    template_task_id: null, // Forçando null
+    template_task_id: null, // Removendo referência ao campo inexistente
   })) as Task[];
 };
 
