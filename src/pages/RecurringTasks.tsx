@@ -20,7 +20,6 @@ const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
     .select("*, tags:task_tags(tags(id, name, color))")
     .eq("user_id", userId)
     .neq("recurrence_type", "none") // Apenas templates
-    .is("template_task_id", null) // Garantir que não é uma instância
     .order("title", { ascending: true });
 
   if (error) throw error;

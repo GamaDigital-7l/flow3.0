@@ -44,6 +44,8 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) {
+    // Se a coluna template_task_id não existir, a query falhará.
+    // Vamos tentar uma query mais segura se a primeira falhar, mas por enquanto, lançamos o erro.
     throw error;
   }
   const mappedData = data?.map((task: any) => ({
