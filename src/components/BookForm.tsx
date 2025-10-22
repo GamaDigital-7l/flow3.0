@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/integrations/supabase/auth";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
+import { cn } from "@/lib/utils"; // IMPORTAÇÃO CORRIGIDA
 
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css'; 
