@@ -17,20 +17,26 @@ import { format } from "date-fns";
 const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
-    .select("*, tags:task_tags(tags(id, name, color))")
+    .select(`
+      id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+      origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, updated_at,
+      task_tags(
+        tags(id, name, color)
+      )
+    `) // Removendo template_task_id da seleção para evitar o erro 400
     .eq("user_id", userId)
     .neq("recurrence_type", "none") // Apenas templates
+    .is("parent_task_id", null) // Garante que estamos pegando apenas templates raiz
     .order("title", { ascending: true });
 
   if (error) throw error;
 
   return data.map(task => ({
     ...task,
-    tags: task.task_tags.map((t: any) => t.tags),
-    // Subtasks não são relevantes para templates aqui
+    tags: (task as any).task_tags.map((t: any) => t.tags),
     subtasks: [], 
     due_date: task.due_date ? parseISO(task.due_date) : null,
-    template_task_id: null, // Temporariamente forçando null
+    template_task_id: null, // Forçando null no cliente
   })) as Task[];
 };
 
@@ -88,7 +94,7 @@ const RecurringTasks: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="text-foreground">{editingTask ? "Editar Template" : "Adicionar Novo Template Recorrente"}</DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                Defina uma tarefa que será instanciada automaticamente.
+                {editingTask ? "Atualize os detalhes do seu template." : "Defina uma tarefa que será instanciada automaticamente."}
               </DialogDescription>
             </DialogHeader>
             <TaskForm
