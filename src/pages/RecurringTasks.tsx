@@ -13,11 +13,19 @@ import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { parseISO } from "@/lib/utils";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 
 const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
-    .select("*, tags:task_tags(tags(id, name, color))")
+    .select(`
+      id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+      origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+      recurrence_time,
+      task_tags(
+        tags(id, name, color)
+      )
+    `)
     .eq("user_id", userId)
     .neq("recurrence_type", "none") // Apenas templates
     .is("parent_task_id", null) // Garante que estamos pegando apenas templates raiz
@@ -70,7 +78,7 @@ const RecurringTasks: React.FC = () => {
 
   if (error) {
     showError("Erro ao carregar templates recorrentes: " + error.message);
-    return <p className="text-red-500">Erro ao carregar templates recorrentes.</p>;
+    return <p className="text-red-500">Erro ao carregar templates recorrentes: {error.message}</p>;
   }
 
   return (
