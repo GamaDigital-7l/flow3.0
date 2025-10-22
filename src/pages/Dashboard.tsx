@@ -7,11 +7,15 @@ import { useSession } from "@/integrations/supabase/auth";
 import { isToday } from "date-fns";
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
 import { Task, TaskCurrentBoard } from "@/types/task";
-import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp } from "lucide-react";
+import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
 import DashboardFinanceSummary from "@/components/dashboard/DashboardFinanceSummary";
 import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary"; // Componente de resultados de produtividade
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import TaskForm from "@/components/TaskForm";
+import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
@@ -57,8 +61,6 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   return mappedData;
 };
 
-// Função getGreeting removida
-
 const Dashboard: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -70,6 +72,8 @@ const Dashboard: React.FC = () => {
     enabled: !!userId,
   });
 
+  const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
+
   React.useEffect(() => {
     if (errorTasks) {
       showError("Erro ao carregar tarefas: " + errorTasks.message);
@@ -78,13 +82,8 @@ const Dashboard: React.FC = () => {
 
   const handleTaskUpdated = () => {
     refetchTasks();
+    setIsTaskFormOpen(false);
   };
-  
-  // Filtra tarefas que são templates (recurrence_type != 'none')
-  const templateTasks = allTasks.filter(task => task.recurrence_type !== 'none');
-  
-  // Filtra tarefas que são instâncias ou tarefas regulares (recurrence_type == 'none')
-  const regularAndInstanceTasks = allTasks.filter(task => task.recurrence_type === 'none');
 
   // As tarefas do dashboard são todas as tarefas que não são templates (pois templates são gerenciados na página /recurring)
   // E as instâncias recorrentes (que têm current_board: 'recurring')
@@ -103,11 +102,33 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="p-3 md:p-4 lg:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Seu resumo de tarefas e fluxo de trabalho.
-        </p>
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Seu resumo de tarefas e fluxo de trabalho.
+          </p>
+        </div>
+        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
+            </Button>
+          </DialogTrigger>
+          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Adicionar Nova Tarefa</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Crie uma nova tarefa para organizar seu dia.
+              </DialogDescription>
+            </DialogHeader>
+            <TaskForm
+              onTaskSaved={handleTaskUpdated}
+              onClose={() => setIsTaskFormOpen(false)}
+              initialOriginBoard="general"
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
