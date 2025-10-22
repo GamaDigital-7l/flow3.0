@@ -86,9 +86,9 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
 };
 
 const fetchStandardTemplates = async (userId: string): Promise<StandardTaskTemplate[]> => {
-  // Usando select explícito para garantir que o Supabase não se confunda com o cache
+  // Usando o nome da tabela explícito 'public.standard_task_templates'
   const { data, error } = await supabase
-    .from("standard_task_templates")
+    .from("public.standard_task_templates")
     .select("id, user_id, title, description, recurrence_days, origin_board, is_active, created_at")
     .eq("user_id", userId)
     .order("title", { ascending: true });
@@ -168,7 +168,7 @@ const Tasks: React.FC = () => {
     mutationFn: async (templateId: string) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       const { error } = await supabase
-        .from("standard_task_templates")
+        .from("public.standard_task_templates") // Usando nome explícito
         .delete()
         .eq("id", templateId)
         .eq("user_id", userId);

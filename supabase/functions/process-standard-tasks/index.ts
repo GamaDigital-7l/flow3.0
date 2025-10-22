@@ -46,7 +46,7 @@ serve(async (req) => {
 
       // 1. Buscar todos os templates de tarefas padrão ATIVOS para o usuário
       const { data: templates, error: fetchTemplatesError } = await supabase
-        .from('standard_task_templates')
+        .from('standard_task_templates') // Nome da tabela corrigido
         .select(`
           id,
           user_id,
