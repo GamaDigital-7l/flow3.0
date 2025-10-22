@@ -13,6 +13,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist"; // Adjusted import path
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface Book {
   id: string;
@@ -257,28 +258,43 @@ const BookReaderFullScreen: React.FC = () => {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background text-foreground z-50">
-      <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-card border-b border-border shadow-sm gap-2">
-        <div className="flex items-center gap-4 w-full sm:w-auto min-w-0">
-          <Button variant="outline" size="icon" onClick={() => navigate(`/books/${id}`)} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground flex-shrink-0">
+      {/* Barra de Controle Compacta e Responsiva */}
+      <div className="flex flex-col sm:flex-row items-center justify-between p-2 sm:p-4 bg-card border-b border-border shadow-sm gap-2 pt-[var(--sat)]">
+        
+        {/* Linha 1: Título e Botão Voltar */}
+        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/books/${id}`)} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground flex-shrink-0">
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Voltar para Detalhes</span>
           </Button>
-          <h1 className="text-xl font-bold text-foreground truncate flex-1 min-w-0">{book.title}</h1>
+          <h1 className="text-base font-bold text-foreground truncate flex-1 min-w-0">{book.title}</h1>
         </div>
-        <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end w-full sm:w-auto flex-shrink-0">
-          <Button variant="outline" size="icon" onClick={zoomOut} disabled={scale <= (initialScale ? initialScale * 0.5 : 0.5)} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
-            <ZoomOut className="h-4 w-4" />
-            <span className="sr-only">Diminuir Zoom</span>
-          </Button>
-          <Button variant="outline" size="icon" onClick={zoomIn} disabled={scale >= 3.0} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
-            <ZoomIn className="h-4 w-4" />
-            <span className="sr-only">Aumentar Zoom</span>
-          </Button>
-          <Button variant="outline" size="icon" onClick={resetZoom} disabled={scale === initialScale} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
-            <RotateCcw className="h-4 w-4" />
-            <span className="sr-only">Resetar Zoom</span>
-          </Button>
-          <div className="flex items-center gap-1">
+
+        {/* Linha 2 (ou continuação no desktop): Controles de Zoom e Página */}
+        <div className="flex items-center justify-between w-full sm:w-auto flex-shrink-0 gap-2">
+          
+          {/* Controles de Zoom */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={zoomOut} disabled={scale <= (initialScale ? initialScale * 0.5 : 0.5)} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground">
+              <ZoomOut className="h-4 w-4" />
+              <span className="sr-only">Diminuir Zoom</span>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={zoomIn} disabled={scale >= 3.0} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground">
+              <ZoomIn className="h-4 w-4" />
+              <span className="sr-only">Aumentar Zoom</span>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={resetZoom} disabled={scale === initialScale} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground">
+              <RotateCcw className="h-4 w-4" />
+              <span className="sr-only">Resetar Zoom</span>
+            </Button>
+          </div>
+
+          {/* Controles de Página */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={previousPage} disabled={pageNumber <= 1} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground">
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Página Anterior</span>
+            </Button>
             <Input
               type="number"
               value={pageInput}
@@ -286,14 +302,17 @@ const BookReaderFullScreen: React.FC = () => {
               onKeyPress={(e) => e.key === "Enter" && goToPage()}
               min="1"
               max={numPages || 1}
-              className="w-16 text-center bg-input border-border text-foreground focus-visible:ring-ring"
+              className="w-12 text-center bg-input border-border text-foreground focus-visible:ring-ring h-8 p-1 text-sm"
             />
             {numPages && (
               <span className="text-sm text-muted-foreground">
                 / {numPages}
               </span>
             )}
-            <Button onClick={goToPage} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">Ir</Button>
+            <Button variant="ghost" size="icon" onClick={nextPage} disabled={pageNumber >= (numPages || 1)} className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground">
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Próxima Página</span>
+            </Button>
           </div>
         </div>
       </div>
@@ -334,6 +353,7 @@ const BookReaderFullScreen: React.FC = () => {
           <p className="text-lg text-muted-foreground">Nenhum PDF disponível para este livro.</p>
         )}
 
+        {/* Controles de navegação lateral (Desktop/Hover) */}
         {!isMobile && (
           <>
             <Button
@@ -341,9 +361,10 @@ const BookReaderFullScreen: React.FC = () => {
               size="icon"
               onClick={previousPage}
               disabled={pageNumber <= 1}
-              className={`absolute left-4 top-1/2 -translate-y-1/2 bg-background/50 hover:bg-background/70 text-foreground disabled:opacity-30 transition-opacity duration-200 ${
+              className={cn(
+                "absolute left-4 top-1/2 -translate-y-1/2 bg-background/50 hover:bg-background/70 text-foreground disabled:opacity-30 transition-opacity duration-200",
                 isHovering ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
+              )}
             >
               <ChevronLeft className="h-6 w-6" />
               <span className="sr-only">Página Anterior</span>
@@ -353,9 +374,10 @@ const BookReaderFullScreen: React.FC = () => {
               size="icon"
               onClick={nextPage}
               disabled={pageNumber >= (numPages || 1)}
-              className={`absolute right-4 top-1/2 -translate-y-1/2 bg-background/50 hover:bg-background/70 text-foreground disabled:opacity-30 transition-opacity duration-200 ${
+              className={cn(
+                "absolute right-4 top-1/2 -translate-y-1/2 bg-background/50 hover:bg-background/70 text-foreground disabled:opacity-30 transition-opacity duration-200",
                 isHovering ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
+              )}
             >
               <ChevronRight className="h-6 w-6" />
               <span className="sr-only">Próxima Página</span>
@@ -363,6 +385,7 @@ const BookReaderFullScreen: React.FC = () => {
           </>
         )}
 
+        {/* Áreas de toque para navegação (Mobile) */}
         {isMobile && (
           <>
             <div

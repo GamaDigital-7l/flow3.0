@@ -35,36 +35,39 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ currentPeriod, onPeriod
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-2 p-4 bg-card border border-border rounded-xl shadow-sm frosted-glass">
-      <div className="flex items-center gap-2 w-full sm:w-auto">
-        <Button variant="ghost" size="icon" onClick={() => onPeriodChange(subMonths(currentPeriod, 1))} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+    <div className="flex flex-col gap-2 p-4 bg-card border border-border rounded-xl shadow-sm frosted-glass">
+      {/* Controles de Mês */}
+      <div className="flex items-center gap-2 w-full">
+        <Button variant="ghost" size="icon" onClick={() => onPeriodChange(subMonths(currentPeriod, 1))} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9 flex-shrink-0">
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <Select
           value={format(currentPeriod, "yyyy-MM")}
           onValueChange={handleMonthChange}
         >
-          <SelectTrigger className="w-full sm:w-[180px] bg-input border-border text-foreground focus-visible:ring-ring">
-            <CalendarIcon className="mr-2 h-4 w-4" />
+          <SelectTrigger className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring h-9 text-sm">
+            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
             <SelectValue placeholder="Selecionar Mês" />
           </SelectTrigger>
           <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
             {generateMonthOptions().map((date) => {
               const value = format(date, "yyyy-MM");
-              const label = format(date, "MMMM yyyy"); // FIX TS2554
+              const label = format(date, "MMMM yyyy", { locale: ptBR });
               return <SelectItem key={value} value={value}>{label}</SelectItem>;
             })}
           </SelectContent>
         </Select>
-        <Button variant="ghost" size="icon" onClick={() => onPeriodChange(addMonths(currentPeriod, 1))} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+        <Button variant="ghost" size="icon" onClick={() => onPeriodChange(addMonths(currentPeriod, 1))} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9 flex-shrink-0">
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-      <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 sm:border-l border-border pt-2 sm:pt-0 sm:pl-2">
-        <Button variant="outline" size="sm" onClick={() => onPeriodChange(new Date())} className="flex-1 border-border text-foreground hover:bg-accent hover:text-accent-foreground">Hoje</Button>
-        <Button variant="outline" size="sm" onClick={() => handleShortcut(3)} className="flex-1 border-border text-foreground hover:bg-accent hover:text-accent-foreground">3m</Button>
-        <Button variant="outline" size="sm" onClick={() => handleShortcut(6)} className="flex-1 border-border text-foreground hover:bg-accent hover:text-accent-foreground">6m</Button>
-        <Button variant="outline" size="sm" onClick={() => handleShortcut(12)} className="flex-1 border-border text-foreground hover:bg-accent hover:text-accent-foreground">12m</Button>
+      
+      {/* Atalhos de Período */}
+      <div className="grid grid-cols-4 gap-2 w-full border-t border-border pt-2">
+        <Button variant="outline" size="sm" onClick={() => onPeriodChange(new Date())} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground h-8 text-xs">Hoje</Button>
+        <Button variant="outline" size="sm" onClick={() => handleShortcut(3)} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground h-8 text-xs">3m</Button>
+        <Button variant="outline" size="sm" onClick={() => handleShortcut(6)} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground h-8 text-xs">6m</Button>
+        <Button variant="outline" size="sm" onClick={() => handleShortcut(12)} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground h-8 text-xs">12m</Button>
       </div>
     </div>
   );

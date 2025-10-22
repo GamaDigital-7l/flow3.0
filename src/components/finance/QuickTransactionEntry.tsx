@@ -90,24 +90,26 @@ const QuickTransactionEntry: React.FC<QuickTransactionEntryProps> = ({ onTransac
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 w-full">
         <Input
           type="text"
           placeholder="Adicionar transação rápida (Ex: 50.00 Aluguel)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring"
+          className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring h-9 text-sm"
           disabled={isLoading}
         />
-        <Button onClick={() => handleAddTransaction('expense')} disabled={isLoading || input.trim() === ""} className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white flex-shrink-0">
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-          <span className="sr-only sm:not-sr-only sm:ml-2">Despesa</span>
-        </Button>
-        <Button onClick={() => handleAddTransaction('income')} disabled={isLoading || input.trim() === ""} className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white flex-shrink-0">
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-          <span className="sr-only sm:not-sr-only sm:ml-2">Receita</span>
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+          <Button onClick={() => handleAddTransaction('expense')} disabled={isLoading || input.trim() === ""} className="flex-1 bg-red-500 hover:bg-red-600 text-white h-9 px-3 text-sm">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+            <span className="ml-1">Despesa</span>
+          </Button>
+          <Button onClick={() => handleAddTransaction('income')} disabled={isLoading || input.trim() === ""} className="flex-1 bg-green-500 hover:bg-green-600 text-white h-9 px-3 text-sm">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+            <span className="ml-1">Receita</span>
+          </Button>
+        </div>
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
