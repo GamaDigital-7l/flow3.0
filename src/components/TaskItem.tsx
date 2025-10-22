@@ -94,6 +94,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
+      // Selecionando explicitamente template_task_id
       const { data: taskToUpdate, error: fetchTaskError } = await supabase
         .from("tasks")
         .select("recurrence_type, template_task_id")
