@@ -41,7 +41,6 @@ serve(async (req) => {
       console.log(`[User ${userId}] Executando instantiate-template-tasks para o dia: ${todayInUserTimezoneString} no fuso horário ${userTimezone}`);
 
       // 1. Buscar todos os templates de recorrência ATIVOS para o usuário
-      // Adicionamos 'route_to_origin_board' na seleção
       const { data: templateTasks, error: fetchTemplatesError } = await supabase
         .from('tasks')
         .select(`
@@ -55,7 +54,6 @@ serve(async (req) => {
           origin_board,
           is_priority,
           client_name,
-          route_to_origin_board,
           task_tags (tag_id)
         `)
         .eq('user_id', userId)
@@ -74,15 +72,7 @@ serve(async (req) => {
         if (template.recurrence_type === 'daily') {
           shouldInstantiate = true;
         } else if (template.recurrence_type === 'weekly' && template.recurrence_details) {
-          // Detalhes são strings de dias da semana separados por vírgula (ex: "Monday,Tuesday")
-          const days = template.recurrence_details.split(',').map(dayName => {
-            // Mapear nome do dia para número (0-6)
-            const dayMap: { [key: string]: number } = {
-              "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3,
-              "Thursday": 4, "Friday": 5, "Saturday": 6
-            };
-            return dayMap[dayName];
-          }).filter(day => day !== undefined);
+          const days = template.recurrence_details.split(',').map(Number); // Detalhes agora são números (0-6)
           shouldInstantiate = days.includes(currentDayOfWeek);
         } else if (template.recurrence_type === 'monthly' && template.recurrence_details) {
           shouldInstantiate = template.recurrence_details === currentDayOfMonth;
@@ -106,10 +96,7 @@ serve(async (req) => {
             continue;
           }
 
-          // 3. Determinar o current_board
-          const targetBoard = template.route_to_origin_board ? template.origin_board : 'recurring';
-          
-          // 4. Criar a nova instância
+          // 3. Criar a nova instância
           const newTaskId = crypto.randomUUID();
 
           tasksToInsert.push({
@@ -126,7 +113,7 @@ serve(async (req) => {
             recurrence_details: null,
             recurrence_time: template.recurrence_time || null,
             origin_board: template.origin_board,
-            current_board: targetBoard, // USANDO A LÓGICA CONDICIONAL
+            current_board: 'recurring', // Todas as instâncias vão para o quadro 'recurring'
             client_name: template.client_name,
             template_task_id: template.id, // Link para o template
             created_at: nowUtc.toISOString(),

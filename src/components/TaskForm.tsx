@@ -40,7 +40,6 @@ const taskSchema = z.object({
   client_name: z.string().nullable().optional(),
   parent_task_id: z.string().nullable().optional(),
   selected_tag_ids: z.array(z.string()).optional(),
-  route_to_origin_board: z.boolean().default(false), // NOVO CAMPO
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -75,7 +74,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       client_name: initialData?.client_name || null,
       parent_task_id: initialData?.parent_task_id || parentTaskId || null,
       selected_tag_ids: initialData?.tags?.map(tag => tag.id) || [],
-      route_to_origin_board: initialData?.route_to_origin_board || false, // Valor inicial
     },
   });
 
@@ -100,7 +98,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
         is_priority: values.is_priority,
         client_name: values.client_name || null,
         parent_task_id: values.parent_task_id || null,
-        route_to_origin_board: values.route_to_origin_board, // NOVO CAMPO
         updated_at: new Date().toISOString(),
         is_completed: false,
         completed_at: null,
@@ -151,7 +148,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       queryClient.invalidateQueries({ queryKey: ["allTasks", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks", userId] });
       queryClient.invalidateQueries({ queryKey: ["dailyRecurringTasks", userId] }); // Manter para invalidar o cache antigo
-      queryClient.invalidateQueries({ queryKey: ["recurringTemplates", userId] });
       onTaskSaved();
       onClose();
     },
@@ -236,33 +232,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
         />
 
         <TaskScheduling form={form as any} />
-        
-        {isRecurrentTemplate && (
-          <FormField
-            control={form.control}
-            name="route_to_origin_board"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel className="text-foreground">
-                    Roteamento para Quadro de Origem (Trabalho)
-                  </FormLabel>
-                  <FormDescription className="text-muted-foreground">
-                    Se marcado, as instâncias desta tarefa aparecerão no quadro de origem (ex: Hoje - Prioridade Alta) em vez do quadro 'Recorrentes'. Use para tarefas de trabalho.
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-        )}
-
         <TaskCategorization form={form} />
 
         <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveTaskMutation.isPending}>
