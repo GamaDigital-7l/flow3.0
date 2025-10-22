@@ -84,13 +84,13 @@ const CompanyGoals: React.FC = () => {
 
   return (
     <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" /> Metas Financeiras
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2 flex-1 min-w-0 break-words">
+          <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" /> Metas Financeiras
         </CardTitle>
         <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingGoal(undefined)} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={() => setEditingGoal(undefined)} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0">
               <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Meta
             </Button>
           </DialogTrigger>

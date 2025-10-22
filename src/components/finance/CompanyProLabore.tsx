@@ -57,13 +57,13 @@ const CompanyProLabore: React.FC = () => {
 
   return (
     <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-          <Banknote className="h-5 w-5 text-green-500" /> Pro Labore
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2 flex-1 min-w-0 break-words">
+          <Banknote className="h-5 w-5 text-green-500 flex-shrink-0" /> Pro Labore
         </CardTitle>
         <Dialog open={isProLaboreFormOpen} onOpenChange={setIsProLaboreFormOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/10">
+            <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/10 flex-shrink-0">
               {proLaboreSettings ? "Editar" : "Configurar"}
             </Button>
           </DialogTrigger>

@@ -90,22 +90,22 @@ const QuickTransactionEntry: React.FC<QuickTransactionEntryProps> = ({ onTransac
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row gap-2 w-full">
+      <div className="flex flex-col gap-2 w-full">
         <Input
           type="text"
           placeholder="Adicionar transação rápida (Ex: 50.00 Aluguel)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring h-9 text-sm"
+          className="w-full bg-input border-border text-foreground focus-visible:ring-ring h-11 text-base" // Aumentei a altura e o texto
           disabled={isLoading}
         />
-        <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
-          <Button onClick={() => handleAddTransaction('expense')} disabled={isLoading || input.trim() === ""} className="flex-1 bg-red-500 hover:bg-red-600 text-white h-9 px-3 text-sm">
+        <div className="flex gap-2 w-full flex-shrink-0">
+          <Button onClick={() => handleAddTransaction('expense')} disabled={isLoading || input.trim() === ""} className="flex-1 bg-red-600 hover:bg-red-700 text-white h-11 px-3 text-base">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
             <span className="ml-1">Despesa</span>
           </Button>
-          <Button onClick={() => handleAddTransaction('income')} disabled={isLoading || input.trim() === ""} className="flex-1 bg-green-500 hover:bg-green-600 text-white h-9 px-3 text-sm">
+          <Button onClick={() => handleAddTransaction('income')} disabled={isLoading || input.trim() === ""} className="flex-1 bg-green-600 hover:bg-green-700 text-white h-11 px-3 text-base">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
             <span className="ml-1">Receita</span>
           </Button>
