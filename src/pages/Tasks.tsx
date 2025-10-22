@@ -56,9 +56,11 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
+      template_task_id: null, // Temporariamente forçando null
     })),
     // Ensure date fields are Date objects if needed for form/display logic
     due_date: task.due_date ? parseISO(task.due_date) : null,
+    template_task_id: null, // Temporariamente forçando null
   })) || [];
   return mappedData;
 };

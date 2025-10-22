@@ -28,7 +28,6 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-      template_task_id,
       task_tags(
         tags(id, name, color)
       ),
@@ -51,7 +50,9 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
+      template_task_id: null, // Temporariamente forçando null
     })),
+    template_task_id: null, // Temporariamente forçando null
   })) || [];
   return mappedData;
 };

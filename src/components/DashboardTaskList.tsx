@@ -28,6 +28,7 @@ const fetchAllTasks = async (userId: string): Promise<Task[]> => {
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
+    template_task_id: null, // Temporariamente forçando null
   })) || [];
   return mappedData;
 };

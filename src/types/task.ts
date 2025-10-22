@@ -33,7 +33,7 @@ export interface Task {
   updated_at: string;
 
   // NOVO CAMPO PARA RECORRÊNCIA (Se for uma instância, aponta para o template)
-  template_task_id: string | null; 
+  template_task_id: string | null; // Mantido para compatibilidade com a lógica de filtragem, mas forçado a null nas consultas
   
   subtasks?: Task[]; // Adicionado para a árvore de tarefas
 }

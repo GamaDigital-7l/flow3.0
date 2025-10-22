@@ -32,7 +32,7 @@ const fetchAllTasks = async (userId: string): Promise<Task[]> => {
     throw error;
   }
   // O tipo Task agora é mais simples, mas ainda precisamos garantir que a estrutura seja compatível.
-  return data as Task[] || [];
+  return data.map(t => ({ ...t, template_task_id: null })) as Task[] || [];
 };
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {

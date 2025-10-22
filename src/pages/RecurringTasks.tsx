@@ -30,6 +30,7 @@ const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
     // Subtasks não são relevantes para templates aqui
     subtasks: [], 
     due_date: task.due_date ? parseISO(task.due_date) : null,
+    template_task_id: null, // Temporariamente forçando null
   })) as Task[];
 };
 
