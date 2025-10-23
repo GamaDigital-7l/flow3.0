@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -23,9 +23,12 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, PlusCircle } from 'lucide-react';
 import { cn, convertToUtc, formatDateTime, parseISO } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import CategoryForm from './CategoryForm';
+import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
 const RECURRENCE_OPTIONS = ['monthly', 'weekly', 'yearly', 'quarterly'] as const;
 type RecurrenceType = typeof RECURRENCE_OPTIONS[number];
@@ -54,6 +57,8 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
   const userId = session?.user?.id;
   const { categories, isLoading: isDataLoading } = useFinancialData();
   const queryClient = useQueryClient();
+
+  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
 
   const form = useForm<RecurringTransactionFormValues>({
     resolver: zodResolver(recurringTransactionSchema),
@@ -106,14 +111,6 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
   const onSubmit = (data: RecurringTransactionFormValues) => {
     saveRecurringTransaction.mutate(data);
   };
-
-  if (isDataLoading) {
-    return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <Form {...form}>
@@ -250,28 +247,54 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoria (Opcional)</FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
-                value={field.value || '__none__'}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="__none__">Nenhuma</SelectItem>
-                  {filteredCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center">
+                <Select
+                  onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
+                  value={field.value || '__none__'}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
+                    {filteredCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="ml-2 h-8 w-8">
+                      <PlusCircle className="h-4 w-4" />
+                      <span className="sr-only">Criar Categoria</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+                    <DialogHeader>
+                      <DialogTitle className="text-foreground">Criar Nova Categoria</DialogTitle>
+                      <DialogDescription className="text-muted-foreground">
+                        Adicione uma nova categoria para organizar suas transações.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <CategoryForm
+                      onCategorySaved={() => {
+                        queryClient.invalidateQueries({ queryKey: ["financialData", userId] });
+                        setIsCategoryFormOpen(false);
+                      }}
+                      onClose={() => setIsCategoryFormOpen(false)}
+                      type={currentType}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
               <FormMessage />
             </FormItem>
           )}
-        />
+        </div>
 
         <div className="flex items-center space-x-2">
           <FormField
