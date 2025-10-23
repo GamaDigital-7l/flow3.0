@@ -5,7 +5,7 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, parseISO, differenceInDays } from 'date-fns';
-import * as dateFnsTz from 'date-fns-tz'; // Importação padrão
+import { utcToZonedTime } from 'date-fns-tz'; // Importação nomeada corrigida
 
 // Fetch the user's timezone from profile
 const fetchUserTimezone = async (userId: string): Promise<string> => {
@@ -33,7 +33,7 @@ function isDayEligible(date: Date, frequency: string, weekdays: number[] | null)
 // Fetch today's active habit instances
 const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
   const timezone = await fetchUserTimezone(userId);
-  const nowInUserTimezone = dateFnsTz.utcToZonedTime(new Date(), timezone);
+  const nowInUserTimezone = utcToZonedTime(new Date(), timezone);
   const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
 
   const { data, error } = await supabase
@@ -104,7 +104,7 @@ export const useToggleHabitCompletion = () => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
       const timezone = await fetchUserTimezone(userId);
-      const nowInUserTimezone = dateFnsTz.utcToZonedTime(new Date(), timezone);
+      const nowInUserTimezone = utcToZonedTime(new Date(), timezone);
       const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
       const tomorrowLocal = format(subDays(nowInUserTimezone, -1), "yyyy-MM-dd");
       

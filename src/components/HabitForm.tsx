@@ -23,7 +23,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Habit, HabitFrequency, WEEKDAY_LABELS } from "@/types/habit";
 import { format } from "date-fns";
-import * as dateFnsTz from "date-fns-tz"; // Importação padrão
+import { utcToZonedTime } from "date-fns-tz"; // Importação nomeada corrigida
 
 const habitSchema = z.object({
   title: z.string().min(1, "O título é obrigatório."),
@@ -78,7 +78,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
         .eq('id', userId)
         .single();
       const userTimezone = profile?.timezone || 'America/Sao_Paulo';
-      const nowInUserTimezone = dateFnsTz.utcToZonedTime(new Date(), userTimezone);
+      const nowInUserTimezone = utcToZonedTime(new Date(), userTimezone);
       const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
 
       const dataToSave = {
