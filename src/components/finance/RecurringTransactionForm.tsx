@@ -309,17 +309,18 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                     className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                   />
                 </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="text-foreground">Recorrência Ativa</FormLabel>
-                    <FormDescription className="text-muted-foreground">
-                      Desative para pausar a recorrência.
-                    </FormDescription>
-                  </div>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-foreground">Recorrência Ativa</FormLabel>
+                  <FormDescription className="text-muted-foreground">
+                    Desative para pausar a recorrência.
+                  </FormDescription>
+                </div>
               </FormItem>
             )}
           />
         </div>
 
+        
         <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
