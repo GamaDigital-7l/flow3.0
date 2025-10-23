@@ -288,7 +288,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = f
               </DialogDescription>
             </DialogHeader>
             <TaskForm
-              initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } as any}
+              initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } : undefined}
               onTaskSaved={refetchTasks}
               onClose={() => setIsFormOpen(false)}
             />
