@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useTransition } from "react";
+import React, { useState, useEffect, useCallback, useTransition, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionContextProvider, useSession } from "@/integrations/supabase/auth";
@@ -6,24 +6,27 @@ import Layout from "./components/layout/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Goals from "./pages/Goals";
-import Study from "./pages/Study";
-import Health from "./pages/Health";
-import Notes from "./pages/Notes";
-import Results from "./pages/Results";
-import Settings from "./pages/Settings";
-import Finance from "./pages/Finance";
-import Books from "./pages/Books";
-import BookDetails from "./pages/BookDetails";
-import BookReaderFullScreen from "./pages/BookReaderFullScreen";
-import Tasks from "./pages/Tasks"; // Importando Tasks
-import FinancialManagement from "./pages/FinancialManagement"; // Importando FinancialManagement
-import Recurrence from "./pages/Recurrence"; // Importando Recurrence
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
-import { showError } from "@/utils/toast";
+import LoadingScreen from "./components/layout/LoadingScreen"; // Importar LoadingScreen
+
+// Lazy Loaded Pages
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const Recurrence = lazy(() => import("./pages/Recurrence"));
+const Finance = lazy(() => import("./pages/Finance"));
+const FinancialManagement = lazy(() => import("./pages/FinancialManagement"));
+const Goals = lazy(() => import("./pages/Goals"));
+const Study = lazy(() => import("./pages/Study"));
+const Health = lazy(() => import("./pages/Health"));
+const Notes = lazy(() => import("./pages/Notes"));
+const Results = lazy(() => import("./pages/Results"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Books = lazy(() => import("./pages/Books"));
+const BookDetails = lazy(() => import("./pages/BookDetails"));
+const BookReaderFullScreen = lazy(() => import("./pages/BookReaderFullScreen"));
+
 
 // Main App component wrapper for context providers
 function App() {
@@ -118,36 +121,38 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
       <DeepLinkHandler />
-      <Routes>
-        {/* Rotas Públicas */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/approval/:uniqueId" element={<NotFound />} />
-        <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          {/* Rotas Públicas */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/approval/:uniqueId" element={<NotFound />} />
+          <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
 
-        {/* Rotas Protegidas */}
-        <Route element={<ProtectedRoute session={session} />}>
-          <Route element={<Layout isOnline={isOnline} deferredPrompt={null} onInstallClick={() => {}} />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/recurrence" element={<Recurrence />} /> {/* NOVA ROTA */}
-            <Route path="/finance" element={<Finance />} />
-            <Route path="/financial-management" element={<FinancialManagement />} />
-            <Route path="/goals" element={<Goals />} />
-            <Route path="/study" element={<Study />} />
-            <Route path="/health" element={<Health />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/books" element={<Books />} />
-            <Route path="/books/:id" element={<BookDetails />} />
+          {/* Rotas Protegidas */}
+          <Route element={<ProtectedRoute session={session} />}>
+            <Route element={<Layout isOnline={isOnline} deferredPrompt={null} onInstallClick={() => {}} />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/recurrence" element={<Recurrence />} />
+              <Route path="/finance" element={<Finance />} />
+              <Route path="/financial-management" element={<FinancialManagement />} />
+              <Route path="/goals" element={<Goals />} />
+              <Route path="/study" element={<Study />} />
+              <Route path="/health" element={<Health />} />
+              <Route path="/notes" element={<Notes />} />
+              <Route path="/results" element={<Results />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/books" element={<Books />} />
+              <Route path="/books/:id" element={<BookDetails />} />
+            </Route>
           </Route>
-        </Route>
-        
-        {/* Rota 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          
+          {/* Rota 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 }
