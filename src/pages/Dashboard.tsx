@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
 import { isToday } from "date-fns";
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
-import { Task, TaskCurrentBoard } from "@/types/task";
+import { Task, TaskCurrentBoard, RecurringTask } from "@/types/task";
 import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
@@ -16,13 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
+import RecurringTaskItem from "@/components/recurring/RecurringTaskItem";
+import { format } from "date-fns";
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Woe Comunicação", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
-  // { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Removido
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -59,6 +60,22 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   return mappedData;
 };
 
+const fetchRecurringTasksToday = async (userId: string): Promise<RecurringTask[]> => {
+  // Nota: A Edge Function garante que a instância de HOJE exista.
+  const todayLocal = format(new Date(), 'yyyy-MM-dd');
+  
+  const { data, error } = await supabase
+    .from("recurring_tasks")
+    .select(`*`)
+    .eq("user_id", userId)
+    .eq("date_local", todayLocal)
+    .eq("paused", false)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data as RecurringTask[] || [];
+};
+
 const Dashboard: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -69,6 +86,12 @@ const Dashboard: React.FC = () => {
     queryFn: () => fetchTasks(userId!),
     enabled: !!userId,
   });
+  
+  const { data: recurringTasksToday = [], isLoading: isLoadingRecurring, error: errorRecurring, refetch: refetchRecurringTasks } = useQuery<RecurringTask[], Error>({
+    queryKey: ["dashboardRecurringTasks", userId],
+    queryFn: () => fetchRecurringTasksToday(userId!),
+    enabled: !!userId,
+  });
 
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
 
@@ -76,17 +99,21 @@ const Dashboard: React.FC = () => {
     if (errorTasks) {
       showError("Erro ao carregar tarefas: " + errorTasks.message);
     }
-  }, [errorTasks]);
+    if (errorRecurring) {
+      showError("Erro ao carregar hábitos: " + errorRecurring.message);
+    }
+  }, [errorTasks, errorRecurring]);
 
   const handleTaskUpdated = () => {
     refetchTasks();
+    refetchRecurringTasks();
     setIsTaskFormOpen(false);
   };
 
   // As tarefas do dashboard são todas as tarefas que não são templates e não estão concluídas
   const dashboardTasks = allTasks.filter(task => !task.is_completed);
 
-  if (isLoadingTasks) {
+  if (isLoadingTasks || isLoadingRecurring) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
         <Loader2 className="h-8 w-8 animate-spin mr-2" /> Carregando seu dia...
@@ -125,8 +152,35 @@ const Dashboard: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Seção de Hábitos Recorrentes */}
+      <h2 className="text-xl font-bold text-foreground pt-4 flex items-center gap-2">
+        <Repeat className="h-5 w-5 text-orange-500" /> Hábitos do Dia
+      </h2>
+      <TaskListBoard
+        title="Recorrentes"
+        tasks={[]} // Não usamos tasks aqui, apenas renderizamos os RecurringTaskItem
+        isLoading={isLoadingRecurring}
+        error={errorRecurring}
+        refetchTasks={handleTaskUpdated}
+        originBoard="recurring"
+      >
+        <div className="space-y-1">
+          {recurringTasksToday.length > 0 ? (
+            recurringTasksToday.map(task => (
+              <RecurringTaskItem 
+                key={task.id} 
+                task={task} 
+                refetchTasks={handleTaskUpdated} 
+              />
+            ))
+          ) : (
+            <p className="text-muted-foreground text-xs p-2">Nenhum hábito ativo para hoje.</p>
+          )}
+        </div>
+      </TaskListBoard>
+
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
-      <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
+      <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {BOARD_DEFINITIONS.map((board) => (
           <TaskListBoard

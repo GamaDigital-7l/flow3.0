@@ -23,6 +23,7 @@ interface TaskListBoardProps {
   quickAddTaskInput?: React.ReactNode;
   originBoard?: TaskOriginBoard;
   selectedDate?: Date; // Nova prop
+  children?: React.ReactNode; // Adicionado children
 }
 
 const TaskListBoard: React.FC<TaskListBoardProps> = ({
@@ -34,6 +35,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
   quickAddTaskInput,
   originBoard = "general",
   selectedDate, // Recebe a data selecionada
+  children, // Recebe children
 }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -107,14 +109,20 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
         {quickAddTaskInput && <div className="w-full">{quickAddTaskInput}</div>}
       </CardHeader>
       <CardContent className="p-2 pt-1">
-        {taskTree.length === 0 ? (
+        {/* Renderiza children se fornecido (usado para RecurringTaskItem) */}
+        {children}
+        
+        {/* Renderiza tarefas normais se não houver children e houver tarefas */}
+        {!children && taskTree.length === 0 ? (
           <p className="text-muted-foreground text-xs">Nenhuma tarefa encontrada para este quadro.</p>
         ) : (
-          <div className="space-y-1">
-            {taskTree.map((task) => (
-              <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
-            ))}
-          </div>
+          !children && (
+            <div className="space-y-1">
+              {taskTree.map((task) => (
+                <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
+              ))}
+            </div>
+          )
         )}
       </CardContent>
     </Card>
