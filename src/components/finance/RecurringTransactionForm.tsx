@@ -2,9 +2,9 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,12 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FinancialRecurrence } from '@/types/finance';
-import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/integrations/supabase/auth';
-import { showError, showSuccess } from '@/utils/toast';
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/integrations/supabase/auth";
+import { showError, showSuccess } from "@/utils/toast";
 import { useFinancialData } from '@/hooks/useFinancialData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
@@ -137,7 +137,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                 <FormMessage />
               </FormItem>
             )}
-          />
+          </FormField>
 
           {/* Valor */}
           <FormField
@@ -298,7 +298,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             </FormItem>
           )}
         </FormField>
-        
+
         <FormField
           control={form.control}
           name="is_active"
@@ -319,7 +319,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
               </div>
             </FormItem>
           )}
-        />
+        </FormField>
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
