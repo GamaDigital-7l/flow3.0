@@ -4,8 +4,8 @@ import { useAllHabitDefinitions } from "@/hooks/useHabits";
 import { useSession } from "@/integrations/supabase/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Repeat, Edit, CalendarDays, Pause, BarChart3, Play } from "lucide-react";
-import { showError } from "@/utils/toast";
+import { PlusCircle, Loader2, Repeat, Edit, CalendarDays, Pause, BarChart3, Play, Trash2 } from "lucide-react";
+import { showError, showSuccess } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import HabitForm from "@/components/HabitForm";
 import HabitItem from "@/components/HabitItem";
@@ -52,6 +52,39 @@ const Recurrence: React.FC = () => {
     },
     onError: (err: any) => {
       showError("Erro ao pausar/retomar hábito: " + err.message);
+    },
+  });
+  
+  const handleDeleteHabit = useMutation({
+    mutationFn: async (recurrenceId: string) => {
+      if (!userId) throw new Error("Usuário não autenticado.");
+      if (!window.confirm("Tem certeza que deseja deletar ESTE HÁBITO e TODO O SEU HISTÓRICO?")) return;
+      
+      // Deleta todas as instâncias e o histórico associado ao recurrence_id
+      const { error: deleteHistoryError } = await supabase
+        .from("habit_history")
+        .delete()
+        .eq("recurrence_id", recurrenceId)
+        .eq("user_id", userId);
+        
+      if (deleteHistoryError) console.error("Error deleting habit history:", deleteHistoryError);
+
+      const { error: deleteHabitsError } = await supabase
+        .from("habits")
+        .delete()
+        .eq("recurrence_id", recurrenceId)
+        .eq("user_id", userId);
+
+      if (deleteHabitsError) throw deleteHabitsError;
+    },
+    onSuccess: () => {
+      showSuccess("Hábito e histórico deletados com sucesso!");
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["todayHabits", userId] });
+      queryClient.invalidateQueries({ queryKey: ["allHabitDefinitions", userId] });
+    },
+    onError: (err: any) => {
+      showError("Erro ao deletar hábito: " + err.message);
     },
   });
 
@@ -124,6 +157,9 @@ const Recurrence: React.FC = () => {
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handlePauseToggle.mutate({ recurrenceId: habit.recurrence_id, paused: true })} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
                       <Pause className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteHabit.mutate(habit.recurrence_id)} className="h-7 w-7 text-red-500 hover:bg-red-500/10">
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

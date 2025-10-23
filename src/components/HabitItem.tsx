@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CheckCircle2, AlertCircle, Repeat, Pause, Play } from "lucide-react";
+import { Edit, Trash2, CheckCircle2, AlertCircle, Repeat, Pause, Play, MoreVertical } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Habit, WEEKDAY_LABELS } from "@/types/habit";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import HabitForm from "@/components/HabitForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { useToggleHabitCompletion } from "@/hooks/useHabits";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface HabitItemProps {
   habit: Habit;
@@ -86,7 +87,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, refetchHabits, compactMode
         .eq("user_id", userId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       showSuccess(`Hábito ${habit.paused ? 'retomado' : 'pausado'} com sucesso!`);
       refetchHabits();
       queryClient.invalidateQueries({ queryKey: ["todayHabits", userId] });
@@ -144,7 +145,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, refetchHabits, compactMode
             </div>
             {isAlert && (
               <p className={cn("text-red-500 mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
-                <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> ⚠️ Não quebre o hábito!
+                <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> ⚠️ Não quebre o hábito 2 dias seguidos!
               </p>
             )}
             {isPaused && (
@@ -155,20 +156,25 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, refetchHabits, compactMode
           </div>
           
           {showActions && (
-            <div className="flex-shrink-0 flex gap-0.5">
-              <Button variant="ghost" size="icon" onClick={() => handleEditHabit(habit)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
-                <Edit className="h-3.5 w-3.5" />
-                <span className="sr-only">Editar Hábito</span>
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => handlePauseToggle.mutate(!isPaused)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
-                {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-                <span className="sr-only">{isPaused ? "Retomar" : "Pausar"}</span>
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => handleDeleteHabit.mutate(habit.recurrence_id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
-                <Trash2 className="h-3.5 w-3.5" />
-                <span className="sr-only">Deletar Hábito</span>
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground flex-shrink-0">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                  <span className="sr-only">Mais Ações</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover border-border rounded-md shadow-lg text-sm">
+                <DropdownMenuItem onClick={() => handleEditHabit(habit)} className="cursor-pointer py-1.5 px-2">
+                  <Edit className="mr-2 h-4 w-4" /> Editar Definição
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePauseToggle.mutate(!isPaused)} className="cursor-pointer py-1.5 px-2">
+                  {isPaused ? <><Play className="mr-2 h-4 w-4" /> Retomar Hábito</> : <><Pause className="mr-2 h-4 w-4" /> Pausar Hábito</>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDeleteHabit.mutate(habit.recurrence_id)} className="text-red-600 cursor-pointer py-1.5 px-2">
+                  <Trash2 className="mr-2 h-4 w-4" /> Deletar Hábito (Histórico)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </Card>

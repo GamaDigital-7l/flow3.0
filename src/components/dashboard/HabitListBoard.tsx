@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import HabitForm from "../HabitForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface HabitListBoardProps {
   habits: Habit[];
@@ -60,7 +61,7 @@ const HabitListBoard: React.FC<HabitListBoardProps> = ({
     <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1 flex-shrink-0">
         <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-          <Repeat className="h-4 w-4 text-status-recurring" /> Hábitos Recorrentes ({activeHabits.length})
+          <Repeat className="h-4 w-4 text-status-recurring" /> Recorrentes ({activeHabits.length})
         </CardTitle>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
@@ -84,7 +85,7 @@ const HabitListBoard: React.FC<HabitListBoardProps> = ({
       <div className="max-h-[85vh] overflow-y-auto custom-scrollbar flex-1">
         <CardContent className="p-2 pt-1 space-y-1">
           {activeHabits.length === 0 ? (
-            <p className="text-muted-foreground text-xs">Nenhum hábito ativo para hoje.</p>
+            <p className="text-muted-foreground text-xs">Nenhum hábito ativo para hoje. <Link to="/recurrence" className="text-primary underline">Gerenciar hábitos</Link>.</p>
           ) : (
             activeHabits.map((habit) => (
               <HabitItem key={habit.id} habit={habit} refetchHabits={refetchHabits} compactMode={true} showActions={false} />

@@ -16,8 +16,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import HabitListBoard from "@/components/dashboard/HabitListBoard"; // Importar HabitListBoard
-import { useTodayHabits } from "@/hooks/useHabits"; // Importar hook de hábitos
+import { useTodayHabits } from "@/hooks/useHabits"; // Mantido para evitar erro de importação, mas não usado diretamente
 
 const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
   { id: "today_high_priority", title: "Hoje (Alta Prioridade)" },
@@ -102,7 +101,8 @@ const Tasks: React.FC = () => {
     enabled: !!userId,
   });
   
-  const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits(); // Usando o novo hook
+  // Removendo o uso direto de useTodayHabits aqui, pois a página Recurrence lida com isso.
+  // const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits(); 
 
   const handleTaskUpdated = () => {
     refetchTasks();
@@ -110,10 +110,6 @@ const Tasks: React.FC = () => {
     setEditingTask(undefined);
   };
   
-  const handleHabitUpdated = () => {
-    refetchHabits();
-  };
-
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setIsFormOpen(true);
@@ -130,7 +126,7 @@ const Tasks: React.FC = () => {
     }
   }, [location.state?.openNewTaskForm]);
 
-  if (isLoadingTasks || isLoadingHabits) {
+  if (isLoadingTasks) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
         <Loader2 className="h-8 w-8 animate-spin mr-2" /> Carregando tarefas...
@@ -141,11 +137,6 @@ const Tasks: React.FC = () => {
   if (errorTasks) {
     showError("Erro ao carregar tarefas: " + errorTasks.message);
     return <p className="text-red-500">Erro ao carregar tarefas: {errorTasks.message}</p>;
-  }
-  
-  if (errorHabits) {
-    showError("Erro ao carregar hábitos: " + errorHabits.message);
-    // Não retorna erro total, apenas exibe a mensagem
   }
 
   return (
@@ -180,15 +171,6 @@ const Tasks: React.FC = () => {
 
       <div className="mb-6 overflow-x-auto pb-2">
         <div className="flex flex-nowrap gap-2 min-w-max">
-          {/* Adicionando a aba de Hábitos Recorrentes */}
-          <Button
-            variant={activeBoard === "recurrence" ? "default" : "outline"}
-            onClick={() => setActiveBoard("recurrence" as TaskCurrentBoard)}
-            className="flex-shrink-0"
-          >
-            <Repeat className="mr-2 h-4 w-4" /> Recorrentes ({todayHabits?.length || 0})
-          </Button>
-          
           {TASK_BOARDS.map(board => (
             <Button
               key={board.id}
@@ -202,40 +184,20 @@ const Tasks: React.FC = () => {
         </div>
       </div>
 
-      {/* Conteúdo da Aba de Hábitos */}
-      {activeBoard === "recurrence" ? (
-        <Card className="bg-card border-border shadow-lg frosted-glass">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <Repeat className="h-5 w-5 text-status-recurring" /> Hábitos Recorrentes de Hoje
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {todayHabits && todayHabits.length > 0 ? (
-              todayHabits.map(habit => (
-                <HabitItem key={habit.id} habit={habit} refetchHabits={handleHabitUpdated} showActions={true} />
-              ))
-            ) : (
-              <p className="text-muted-foreground">Nenhum hábito ativo para hoje. <a href="/recurrence" className="text-primary underline">Crie um novo hábito</a>.</p>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-card border-border shadow-lg frosted-glass">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard)}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {tasks && tasks.length > 0 ? (
-              tasks.map(task => (
-                <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
-              ))
-            ) : (
-              <p className="text-muted-foreground">Nenhuma tarefa encontrada nesta categoria.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <Card className="bg-card border-border shadow-lg frosted-glass">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard)}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {tasks && tasks.length > 0 ? (
+            tasks.map(task => (
+              <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
+            ))
+          ) : (
+            <p className="text-muted-foreground">Nenhuma tarefa encontrada nesta categoria.</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Dialog para edição de Tarefa Comum */}
       <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>

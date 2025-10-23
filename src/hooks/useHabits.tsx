@@ -148,8 +148,6 @@ export const useToggleHabitCompletion = () => {
       
       // 3. Create/Ensure Tomorrow's Instance exists (only if completing today)
       if (completed && isSameDay(parseISO(habit.date_local), parseISO(todayLocal))) {
-        // We rely on the daily job to handle eligibility, but we ensure tomorrow's instance exists if completed today.
-        
         // Check if tomorrow's instance already exists
         const { data: existingTomorrow, error: checkError } = await supabase
           .from('habits')
@@ -162,42 +160,49 @@ export const useToggleHabitCompletion = () => {
         if (checkError) console.error("Error checking tomorrow's habit:", checkError);
 
         if (!existingTomorrow || existingTomorrow.length === 0) {
-          // Inherit metrics from the current instance (which is the latest completed state)
-          const newStreak = habit.streak + 1;
-          const newTotalCompleted = habit.total_completed + 1;
-          
-          const tomorrowPayload = {
-            recurrence_id: habit.recurrence_id,
-            user_id: userId,
-            title: habit.title,
-            description: habit.description,
-            frequency: habit.frequency,
-            weekdays: habit.weekdays,
-            paused: habit.paused,
-            completed_today: false,
-            date_local: tomorrowLocal,
-            last_completed_date_local: todayLocal,
-            streak: newStreak,
-            total_completed: newTotalCompleted,
-            missed_days: habit.missed_days,
-            fail_by_weekday: habit.fail_by_weekday,
-            success_rate: habit.success_rate, // Will be recalculated by client/job
-            alert: false,
-          };
-          
-          const { error: insertTomorrowError } = await supabase
+          // Fetch the latest metrics again to ensure consistency before creating tomorrow's instance
+          const { data: latestHabitData } = await supabase
             .from('habits')
-            .insert(tomorrowPayload);
+            .select('*')
+            .eq('recurrence_id', habit.recurrence_id)
+            .eq('user_id', userId)
+            .order('date_local', { ascending: false })
+            .limit(1)
+            .single();
             
-          if (insertTomorrowError) console.error("Error inserting tomorrow's habit:", insertTomorrowError);
+          if (latestHabitData) {
+            const newStreak = latestHabitData.streak + 1;
+            const newTotalCompleted = latestHabitData.total_completed + 1;
+            
+            const tomorrowPayload = {
+              recurrence_id: latestHabitData.recurrence_id,
+              user_id: userId,
+              title: latestHabitData.title,
+              description: latestHabitData.description,
+              frequency: latestHabitData.frequency,
+              weekdays: latestHabitData.weekdays,
+              paused: latestHabitData.paused,
+              completed_today: false,
+              date_local: tomorrowLocal,
+              last_completed_date_local: todayLocal,
+              streak: newStreak,
+              total_completed: newTotalCompleted,
+              missed_days: latestHabitData.missed_days,
+              fail_by_weekday: latestHabitData.fail_by_weekday,
+              success_rate: latestHabitData.success_rate, // Will be recalculated by client/job
+              alert: false,
+            };
+            
+            const { error: insertTomorrowError } = await supabase
+              .from('habits')
+              .insert(tomorrowPayload);
+              
+            if (insertTomorrowError) console.error("Error inserting tomorrow's habit:", insertTomorrowError);
+          }
         }
       }
       
-      // 4. Trigger metric recalculation (client-side logic for streak/total update)
-      // Since we updated the history, we can now trigger a refetch of all definitions
-      // to get the latest metrics (which should be updated by the DB triggers/logic, 
-      // but since we rely on the client to refresh the view).
-      
+      // 4. Invalidate queries to refresh UI
       return updatedInstance;
     },
     onSuccess: (data, variables) => {
