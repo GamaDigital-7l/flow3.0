@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Button } from "@/components/ui/button";
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -40,7 +40,6 @@ const recurringTransactionSchema = z.object({
   frequency: z.enum(RECURRENCE_OPTIONS, { required_error: "A frequência é obrigatória." }),
   next_due_date: z.date({ required_error: "A próxima data de vencimento é obrigatória." }),
   category_id: z.string().nullable().optional(),
-  //account_id: z.string().min(1, "A conta é obrigatória."), // Removed
   is_active: z.boolean().optional().default(true),
 });
 
@@ -58,7 +57,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
   const { categories, isLoading: isDataLoading } = useFinancialData();
   const queryClient = useQueryClient();
 
-  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
+  const [isCategoryFormOpen, setIsCategoryFormOpen] = React.useState(false);
 
   const form = useForm<RecurringTransactionFormValues>({
     resolver: zodResolver(recurringTransactionSchema),
@@ -69,7 +68,6 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
       frequency: initialData?.frequency as RecurrenceType || 'monthly',
       next_due_date: initialData?.next_due_date ? parseISO(initialData.next_due_date) : new Date(),
       category_id: initialData?.category_id || '',
-      //account_id: initialData?.account_id || '', // Removed
       is_active: initialData?.is_active ?? true,
     },
   });
@@ -86,7 +84,6 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
         user_id: userId,
         next_due_date: format(convertToUtc(data.next_due_date)!, 'yyyy-MM-dd'),
         category_id: data.category_id || null,
-        //account_id: data.account_id, // Removed
       };
 
       if (initialData?.id) {
@@ -123,7 +120,10 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
@@ -184,7 +184,10 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Frequência</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a frequência" />
@@ -295,7 +298,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             </FormItem>
           )}
         </FormField>
-
+        
         <FormField
           control={form.control}
           name="is_active"
