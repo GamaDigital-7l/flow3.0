@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
   const overdueTasks = dashboardTasks.filter(t => t.overdue && !t.is_completed);
   const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
 
-  // Adicionando o quadro de Atrasadas de volta, mas filtrando as tarefas que já estão no dashboardTasks
+  // Adicionando o quadro de Atrasadas
   const boardsWithOverdue = [
     ...BOARD_DEFINITIONS,
     { id: "overdue" as TaskCurrentBoard, title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },

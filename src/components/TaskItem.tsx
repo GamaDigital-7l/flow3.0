@@ -14,7 +14,7 @@ import { formatDateTime, formatTime, parseISO } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { isToday, isTomorrow, isPast } from "date-fns"; // Import isToday
+import { isToday, isTomorrow, isBefore, startOfDay } from "date-fns"; // Importando isBefore e startOfDay
 
 interface TaskItemProps {
   task: Task;
@@ -26,11 +26,12 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
   if (task.is_completed) {
     return <Badge className="bg-status-completed text-foreground/80 h-5 px-1.5 text-xs">Concluída</Badge>;
   }
-  if (task.overdue) {
-    return <Badge variant="destructive" className="bg-status-overdue text-white h-5 px-1.5 text-xs">Atrasada</Badge>;
-  }
+  // Atrasada é definida pelo campo 'overdue' no DB, mas também podemos verificar a data aqui para consistência visual
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
+    if (isBefore(dueDate, startOfDay(new Date()))) {
+      return <Badge variant="destructive" className="bg-status-overdue text-white h-5 px-1.5 text-xs">Atrasada</Badge>;
+    }
     if (isToday(dueDate)) {
       return <Badge className="bg-status-today text-white h-5 px-1.5 text-xs">Hoje</Badge>;
     }
@@ -191,11 +192,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
   const wasCompletedYesterday = task.completed_at && format(new Date(task.completed_at), 'yyyy-MM-dd') === format(subDays(new Date(), 1), 'yyyy-MM-dd');
   const shouldShowHabitWarning = isDailyRecurringView && !isCompleted && !wasCompletedYesterday;
 
+  // Nova lógica de atraso: data de vencimento existe E é anterior ao início do dia de hoje E não está concluída
+  const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !isCompleted;
+
   return (
     <Card className={cn(
       "p-2 border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
       isCompleted ? "opacity-70" : "card-hover-effect",
-      task.overdue && !isCompleted && "border-red-500 ring-1 ring-red-500/50"
+      isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50" // Usar isTrulyOverdue
     )}>
       <div className="flex items-start gap-2">
         <Checkbox
@@ -245,7 +249,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
               <AlertCircle className="h-3 w-3 flex-shrink-0" /> Não quebre o hábito!
             </p>
           )}
-          {task.due_date && isPast(parseISO(task.due_date)) && !task.is_completed && (
+          {isTrulyOverdue && (
             <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
               <AlertCircle className="h-3 w-3 flex-shrink-0" /> Atenção: Tarefa Atrasada!
             </p>

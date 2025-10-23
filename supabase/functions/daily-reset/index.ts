@@ -38,11 +38,12 @@ serve(async (req) => {
 
       const nowUtc = new Date();
       const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
-      const yesterdayInUserTimezone = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd", { timeZone: userTimezone });
+      const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd"); // Definindo a variável
 
-      console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${format(nowInUserTimezone, "yyyy-MM-dd")} no fuso horário ${userTimezone}.`);
+      console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString} no fuso horário ${userTimezone}.`);
 
       // 1. Processar Tarefas Atrasadas (Overdue)
+      // Busca tarefas não concluídas cuja data de vencimento é anterior a HOJE.
       const { data: pendingTasks, error: pendingTasksError } = await supabase
         .from('tasks')
         .select('id, due_date, current_board, is_completed, recurrence_type')
@@ -73,9 +74,8 @@ serve(async (req) => {
         else console.log(`[User ${userId}] Movidas ${overdueUpdates.length} tarefas para 'overdue'.`);
       }
       
-      // --- 2. Processar Recorrentes (Instanciação) ---
       // A Edge Function instantiate-template-tasks cuida da criação de novas instâncias.
-      // Não precisamos de lógica de streak/reset aqui.
+      // Não há mais lógica de recorrência aqui.
 
     }
 
