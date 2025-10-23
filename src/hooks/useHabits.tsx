@@ -5,10 +5,8 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, parseISO, differenceInDays } from 'date-fns';
-import * as dateFnsTz from 'date-fns-tz'; // Importar tudo como objeto
-
-// Acessando a função através do objeto importado
-const utcToZonedTime = dateFnsTz.utcToZonedTime;
+import { utcToZonedTime } from 'date-fns-tz'; // Importação direta
+import { parseISO as parseISOFromUtils } from '@/lib/utils'; // Usando parseISO do utils
 
 // Fetch the user's timezone from profile
 const fetchUserTimezone = async (userId: string): Promise<string> => {
@@ -51,7 +49,7 @@ const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
   
   // Filter only eligible habits for today
   return (data as Habit[] || []).filter(h => 
-    isDayEligible(parseISO(h.date_local), h.frequency, h.weekdays)
+    isDayEligible(parseISOFromUtils(h.date_local), h.frequency, h.weekdays)
   );
 };
 
@@ -141,7 +139,7 @@ export const useToggleHabitCompletion = () => {
       if (historyError) console.error("Error updating habit history:", historyError);
       
       // 3. Create/Ensure Tomorrow's Instance exists (only if completing today)
-      if (completed && isSameDay(parseISO(habit.date_local), parseISO(todayLocal))) {
+      if (completed && isSameDay(parseISOFromUtils(habit.date_local), parseISOFromUtils(todayLocal))) {
         // Check if tomorrow's instance already exists
         const { data: existingTomorrow, error: checkError } = await supabase
           .from('habits')

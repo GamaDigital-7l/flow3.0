@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { format, parseISO, subDays, getDay, isSameDay } from "https://esm.sh/date-fns@3.6.0";
-import { utcToZonedTime } from "https://esm.sh/date-fns-tz@3.0.1";
+import { utcToZonedTime } from "https://esm.sh/date-fns-tz@2.0.1"; // Importação corrigida
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -187,7 +187,7 @@ serve(async (req) => {
                             total_completed: baseHabit.total_completed,
                             missed_days: baseHabit.missed_days,
                             fail_by_weekday: baseHabit.fail_by_weekday,
-                            success_rate: baseHabit.success_rate,
+                            success_rate: baseHabit.success_rate, // Will be recalculated by client/job
                             alert: baseHabit.streak === 0, // Set alert if streak was broken yesterday
                         });
                     }
