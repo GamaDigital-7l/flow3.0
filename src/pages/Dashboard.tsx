@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
 import { isToday } from "date-fns";
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
+import HabitListBoard from "@/components/dashboard/HabitListBoard"; // Importar HabitListBoard
+import { useTodayHabits } from "@/hooks/useHabits"; // Importar hook de hábitos
 import { Task, TaskCurrentBoard } from "@/types/task";
 import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
@@ -69,23 +71,32 @@ const Dashboard: React.FC = () => {
     enabled: !!userId,
   });
   
+  const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits(); // Usando o novo hook
+  
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (errorTasks) {
       showError("Erro ao carregar tarefas: " + errorTasks.message);
     }
-  }, [errorTasks]);
+    if (errorHabits) {
+      showError("Erro ao carregar hábitos: " + errorHabits.message);
+    }
+  }, [errorTasks, errorHabits]);
 
   const handleTaskUpdated = () => {
     refetchTasks();
     setIsTaskFormOpen(false);
   };
+  
+  const handleHabitUpdated = () => {
+    refetchHabits();
+  };
 
   // As tarefas do dashboard são todas as tarefas que não são templates e não estão concluídas
   const dashboardTasks = allTasks.filter(task => !task.is_completed);
 
-  if (isLoadingTasks) {
+  if (isLoadingTasks || isLoadingHabits) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
         <Loader2 className="h-8 w-8 animate-spin mr-2" /> Carregando seu dia...
@@ -127,6 +138,14 @@ const Dashboard: React.FC = () => {
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
       <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {/* Novo Quadro de Hábitos */}
+        <HabitListBoard 
+          habits={todayHabits || []} 
+          isLoading={isLoadingHabits} 
+          error={errorHabits} 
+          refetchHabits={handleHabitUpdated} 
+        />
+        
         {BOARD_DEFINITIONS.map((board) => (
           <TaskListBoard
             key={board.id}
