@@ -25,24 +25,30 @@ import BriefingForm from '@/components/briefing/BriefingForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useNavigate, Link } from 'react-router-dom'; // Importando Link
+import { useNavigate, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+
+interface Question {
+  id: string;
+  text: string;
+  type: string;
+}
 
 interface Briefing {
   id: string;
   title: string;
   description: string | null;
-  form_structure: any[]; // Renomeado de 'questions' para 'form_structure'
+  form_structure: Question[];
   created_at: string;
   updated_at: string;
-  created_by: string; // Usando created_by
+  created_by: string;
   display_mode: 'all_questions' | 'one_by_one';
 }
 
 const fetchBriefings = async (userId: string): Promise<Briefing[]> => {
   if (!userId) return [];
   const { data, error } = await supabase
-    .from('briefing_forms') // Tabela correta
+    .from('briefing_forms')
     .select('*')
     .eq('created_by', userId)
     .order('updated_at', { ascending: false });
@@ -96,11 +102,11 @@ const BriefingPage: React.FC = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingBriefing(null);
-    refetch(); // Refetch após salvar/fechar
+    refetch();
   };
 
   const handleCopyLink = (briefingId: string) => {
-    const publicUrl = `${window.location.origin}/briefing/${briefingId}`; // URL pública para o formulário
+    const publicUrl = `${window.location.origin}/briefing/${briefingId}`;
     navigator.clipboard.writeText(publicUrl);
     showSuccess('Link do briefing copiado para a área de transferência!');
   };
@@ -137,7 +143,7 @@ const BriefingPage: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
             <BriefingForm
-              initialData={editingBriefing ? { ...editingBriefing, questions: editingBriefing.form_structure } as any : undefined}
+              initialData={editingBriefing as any}
               onBriefingSaved={handleCloseDialog}
               onClose={handleCloseDialog}
             />

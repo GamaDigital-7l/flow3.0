@@ -29,13 +29,12 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
-import QuestionBuilder, { questionSchema } from './QuestionBuilder'; // Importando QuestionBuilder e schema
+import QuestionBuilder, { questionSchema } from './QuestionBuilder';
 
 const briefingSchema = z.object({
   title: z.string().min(1, "O título do briefing é obrigatório."),
   description: z.string().optional().nullable(),
-  // Usando o schema de pergunta importado
-  questions: z.array(questionSchema).optional(),
+  form_structure: z.array(questionSchema).min(1, "O briefing deve ter pelo menos uma pergunta."),
   display_mode: z.enum(["all_questions", "one_by_one"]).default("all_questions"),
 });
 
@@ -57,18 +56,18 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
     defaultValues: {
       title: initialData?.title || "",
       description: initialData?.description || null,
-      questions: initialData?.questions || [],
+      form_structure: initialData?.form_structure && initialData.form_structure.length > 0 ? initialData.form_structure : [{ id: crypto.randomUUID(), text: "", type: "text", required: false, label: "", placeholder: "", options: [] }],
       display_mode: initialData?.display_mode || "all_questions",
     },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "questions"
+    name: "form_structure"
   });
 
   const handleAddQuestion = () => {
-    append({ text: "", type: "text", required: false, label: "", placeholder: "", options: [] });
+    append({ id: crypto.randomUUID(), text: "", type: "text", required: false, label: "", placeholder: "", options: [] });
   };
 
   const onSubmit = async (values: BriefingFormValues) => {
@@ -81,7 +80,13 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
       const dataToSave = {
         title: values.title,
         description: values.description || null,
-        form_structure: values.questions || [], // Renomeado para form_structure no DB
+        form_structure: values.form_structure.map(q => ({
+          ...q,
+          // Garantir que o ID exista para cada pergunta
+          id: q.id || crypto.randomUUID(),
+          // Limpar opções se não for select
+          options: q.type === 'select' ? q.options : null,
+        })),
         display_mode: values.display_mode,
         updated_at: new Date().toISOString(),
       };
@@ -91,7 +96,7 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
           .from("briefing_forms")
           .update(dataToSave)
           .eq("id", initialData.id)
-          .eq("created_by", userId); // Usando created_by como user_id
+          .eq("created_by", userId);
 
         if (error) throw error;
         showSuccess("Briefing atualizado com sucesso!");
@@ -99,7 +104,7 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
         const { error } = await supabase.from("briefing_forms").insert({
           ...dataToSave,
           created_by: userId,
-          workspace_id: null, // Assumindo workspace_id nulo por enquanto
+          workspace_id: null,
         });
 
         if (error) throw error;
@@ -119,29 +124,41 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Informações Básicas */}
-        <div>
-          <Label htmlFor="title" className="text-foreground">Título do Briefing</Label>
-          <Input
-            id="title"
-            {...form.register("title")}
-            placeholder="Ex: Briefing de Lançamento de Produto"
-            className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-          />
-          {form.formState.errors.title && (
-            <p className="text-red-500 text-sm mt-1">
-              {form.formState.errors.title.message}
-            </p>
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground">Título do Briefing</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Ex: Briefing de Lançamento de Produto"
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-        <div>
-          <Label htmlFor="description" className="text-foreground">Descrição (Opcional)</Label>
-          <Textarea
-            id="description"
-            {...form.register("description")}
-            placeholder="Detalhes sobre este briefing..."
-            className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-          />
-        </div>
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground">Descrição (Opcional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Detalhes sobre este briefing..."
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                  {...field}
+                  value={field.value || ''}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Modo de Exibição */}
         <FormField
@@ -180,10 +197,15 @@ const BriefingForm: React.FC<BriefingFormProps> = ({ initialData, onBriefingSave
           <Button type="button" variant="outline" onClick={handleAddQuestion} className="w-full justify-start border-dashed border-primary text-primary hover:bg-primary/10">
             <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Pergunta
           </Button>
+          {form.formState.errors.form_structure && (
+            <p className="text-red-500 text-sm mt-1">
+              {form.formState.errors.form_structure.message}
+            </p>
+          )}
         </div>
 
-        <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-          {initialData?.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin hidden group-hover:inline" /> Atualizar Briefing</> : <><PlusCircle className="mr-2 h-4 w-4" /> Salvar Briefing</>}
+        <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (initialData?.id ? "Atualizar Briefing" : "Salvar Briefing")}
         </Button>
       </form>
     </Form>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseUrl } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,36 +41,23 @@ interface Briefing {
 }
 
 const fetchBriefing = async (briefingId: string): Promise<Briefing | null> => {
-  // Usamos a chave de serviço para ignorar RLS aqui, pois a rota é pública.
-  // No entanto, como estamos no cliente, dependemos da política de RLS pública (que não existe para SELECT).
-  // Para fins de demonstração, vamos assumir que o formulário é acessível.
-  // Em um cenário real, usaríamos uma Edge Function para buscar o formulário publicamente.
+  const response = await fetch(`${supabaseUrl}/functions/v1/fetch-public-briefing?briefingId=${briefingId}`);
   
-  // Para contornar a limitação do RLS no cliente para SELECT público, vamos simular o fetch
-  // ou, se a política de RLS for 'true' para SELECT (o que não é seguro), funcionaria.
-  // Como definimos RLS para SELECT TO authenticated, esta chamada falhará se o usuário não estiver logado.
-  // Para fins de teste, vamos temporariamente buscar a tabela 'briefing_forms' sem RLS.
-  // Se o erro persistir, o usuário precisará criar uma Edge Function para buscar o formulário.
-  
-  // Tentativa de fetch (que deve falhar se o usuário não estiver logado)
-  const { data, error } = await supabase
-    .from('briefing_forms')
-    .select('*')
-    .eq('id', briefingId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    // Se o erro for 404 ou RLS, vamos lançar um erro genérico
-    throw new Error("Formulário não encontrado ou acesso negado. Verifique o link.");
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Falha ao buscar formulário de briefing.");
   }
-  return data as Briefing || null;
+  
+  const data = await response.json();
+  return data as Briefing;
 };
 
 const BriefingPublicView: React.FC = () => {
   const { briefingId } = useParams<{ briefingId: string }>();
   const navigate = useNavigate();
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0); // Para modo one_by_one
+  const [currentStep, setCurrentStep] = useState(0);
 
   const { data: briefing, isLoading, error } = useQuery<Briefing | null, Error>({
     queryKey: ['publicBriefing', briefingId],
@@ -81,45 +68,6 @@ const BriefingPublicView: React.FC = () => {
 
   const form = useForm();
   const { handleSubmit, control, formState: { isSubmitting, errors } } = form;
-
-  useEffect(() => {
-    if (briefing) {
-      // Cria o schema dinamicamente para validação
-      const dynamicSchema: Record<string, z.ZodTypeAny> = {};
-      briefing.form_structure.forEach(q => {
-        let fieldSchema: z.ZodTypeAny = z.any();
-        
-        if (q.type === 'email') {
-          fieldSchema = z.string().email("E-mail inválido.");
-        } else if (q.type === 'number') {
-          fieldSchema = z.preprocess(
-            (val) => (val === "" ? undefined : Number(val)),
-            z.number().optional()
-          );
-        } else if (q.type === 'date') {
-          fieldSchema = z.date().optional();
-        } else {
-          fieldSchema = z.string().optional();
-        }
-
-        if (q.required) {
-          fieldSchema = fieldSchema.refine(val => {
-            if (q.type === 'date' && val instanceof Date) return true;
-            if (q.type === 'number' && typeof val === 'number') return true;
-            if (q.type === 'checkbox' && typeof val === 'boolean') return true;
-            if (typeof val === 'string' && val.trim() !== '') return true;
-            return false;
-          }, "Este campo é obrigatório.");
-        }
-        
-        dynamicSchema[q.id] = fieldSchema;
-      });
-      
-      // Re-resolve o formulário com o novo schema (necessário para validação)
-      // Nota: Em um ambiente de produção, usaríamos um estado para o resolver ou um hook customizado.
-      // Aqui, vamos confiar na validação manual para simplificar.
-    }
-  }, [briefing]);
 
   const submitResponse = useMutation({
     mutationFn: async (response: any) => {
@@ -142,20 +90,30 @@ const BriefingPublicView: React.FC = () => {
   });
 
   const onSubmit = (data: any) => {
-    // Validação manual para campos obrigatórios (se o zod resolver não for re-aplicado)
-    const errors: Record<string, string> = {};
+    // Validação manual para campos obrigatórios
+    const validationErrors: Record<string, string> = {};
     briefing?.form_structure.forEach(q => {
       if (q.required) {
         const value = data[q.id];
+        
+        let isValid = true;
         if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
-          errors[q.id] = "Este campo é obrigatório.";
+          isValid = false;
+        }
+        
+        if (q.type === 'number' && (value === undefined || value === null || isNaN(Number(value)))) {
+          isValid = false;
+        }
+        
+        if (!isValid) {
+          validationErrors[q.id] = "Este campo é obrigatório.";
         }
       }
     });
 
-    if (Object.keys(errors).length > 0) {
-      Object.keys(errors).forEach(key => {
-        form.setError(key as any, { type: 'manual', message: errors[key] });
+    if (Object.keys(validationErrors).length > 0) {
+      Object.keys(validationErrors).forEach(key => {
+        form.setError(key as any, { type: 'manual', message: validationErrors[key] });
       });
       showError("Por favor, preencha todos os campos obrigatórios.");
       return;
@@ -174,7 +132,7 @@ const BriefingPublicView: React.FC = () => {
         key={fieldName}
         name={fieldName}
         control={control}
-        rules={{ required: isRequired ? "Este campo é obrigatório." : false }}
+        defaultValue={question.type === 'checkbox' ? false : ''}
         render={({ field, fieldState: { error } }) => (
           <div className="space-y-2">
             <Label htmlFor={fieldName} className="text-foreground text-base font-medium">

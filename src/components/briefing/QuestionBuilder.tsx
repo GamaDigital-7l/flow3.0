@@ -21,12 +21,11 @@ import {
   FormLabel,
   FormMessage
 } from "@/components/ui/form";
-import { PlusCircle, Trash2, Check } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 import * as z from "zod";
 
-// Definindo o schema da pergunta (deve ser compatível com o BriefingForm)
+// Definindo o schema da pergunta
 export const questionSchema = z.object({
   id: z.string().optional(), // ID para rastreamento interno (não DB)
   text: z.string().min(1, "O texto da pergunta é obrigatório."),
@@ -40,13 +39,13 @@ export const questionSchema = z.object({
 export type QuestionFormValues = z.infer<typeof questionSchema>;
 
 interface QuestionBuilderProps {
-  form: UseFormReturn<any>; // Usamos 'any' aqui para flexibilidade, pois o form é do BriefingForm
+  form: UseFormReturn<any>;
   index: number;
   onRemove: (index: number) => void;
 }
 
 const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove }) => {
-  const questionType = form.watch(`questions.${index}.type`);
+  const questionType = form.watch(`form_structure.${index}.type`);
 
   return (
     <div className="p-3 border border-border rounded-lg space-y-3 bg-muted/20">
@@ -67,7 +66,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
         {/* Tipo de Resposta */}
         <FormField
           control={form.control}
-          name={`questions.${index}.type`}
+          name={`form_structure.${index}.type`}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs text-muted-foreground">Tipo de Resposta</FormLabel>
@@ -100,7 +99,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
         {/* Campo de Pergunta */}
         <FormField
           control={form.control}
-          name={`questions.${index}.text`}
+          name={`form_structure.${index}.text`}
           render={({ field }) => (
             <FormItem className="sm:col-span-2">
               <FormLabel className="text-xs text-muted-foreground">Pergunta</FormLabel>
@@ -121,7 +120,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <FormField
           control={form.control}
-          name={`questions.${index}.label`}
+          name={`form_structure.${index}.label`}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs text-muted-foreground">Rótulo do Campo (Opcional)</FormLabel>
@@ -130,6 +129,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
                   placeholder="Ex: Nome do Projeto"
                   className="bg-input border-border text-foreground focus-visible:ring-ring h-9 text-sm"
                   {...field}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />
@@ -138,7 +138,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
         />
         <FormField
           control={form.control}
-          name={`questions.${index}.placeholder`}
+          name={`form_structure.${index}.placeholder`}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs text-muted-foreground">Placeholder (Opcional)</FormLabel>
@@ -147,6 +147,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
                   placeholder="Ex: Digite aqui..."
                   className="bg-input border-border text-foreground focus-visible:ring-ring h-9 text-sm"
                   {...field}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />
@@ -155,7 +156,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
         />
         <FormField
           control={form.control}
-          name={`questions.${index}.required`}
+          name={`form_structure.${index}.required`}
           render={({ field }) => (
             <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-2 shadow-sm bg-card h-9 mt-5">
               <FormControl>
@@ -175,7 +176,7 @@ const QuestionBuilder: React.FC<QuestionBuilderProps> = ({ form, index, onRemove
       {questionType === 'select' && (
         <FormField
           control={form.control}
-          name={`questions.${index}.options`}
+          name={`form_structure.${index}.options`}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs text-muted-foreground">Opções (Separadas por vírgula)</FormLabel>

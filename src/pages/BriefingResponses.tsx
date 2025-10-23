@@ -22,6 +22,13 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { formatDateTime } from '@/lib/utils';
+
+interface Question {
+  id: string;
+  text: string;
+  type: "text" | "textarea" | "select" | "checkbox" | "number" | "date" | "email" | "phone" | "url";
+}
 
 interface BriefingResponse {
   id: string;
@@ -34,7 +41,7 @@ interface BriefingResponse {
 interface Briefing {
   id: string;
   title: string;
-  form_structure: { id: string; text: string; type: string }[];
+  form_structure: Question[];
 }
 
 const fetchBriefingAndResponses = async (userId: string, briefingId: string): Promise<{ briefing: Briefing | null, responses: BriefingResponse[] }> => {
@@ -124,9 +131,18 @@ const BriefingResponses: React.FC = () => {
       return <span className="text-muted-foreground italic">Não respondido</span>;
     }
     
-    if (questionType === 'date' && value instanceof Date) {
-      return format(value, 'dd/MM/yyyy');
+    // Tenta converter a string de data ISO para Date para formatação
+    if (questionType === 'date' && typeof value === 'string') {
+      try {
+        const dateObj = new Date(value);
+        if (!isNaN(dateObj.getTime())) {
+          return format(dateObj, 'dd/MM/yyyy');
+        }
+      } catch (e) {
+        // Ignora erro de parse
+      }
     }
+    
     if (questionType === 'checkbox') {
       return value ? <span className="text-green-500">Sim</span> : <span className="text-red-500">Não</span>;
     }
@@ -180,7 +196,7 @@ const BriefingResponses: React.FC = () => {
                         {response.client_name || 'Anônimo'}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(response.submitted_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                        {formatDateTime(new Date(response.submitted_at), true)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleViewResponse(response); }}>
@@ -198,11 +214,11 @@ const BriefingResponses: React.FC = () => {
 
       {/* Dialog para Visualização Detalhada da Resposta */}
       <Dialog open={isResponseDialogOpen} onOpenChange={setIsResponseDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] w-[90vw] bg-card border border-border rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
           <DialogHeader>
             <DialogTitle className="text-foreground">Detalhes da Resposta</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Resposta submetida por {selectedResponse?.client_name || 'Anônimo'} em {selectedResponse?.submitted_at ? format(new Date(selectedResponse.submitted_at), 'dd/MM/yyyy HH:mm') : 'N/A'}.
+              Resposta submetida por {selectedResponse?.client_name || 'Anônimo'} em {selectedResponse?.submitted_at ? formatDateTime(new Date(selectedResponse.submitted_at), true) : 'N/A'}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
