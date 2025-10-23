@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Input } from '@/components/ui/input';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -21,12 +21,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { Calendar } from '@/components/ui/calendar'; // Added Calendar
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Added Popover components
-import { CalendarIcon, Loader2, Save, PlusCircle } from 'lucide-react';
+import { CalendarIcon, Loader2, Save } from 'lucide-react';
 import { cn, convertToUtc, formatDateTime, parseISO } from '@/lib/utils'; // Added cn, parseISO, utilities
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import CategoryForm from './CategoryForm';
-import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
 const transactionSchema = z.object({
   date: z.date({ required_error: "A data é obrigatória." }),
@@ -37,7 +34,7 @@ const transactionSchema = z.object({
   ),
   type: z.enum(['income', 'expense']),
   category_id: z.string().nullable().optional(),
-  //account_id: z.string().min(1, "A conta é obrigatória."), // Removed
+  account_id: z.string().min(1, "A conta é obrigatória."),
   payment_method: z.string().nullable().optional(),
   client_id: z.string().nullable().optional(),
   is_recurrent_instance: z.boolean().optional().default(false),
@@ -54,10 +51,8 @@ interface TransactionFormProps {
 const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransactionSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const { categories, clients, isLoading: isDataLoading } = useFinancialData();
+  const { categories, accounts, clients, isLoading: isDataLoading } = useFinancialData();
   const queryClient = useQueryClient();
-
-  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionSchema),
@@ -67,7 +62,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
       amount: initialData?.amount || 0,
       type: initialData?.type || 'expense',
       category_id: initialData?.category_id || '',
-      //account_id: initialData?.account_id || '', // Removed
+      account_id: initialData?.account_id || '',
       payment_method: initialData?.payment_method || '',
       client_id: initialData?.client_id || '',
       is_recurrent_instance: initialData?.is_recurrent_instance || false,
@@ -88,7 +83,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
         category_id: data.category_id || null,
         client_id: data.client_id || null,
         payment_method: data.payment_method || null,
-        //account_id: data.account_id, // Removed
       };
 
       if (initialData?.id) {
@@ -113,6 +107,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
   const onSubmit = (data: TransactionFormValues) => {
     saveTransactionMutation.mutate(data);
   };
+
+  if (isDataLoading) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -216,6 +218,34 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
             )}
           />
 
+          {/* Conta */}
+          <FormField
+            control={form.control}
+            name="account_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Conta</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           {/* Categoria */}
           <FormField
             control={form.control}
@@ -223,57 +253,29 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoria (Opcional)</FormLabel>
-                <div className="flex items-center">
-                  <Select
-                    onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
-                    value={field.value || '__none__'}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="__none__">Nenhuma</SelectItem>
-                      {filteredCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="ml-2 h-8 w-8">
-                        <PlusCircle className="h-4 w-4" />
-                        <span className="sr-only">Criar Categoria</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-                      <DialogHeader>
-                        <DialogTitle className="text-foreground">Criar Nova Categoria</DialogTitle>
-                        <DialogDescription className="text-muted-foreground">
-                          Adicione uma nova categoria para organizar suas transações.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <CategoryForm
-                        onCategorySaved={() => {
-                          queryClient.invalidateQueries({ queryKey: ["financialData", userId] });
-                          setIsCategoryFormOpen(false);
-                        }}
-                        onClose={() => setIsCategoryFormOpen(false)}
-                        type={currentType}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                </div>
+                <Select
+                  onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
+                  value={field.value || '__none__'}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
+                    {filteredCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
 
-        <div className="grid grid-cols-1 gap-4">
           {/* Cliente */}
           <FormField
             control={form.control}

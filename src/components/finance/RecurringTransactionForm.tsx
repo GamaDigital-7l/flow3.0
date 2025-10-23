@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -12,23 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FinancialRecurrence } from '@/types/finance';
-import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/integrations/supabase/auth";
-import { showError, showSuccess } from "@/utils/toast";
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/integrations/supabase/auth';
+import { showError, showSuccess } from '@/utils/toast';
 import { useFinancialData } from '@/hooks/useFinancialData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, PlusCircle } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn, convertToUtc, formatDateTime, parseISO } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import CategoryForm from './CategoryForm';
-import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
 const RECURRENCE_OPTIONS = ['monthly', 'weekly', 'yearly', 'quarterly'] as const;
 type RecurrenceType = typeof RECURRENCE_OPTIONS[number];
@@ -40,6 +37,7 @@ const recurringTransactionSchema = z.object({
   frequency: z.enum(RECURRENCE_OPTIONS, { required_error: "A frequência é obrigatória." }),
   next_due_date: z.date({ required_error: "A próxima data de vencimento é obrigatória." }),
   category_id: z.string().nullable().optional(),
+  account_id: z.string().min(1, "A conta é obrigatória."),
   is_active: z.boolean().optional().default(true),
 });
 
@@ -54,10 +52,8 @@ interface RecurringTransactionFormProps {
 const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ initialData, onTransactionSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const { categories, isLoading: isDataLoading } = useFinancialData();
+  const { categories, accounts, isLoading: isDataLoading } = useFinancialData();
   const queryClient = useQueryClient();
-
-  const [isCategoryFormOpen, setIsCategoryFormOpen] = React.useState(false);
 
   const form = useForm<RecurringTransactionFormValues>({
     resolver: zodResolver(recurringTransactionSchema),
@@ -68,6 +64,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
       frequency: initialData?.frequency as RecurrenceType || 'monthly',
       next_due_date: initialData?.next_due_date ? parseISO(initialData.next_due_date) : new Date(),
       category_id: initialData?.category_id || '',
+      account_id: initialData?.account_id || '',
       is_active: initialData?.is_active ?? true,
     },
   });
@@ -109,6 +106,14 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
     saveRecurringTransaction.mutate(data);
   };
 
+  if (isDataLoading) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -120,10 +125,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
@@ -137,7 +139,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                 <FormMessage />
               </FormItem>
             )}
-          </FormField>
+          />
 
           {/* Valor */}
           <FormField
@@ -184,10 +186,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Frequência</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a frequência" />
@@ -243,14 +242,40 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           />
         </div>
 
-        {/* Categoria */}
-        <FormField
-          control={form.control}
-          name="category_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Categoria (Opcional)</FormLabel>
-              <div className="flex items-center">
+        <div className="grid grid-cols-2 gap-4">
+          {/* Conta */}
+          <FormField
+            control={form.control}
+            name="account_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Conta</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Categoria */}
+          <FormField
+            control={form.control}
+            name="category_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categoria (Opcional)</FormLabel>
                 <Select
                   onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
                   value={field.value || '__none__'}
@@ -269,57 +294,35 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
                     ))}
                   </SelectContent>
                 </Select>
-                <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="ml-2 h-8 w-8">
-                      <PlusCircle className="h-4 w-4" />
-                      <span className="sr-only">Criar Categoria</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-                    <DialogHeader>
-                      <DialogTitle className="text-foreground">Criar Nova Categoria</DialogTitle>
-                      <DialogDescription className="text-muted-foreground">
-                        Adicione uma nova categoria para organizar suas transações.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <CategoryForm
-                      onCategorySaved={() => {
-                        queryClient.invalidateQueries({ queryKey: ["financialData", userId] });
-                        setIsCategoryFormOpen(false);
-                      }}
-                      onClose={() => setIsCategoryFormOpen(false)}
-                      type={currentType}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        </FormField>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="is_active"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel className="text-foreground">Recorrência Ativa</FormLabel>
-                <FormDescription className="text-muted-foreground">
-                  Desative para pausar a recorrência.
-                </FormDescription>
-              </div>
-            </FormItem>
-          )}
-        </FormField>
+        <div className="flex items-center space-x-2">
+          <FormField
+            control={form.control}
+            name="is_active"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                  />
+                </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-foreground">Recorrência Ativa</FormLabel>
+                    <FormDescription className="text-muted-foreground">
+                      Desative para pausar a recorrência.
+                    </FormDescription>
+                  </div>
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
