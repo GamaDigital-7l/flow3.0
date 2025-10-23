@@ -24,10 +24,11 @@ const fetchCompanyTransactions = async (userId: string, period: Date): Promise<F
   const start = format(startOfMonth(period), "yyyy-MM-dd");
   const end = format(endOfMonth(period), "yyyy-MM-dd");
 
+  // Otimizando o select para buscar apenas campos essenciais e relações leves
   const { data, error } = await supabase
     .from("financial_transactions")
     .select(`
-      *,
+      id, date, description, amount, type, is_recurrent_instance,
       category:financial_categories!financial_transactions_category_id_fkey(id, name, type),
       account:financial_accounts(id, name, type),
       client:clients(id, name)
@@ -62,6 +63,7 @@ const CompanyTransactionsList: React.FC<CompanyTransactionsListProps> = ({ curre
     queryKey: ["companyTransactions", userId, currentPeriod.toISOString()],
     queryFn: () => fetchCompanyTransactions(userId!, currentPeriod),
     enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
   });
 
   const handleEditTransaction = (transaction: FinancialTransaction) => {
@@ -95,11 +97,11 @@ const CompanyTransactionsList: React.FC<CompanyTransactionsListProps> = ({ curre
   };
 
   return (
-    <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+    <Card className="bg-card border border-border rounded-xl shadow-sm card-hover-effect">
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-foreground">Transações de Empresa</CardTitle>
         <CardDescription className="text-muted-foreground">
-          Transações para {format(currentPeriod, "MMMM yyyy")}. {/* FIX TS2554 */}
+          Transações para {format(currentPeriod, "MMMM yyyy")}.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -108,7 +110,7 @@ const CompanyTransactionsList: React.FC<CompanyTransactionsListProps> = ({ curre
             <div key={t.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border border-border">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-foreground truncate">{t.description}</p>
-                <p className={cn("text-sm", t.type === 'income' ? 'text-green-500' : 'text-red-500')}>
+                <p className={cn("text-sm", t.type === 'income' ? 'text-green-500' : 'text-primary')}>
                   {formatCurrency(t.amount)} ({t.category?.name || 'Sem Categoria'})
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">

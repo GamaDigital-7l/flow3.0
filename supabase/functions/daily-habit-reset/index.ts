@@ -51,7 +51,7 @@ serve(async (req) => {
       const yesterdayLocal = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd");
       const yesterdayLocalDate = parseISO(yesterdayLocal);
 
-      console.log(`[User ${userId}] Running habit reset for ${todayLocal} (TZ: ${userTimezone}).`);
+      // console.log(`[User ${userId}] Running habit reset for ${todayLocal} (TZ: ${userTimezone}).`); // Log removido para concisão
 
       // 1. Fetch the latest instance for all habits (to get the most recent metrics)
       const { data: baseHabits, error: fetchBaseHabitsError } = await supabase
@@ -100,7 +100,7 @@ serve(async (req) => {
               date_local: baseHabit.date_local,
               completed: false,
             });
-            console.log(`[User ${userId}] Habit ${baseHabit.title} missed on ${yesterdayLocal}. Streak reset.`);
+            // console.log(`[User ${userId}] Habit ${baseHabit.title} missed on ${yesterdayLocal}. Streak reset.`); // Log removido para concisão
           } else if (isEligibleYesterday && baseHabit.completed_today) {
             // If completed yesterday, ensure alert is false
             const habitUpdates: any = { id: baseHabit.id, updated_at: nowUtc.toISOString(), alert: false };
@@ -114,11 +114,6 @@ serve(async (req) => {
             
             if (isEligibleToday && !baseHabit.paused) {
                 // Create new instance for today, inheriting metrics from the latest instance
-                // Note: If yesterday was missed, the metrics (streak, missed_days, fail_by_weekday) 
-                // should be the updated ones from step A, but since we are iterating over baseHabits 
-                // fetched before step A, we must rely on the DB update in step 2 to fix the metrics 
-                // for the new instance later, or fetch the updated metrics. 
-                // For simplicity and performance, we rely on the client to fetch the final state.
                 
                 // We set the alert based on the *current* streak (which might be 0 if yesterday was missed)
                 const alertStatus = baseHabit.streak === 0 && isSameDay(habitDateLocal, yesterdayLocalDate) && !baseHabit.completed_today;
@@ -151,7 +146,7 @@ serve(async (req) => {
           .from('habits')
           .upsert(updates, { onConflict: 'id' });
         if (updateHabitsError) console.error(`[User ${userId}] Error updating habits:`, updateHabitsError);
-        else console.log(`[User ${userId}] Updated ${updates.length} habit instances (yesterday metrics/alerts).`);
+        // else console.log(`[User ${userId}] Updated ${updates.length} habit instances (yesterday metrics/alerts).`); // Log removido para concisão
       }
       
       // 3. Batch Insert History (Missed days)
@@ -160,7 +155,7 @@ serve(async (req) => {
           .from('habit_history')
           .insert(historyInserts);
         if (insertHistoryError) console.error(`[User ${userId}] Error inserting habit history:`, insertHistoryError);
-        else console.log(`[User ${userId}] Inserted ${historyInserts.length} history entries.`);
+        // else console.log(`[User ${userId}] Inserted ${historyInserts.length} history entries.`); // Log removido para concisão
       }
       
       // 4. Batch Insert Today's New Instances
@@ -169,7 +164,7 @@ serve(async (req) => {
               .from('habits')
               .insert(newInstancesToInsert);
           if (insertNewError) console.error(`[User ${userId}] Error inserting new today instances:`, insertNewError);
-          else console.log(`[User ${userId}] Created ${newInstancesToInsert.length} new habit instances for today.`);
+          // else console.log(`[User ${userId}] Created ${newInstancesToInsert.length} new habit instances for today.`); // Log removido para concisão
       }
     }
 

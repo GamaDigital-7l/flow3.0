@@ -63,7 +63,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
   return "Sem Vencimento";
 };
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = false }) => {
+const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, compactMode = false }) => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | undefined>(undefined);
@@ -168,15 +168,15 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = f
     }
   };
 
-  const handleEditTask = (taskToEdit: Task) => {
+  const handleEditTask = React.useCallback((taskToEdit: Task) => {
     setEditingTask(taskToEdit);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  const handleAddSubtask = () => {
+  const handleAddSubtask = React.useCallback(() => {
     setEditingTask(undefined);
     setIsSubtaskFormOpen(true);
-  };
+  }, []);
 
   const isCompleted = task.is_completed;
   
@@ -326,6 +326,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = f
       )}
     </Card>
   );
-};
+});
 
 export default TaskItem;

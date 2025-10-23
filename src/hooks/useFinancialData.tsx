@@ -42,7 +42,7 @@ export const useFinancialData = (): FinancialData => {
     queryKey: ["financialData", userId],
     queryFn: () => fetchFinancialData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 60, // 60 minutes (Aumentado para dados estáticos)
   });
 
   return {

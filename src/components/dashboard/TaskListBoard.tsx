@@ -37,21 +37,28 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
 
+  // Memoizando a construção da árvore de tarefas
   const buildTaskTree = React.useCallback((allTasks: Task[]): Task[] => {
     const taskMap = new Map<string, Task>();
     allTasks.forEach(task => {
+      // Clonar a tarefa para adicionar subtasks sem modificar o array original
       taskMap.set(task.id, { ...task, subtasks: [] });
     });
 
     const rootTasks: Task[] = [];
     allTasks.forEach(task => {
+      const currentTask = taskMap.get(task.id);
+      if (!currentTask) return;
+
       if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
-        taskMap.get(task.parent_task_id)?.subtasks?.push(taskMap.get(task.id)!);
+        // Adicionar a subtarefa ao array de subtasks do pai
+        taskMap.get(task.parent_task_id)?.subtasks?.push(currentTask);
       } else {
-        rootTasks.push(taskMap.get(task.id)!);
+        rootTasks.push(currentTask);
       }
     });
 
+    // Ordenar subtasks e root tasks
     rootTasks.forEach(task => {
       if (task.subtasks) {
         task.subtasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -59,7 +66,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
     });
 
     return rootTasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-  }, []);
+  }, []); // Dependências vazias, pois a lógica é pura
 
   const taskTree = React.useMemo(() => buildTaskTree(tasks), [tasks, buildTaskTree]);
 
@@ -76,7 +83,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
 
   if (isLoading) {
     return (
-      <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
         <CardHeader className="p-3 pb-2">
           <CardTitle className="text-base font-semibold text-foreground">{title}</CardTitle>
         </CardHeader>
@@ -89,7 +96,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
 
   if (error) {
     return (
-      <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
         <CardHeader className="p-3 pb-2">
           <CardTitle className="text-base font-semibold text-foreground">{title}</CardTitle>
         </CardHeader>
@@ -101,7 +108,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
   }
 
   return (
-    <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect flex flex-col">
+    <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1 flex-shrink-0">
         <div className="flex items-center gap-1 min-w-0">
           <CardTitle className="text-base font-semibold text-foreground break-words">{title}</CardTitle>
