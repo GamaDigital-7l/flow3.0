@@ -23,10 +23,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Habit, HabitFrequency, WEEKDAY_LABELS } from "@/types/habit";
 import { format } from "date-fns";
-import dateFnsTz from "date-fns-tz"; // Importação padrão
-
-// Acessando a função utcToZonedTime através da propriedade default
-const utcToZonedTime = dateFnsTz.utcToZonedTime || (dateFnsTz as any).default.utcToZonedTime;
+import { utcToZonedTime } from "date-fns-tz"; // Importação nomeada direta
 
 const habitSchema = z.object({
   title: z.string().min(1, "O título é obrigatório."),

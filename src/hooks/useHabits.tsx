@@ -5,10 +5,7 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, parseISO, differenceInDays } from 'date-fns';
-import dateFnsTz from 'date-fns-tz'; // Importação padrão
-
-// Acessando a função utcToZonedTime através da propriedade default
-const utcToZonedTime = dateFnsTz.utcToZonedTime || (dateFnsTz as any).default.utcToZonedTime;
+import { utcToZonedTime } from 'date-fns-tz'; // Importação nomeada direta
 
 // Fetch the user's timezone from profile
 const fetchUserTimezone = async (userId: string): Promise<string> => {
