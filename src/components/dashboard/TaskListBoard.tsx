@@ -71,7 +71,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
     return (
       <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
         <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-lg font-semibold text-foreground">{title}</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">{title}</CardTitle> {/* Reduzido para text-base */}
         </CardHeader>
         <CardContent className="p-3">
           <p className="text-muted-foreground text-sm">Carregando tarefas...</p>
@@ -84,7 +84,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
     return (
       <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
         <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-lg font-semibold text-foreground">{title}</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">{title}</CardTitle> {/* Reduzido para text-base */}
         </CardHeader>
         <CardContent className="p-3">
           <p className="text-red-500 text-sm">Erro ao carregar tarefas: {error.message}</p>
@@ -95,22 +95,22 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
 
   return (
     <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 flex-wrap gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <CardTitle className="text-lg font-semibold text-foreground break-words">{title}</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1"> {/* Reduzido padding */}
+        <div className="flex items-center gap-1 min-w-0"> {/* Reduzido gap */}
+          <CardTitle className="text-base font-semibold text-foreground break-words">{title}</CardTitle> {/* Reduzido para text-base */}
           {overdueCount > 0 && (
-            <span className="flex items-center gap-1 text-sm text-red-500 flex-shrink-0">
-              <AlertCircle className="h-4 w-4" /> {overdueCount}
+            <span className="flex items-center gap-1 text-xs text-red-500 flex-shrink-0"> {/* Reduzido para text-xs */}
+              <AlertCircle className="h-3 w-3" /> {overdueCount} {/* Reduzido ícone */}
             </span>
           )}
         </div>
         {quickAddTaskInput && <div className="w-full">{quickAddTaskInput}</div>}
       </CardHeader>
-      <CardContent className="p-3 pt-0">
+      <CardContent className="p-2 pt-1"> {/* Reduzido padding */}
         {taskTree.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Nenhuma tarefa encontrada para este quadro.</p>
+          <p className="text-muted-foreground text-xs">Nenhuma tarefa encontrada para este quadro.</p> {/* Reduzido para text-xs */}
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1"> {/* Reduzido space-y-2 para space-y-1 */}
             {taskTree.map((task) => (
               <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} isDailyRecurringView={originBoard === "recurring"} />
             ))}

@@ -79,23 +79,23 @@ const QuickAddTaskInput: React.FC<QuickAddTaskInputProps> = ({ originBoard, onTa
 
   return (
     <>
-      <div className="flex gap-2 w-full">
+      <div className="flex gap-1 w-full"> {/* Reduzido gap-2 para gap-1 */}
         <Input
           type="text"
           placeholder="Adicionar tarefa rápida (Shift+Enter para detalhes)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring h-9 text-sm"
+          className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring h-8 text-xs" // Reduzido h-9 para h-8 e text-sm para text-xs
           disabled={isLoading}
         />
         <Button 
           onClick={handleAddTask} 
           disabled={isLoading || input.trim() === ""} 
-          className="w-10 h-9 p-0 bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0"
+          className="w-8 h-8 p-0 bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0" // Reduzido w-10 h-9 para w-8 h-8
           size="icon"
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+          {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlusCircle className="h-3.5 w-3.5" />} {/* Reduzido ícone */}
           <span className="sr-only">Adicionar</span>
         </Button>
       </div>
