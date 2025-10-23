@@ -21,9 +21,8 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
-  { id: "general", title: "Geral", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
-  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Adicionado icon e color
-  { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
+  { id: "general", title: "Woe Comunicação", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
+  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" },
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -87,10 +86,16 @@ const Dashboard: React.FC = () => {
 
   // As tarefas do dashboard são todas as tarefas que não são templates (pois templates são gerenciados na página /recurring)
   // E as instâncias recorrentes (que têm current_board: 'recurring')
-  const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none' || task.current_board === 'recurring');
+  const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none' || task.current_board === 'recurring' || task.overdue);
 
-  const overdueTasks = dashboardTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
+  const overdueTasks = dashboardTasks.filter(t => t.overdue && !t.is_completed);
   const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
+
+  // Adicionando o quadro de Atrasadas de volta, mas filtrando as tarefas que já estão no dashboardTasks
+  const boardsWithOverdue = [
+    ...BOARD_DEFINITIONS,
+    { id: "overdue" as TaskCurrentBoard, title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
+  ];
 
   if (isLoadingTasks) {
     return (
@@ -134,12 +139,12 @@ const Dashboard: React.FC = () => {
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
       <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {BOARD_DEFINITIONS.map((board) => (
+        {boardsWithOverdue.map((board) => (
           <TaskListBoard
             key={board.id}
             title={board.title}
             tasks={dashboardTasks.filter(t => 
-              t.current_board === board.id && 
+              (board.id === 'overdue' ? t.overdue : t.current_board === board.id) && 
               !t.is_completed
             )}
             isLoading={isLoadingTasks}

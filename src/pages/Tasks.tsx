@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, Filter, CalendarDays, Repeat, Edit, Trash2 } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { parseISO } from "@/lib/utils";
@@ -21,9 +21,8 @@ const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
   { id: "today_high_priority", title: "Hoje (Alta Prioridade)" },
   { id: "today_medium_priority", title: "Hoje (Média Prioridade)" },
   { id: "week_low_priority", title: "Esta Semana (Baixa Prioridade)" },
-  { id: "general", title: "Geral" },
+  { id: "general", title: "Woe Comunicação" },
   { id: "recurring", title: "Recorrentes" },
-  { id: "overdue", title: "Atrasadas" },
   { id: "client_tasks", title: "Tarefas de Cliente" },
   { id: "completed", title: "Concluídas" },
 ];
@@ -51,8 +50,6 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
 
   if (board === 'completed') {
     query = query.order("completed_at", { ascending: false });
-  } else if (board === 'overdue') {
-    query = query.order("due_date", { ascending: true });
   } else {
     query = query.order("is_priority", { ascending: false }).order("due_date", { ascending: true, nullsFirst: false });
   }
@@ -82,7 +79,7 @@ const getBoardTitle = (boardId: TaskOriginBoard) => {
     case "today_high_priority": return "Hoje (Alta Prioridade)";
     case "today_medium_priority": return "Hoje (Média Prioridade)";
     case "week_low_priority": return "Esta Semana (Baixa Prioridade)";
-    case "general": return "Geral";
+    case "general": return "Woe Comunicação";
     default: return boardId;
   }
 };
