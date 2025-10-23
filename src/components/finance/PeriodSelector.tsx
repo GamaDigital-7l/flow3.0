@@ -4,7 +4,10 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
+import format from 'date-fns/format'; // FIX TS2554: Importando diretamente do submódulo
+import addMonths from 'date-fns/addMonths';
+import subMonths from 'date-fns/subMonths';
+import startOfMonth from 'date-fns/startOfMonth';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -52,7 +55,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ currentPeriod, onPeriod
           <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
             {generateMonthOptions().map((date) => {
               const value = format(date, "yyyy-MM");
-              // FIX TS2554: Passando o objeto de locale
+              // A chamada está correta para v2, o problema era a importação.
               const label = format(date, "MMMM yyyy", { locale: ptBR }); 
               return <SelectItem key={value} value={value}>{label}</SelectItem>;
             })}

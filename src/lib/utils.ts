@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { parseISO as dateFnsParseISO, format as dateFnsFormat } from 'date-fns'; // Importando funções diretamente
+import dateFnsParseISO from 'date-fns/parseISO'; // FIX TS2305: Importando diretamente do submódulo
+import dateFnsFormat from 'date-fns/format';   // FIX TS2554: Importando diretamente do submódulo
 import * as dateFnsTz from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 
@@ -54,7 +55,7 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   const dateObj = date instanceof Date ? date : parseISO(date);
   
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
-  // FIX TS2554: Usando dateFnsFormat e passando o objeto de opções
+  // A chamada está correta para v2, o problema era a importação.
   return dateFnsFormat(dateObj, formatString, { locale: ptBR }); 
 }
 
