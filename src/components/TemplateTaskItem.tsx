@@ -110,11 +110,11 @@ const TemplateTaskItem: React.FC<TemplateTaskItemProps> = ({ templateTask, refet
         </div>
       </div>
       <div className="flex items-center gap-2 mt-2 sm:mt-0 flex-shrink-0">
-        <Button variant="ghost" size="icon" onClick={() => handleEditTemplateTask(templateTask)} className="text-muted-foreground hover:bg-accent hover:text-foreground">
+        <Button variant="ghost" size="icon" onClick={() => handleEditTemplateTask(templateTask)} className="text-blue-500 hover:bg-blue-500/10">
           <Edit className="h-4 w-4" />
           <span className="sr-only">Editar Tarefa Padrão</span>
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplateTask.mutate(templateTask.id)} className="text-muted-foreground hover:bg-accent hover:text-foreground">
+        <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplateTask.mutate(templateTask.id)} className="text-red-500 hover:bg-red-500/10">
           <Trash2 className="h-4 w-4" />
           <span className="sr-only">Deletar Tarefa Padrão</span>
         </Button>
