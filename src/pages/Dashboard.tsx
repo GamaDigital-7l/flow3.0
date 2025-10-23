@@ -6,8 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
 import { isToday } from "date-fns";
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
-import { Task, TaskCurrentBoard } from "@/types/task"; // Importar Task e TaskOriginBoard
-import { ListTodo, Loader2, AlertCircle, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
+import HabitListBoard from "@/components/dashboard/HabitListBoard"; // Importar HabitListBoard
+import { useTodayHabits } from "@/hooks/useHabits"; // Importar hook de hábitos
+import { Task, TaskCurrentBoard } from "@/types/task";
+import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
 import DashboardFinanceSummary from "@/components/dashboard/DashboardFinanceSummary";
@@ -23,7 +25,6 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Woe Comunicação", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
-  { id: "client_tasks", title: "Tarefas de Cliente", icon: <ListTodo className="h-5 w-5" />, color: "text-foreground" },
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -70,9 +71,7 @@ const Dashboard: React.FC = () => {
     enabled: !!userId,
   });
   
-  // Hábitos removidos.
-  const isLoadingHabits = false;
-  const errorHabits = null;
+  const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits(); // Usando o novo hook
   
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
 
@@ -80,15 +79,19 @@ const Dashboard: React.FC = () => {
     if (errorTasks) {
       showError("Erro ao carregar tarefas: " + errorTasks.message);
     }
-    // Removido o log de erro de hábitos
-  }, [errorTasks]);
+    if (errorHabits) {
+      showError("Erro ao carregar hábitos: " + errorHabits.message);
+    }
+  }, [errorTasks, errorHabits]);
 
   const handleTaskUpdated = () => {
     refetchTasks();
     setIsTaskFormOpen(false);
   };
   
-  // Removido handleHabitUpdated
+  const handleHabitUpdated = () => {
+    refetchHabits();
+  };
 
   // As tarefas do dashboard são todas as tarefas que não são templates e não estão concluídas
   const dashboardTasks = allTasks.filter(task => !task.is_completed);
@@ -135,7 +138,13 @@ const Dashboard: React.FC = () => {
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
       <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {/* Quadro de Hábitos Removido */}
+        {/* Novo Quadro de Hábitos */}
+        <HabitListBoard 
+          habits={todayHabits || []} 
+          isLoading={isLoadingHabits} 
+          error={errorHabits} 
+          refetchHabits={handleHabitUpdated} 
+        />
         
         {BOARD_DEFINITIONS.map((board) => (
           <TaskListBoard
@@ -155,6 +164,7 @@ const Dashboard: React.FC = () => {
               />
             }
             originBoard={board.id}
+            selectedDate={new Date()}
           />
         ))}
       </div>

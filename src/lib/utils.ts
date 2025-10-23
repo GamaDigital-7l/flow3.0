@@ -1,7 +1,8 @@
 import { type ClassValue, clsx } from "clsx"
-import { format, parseISO as dateFnsParseISO, FormatDistanceOptions } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { twMerge } from "tailwind-merge"
+import { format, parseISO as dateFnsParseISO } from 'date-fns'; // Importando format e parseISO
+import * as dateFnsTz from 'date-fns-tz'; // Importação padrão
+import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
 export function parseISO(dateString: string | Date): Date {
@@ -19,16 +20,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
+
 /**
  * Converte uma data local (ou string) para uma data UTC pura (sem informação de tempo/fuso)
  * formatada como 'yyyy-MM-dd'. Isso é usado para salvar datas de vencimento no DB.
- * Nota: Esta função retorna o objeto Date original, mas o formatador subsequente
- * deve tratá-lo como data pura (sem fuso horário) para salvar no DB.
  */
 export function convertToUtc(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
   // Retorna a data como se fosse UTC, mas sem alterar o dia.
+  // Isso é um hack comum para armazenar datas puras no Supabase.
   return dateObj; 
 }
 
@@ -39,8 +41,12 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
   
+  // Se a data for uma string de data pura (yyyy-MM-dd), tratamos ela como local para exibição.
+  // Se for um objeto Date com fuso horário, formatamos diretamente.
+  
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
-  return format(dateObj, formatString, { locale: ptBR } as FormatDistanceOptions);
+  // Corrigindo a chamada de format para a sintaxe da v3
+  return format(dateObj, formatString, { locale: ptBR }); 
 }
 
 /**
@@ -64,14 +70,4 @@ export function getInitials(name: string): string {
 
 export function sanitizeFilename(filename: string): string {
   return filename.replace(/[^a-z0-9_.]/gi, '_').toLowerCase();
-}
-
-/**
- * Obtém o fuso horário local do navegador.
- */
-export function getLocalTimezone(): string {
-  if (typeof window !== 'undefined') {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  }
-  return 'America/Sao_Paulo'; // Fallback
 }
