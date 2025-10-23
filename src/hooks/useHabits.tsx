@@ -32,39 +32,60 @@ function isDayEligible(date: Date, frequency: string, weekdays: number[] | null)
 
 // Fetch today's active habit instances
 const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
-  const userTimezone = await fetchUserTimezone(userId);
-  
-  // Usando Intl.DateTimeFormat para obter a data local correta no formato YYYY-MM-DD
-  const now = new Date();
-  const todayLocal = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: userTimezone }).format(now); // Formato YYYY-MM-DD
+  try {
+    const userTimezone = await fetchUserTimezone(userId);
+    
+    // Usando Intl.DateTimeFormat para obter a data local correta no formato YYYY-MM-DD
+    const now = new Date();
+    const todayLocal = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: userTimezone }).format(now); // Formato YYYY-MM-DD
 
-  const { data, error } = await supabase
-    .from('habits')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('date_local', todayLocal)
-    .eq('paused', false)
-    .order('created_at', { ascending: true });
+    const { data, error } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date_local', todayLocal)
+      .eq('paused', false)
+      .order('created_at', { ascending: true });
 
-  if (error) throw error;
-  
-  // Filter only eligible habits for today
-  return (data as Habit[] || []).filter(h => 
-    isDayEligible(parseISOFromUtils(h.date_local), h.frequency, h.weekdays)
-  );
+    if (error) {
+      // Se o erro for relacionado à tabela não encontrada, logamos e retornamos vazio.
+      if (error.message.includes('Could not find the table')) {
+        console.warn("Aviso: Tabela 'habits' não encontrada no cache do esquema. Retornando array vazio.");
+        return [];
+      }
+      throw error;
+    }
+    
+    // Filter only eligible habits for today
+    return (data as Habit[] || []).filter(h => 
+      isDayEligible(parseISOFromUtils(h.date_local), h.frequency, h.weekdays)
+    );
+  } catch (e) {
+    console.error("Erro robusto em fetchTodayHabits:", e);
+    return [];
+  }
 };
 
 // Fetch all unique habit definitions (latest instance for metrics)
 const fetchAllHabitDefinitions = async (userId: string): Promise<Habit[]> => {
-  // Use RPC to get the latest instance for each recurrence_id
-  const { data: latestHabits, error } = await supabase.rpc('get_latest_habit_instances', { user_id_input: userId });
-  
-  if (error) {
-    console.error("Error fetching latest habit instances via RPC:", error);
-    throw error;
+  try {
+    // Use RPC to get the latest instance for each recurrence_id
+    const { data: latestHabits, error } = await supabase.rpc('get_latest_habit_instances', { user_id_input: userId });
+    
+    if (error) {
+      // Se o erro for relacionado à função não encontrada, logamos e retornamos vazio.
+      if (error.message.includes('function get_latest_habit_instances(uuid) does not exist')) {
+        console.warn("Aviso: Função RPC 'get_latest_habit_instances' não encontrada. Retornando array vazio.");
+        return [];
+      }
+      throw error;
+    }
+    
+    return latestHabits as Habit[] || [];
+  } catch (e) {
+    console.error("Erro robusto em fetchAllHabitDefinitions:", e);
+    return [];
   }
-  
-  return latestHabits as Habit[] || [];
 };
 
 export const useTodayHabits = () => {
