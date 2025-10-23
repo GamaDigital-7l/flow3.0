@@ -227,7 +227,7 @@ const Proposals: React.FC = () => {
             <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
               <DialogHeader>
                 <DialogTitle className="text-foreground">{editingProposal ? "Editar Proposta" : "Criar Nova Proposta"}</DialogTitle>
-                <DialogDescription className="text-muted-foreground">
+                <DialogDescription>
                   {editingProposal ? "Atualize os detalhes do orçamento." : "Crie um orçamento profissional para enviar ao seu cliente."}
                 </DialogDescription>
               </DialogHeader>
