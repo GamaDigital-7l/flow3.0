@@ -112,7 +112,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
         ) : (
           <div className="space-y-1">
             {taskTree.map((task) => (
-              <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} isDailyRecurringView={originBoard === "recurring"} />
+              <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
             ))}
           </div>
         )}

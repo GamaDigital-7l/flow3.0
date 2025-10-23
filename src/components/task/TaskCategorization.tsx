@@ -29,7 +29,6 @@ const fetchClients = async (userId: string) => {
 const TaskCategorization: React.FC<TaskCategorizationProps> = ({ form }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  // isDailyRecurring foi removido do schema
   const selectedTagIds = form.watch("selected_tag_ids") || [];
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
@@ -79,7 +78,6 @@ const TaskCategorization: React.FC<TaskCategorizationProps> = ({ form }) => {
                 checked={field.value}
                 onCheckedChange={field.onChange}
                 className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-                // disabled={isDailyRecurring} // Removido disabled
               />
             </FormControl>
             <div className="space-y-1 leading-none">
@@ -100,7 +98,7 @@ const TaskCategorization: React.FC<TaskCategorizationProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-foreground">Cliente (Opcional)</FormLabel>
-            <Select onValueChange={(value) => field.onChange(value === '__none__' ? null : value)} value={field.value || '__none__'}>
+            <Select onValueChange={(value) => field.onChange(value === '__none__' ? null : value)} value={field.value || '__none__'} disabled={isLoadingClients}>
               <FormControl>
                 <SelectTrigger className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
                   {isLoadingClients ? (

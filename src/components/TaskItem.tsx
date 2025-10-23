@@ -14,7 +14,7 @@ import { formatDateTime, formatTime, parseISO } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { isToday, isTomorrow, isBefore, startOfDay, subDays } from "date-fns"; // Importando subDays
+import { isToday, isTomorrow, isBefore, startOfDay, subDays } from "date-fns";
 
 interface TaskItemProps {
   task: Task;
@@ -31,11 +31,6 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
   if (isTrulyOverdue) {
     // Se estiver atrasada, retorna apenas a badge de Atrasada
     return <Badge variant="destructive" className="bg-status-overdue text-white h-5 px-1.5 text-xs">Atrasada</Badge>;
-  }
-
-  // Se for um template recorrente, mostra a badge de template
-  if (task.recurrence_type !== 'none' && !task.parent_task_id) {
-    return <Badge className="bg-status-recurring text-white h-5 px-1.5 text-xs flex items-center gap-1"><Repeat className="h-3 w-3" /> Template</Badge>;
   }
 
   // Se não estiver atrasada, verifica outras condições
@@ -75,38 +70,20 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
   const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false);
 
   const isClientTaskMirrored = task.current_board === "client_tasks";
-  const isRecurrentTemplate = task.recurrence_type !== 'none' && !task.parent_task_id;
-  const isRecurrentInstance = !!task.parent_task_id;
+  // Lógica de recorrência removida
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      const { data: taskToUpdate, error: fetchTaskError } = await supabase
-        .from("tasks")
-        .select("recurrence_type, parent_task_id")
-        .eq("id", taskId)
-        .single();
-
-      if (fetchTaskError) throw fetchTaskError;
-
-      let newCurrentBoard = task.current_board;
-      let newOverdueStatus = task.overdue;
-
-      if (taskToUpdate.recurrence_type === "none") {
-        newCurrentBoard = "completed";
-        newOverdueStatus = false;
-      } else {
-        newCurrentBoard = 'completed'; 
-        newOverdueStatus = false;
-      }
-
+      // Não precisamos mais buscar o tipo de recorrência, pois é sempre 'none'
+      
       const { error: updateError } = await supabase
         .from("tasks")
         .update({
           is_completed: true,
           updated_at: new Date().toISOString(),
           completed_at: new Date().toISOString(),
-          current_board: newCurrentBoard,
-          overdue: newOverdueStatus,
+          current_board: "completed", // Sempre move para completed
+          overdue: false,
         })
         .eq("id", taskId);
 
@@ -203,12 +180,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
 
   const isCompleted = task.is_completed;
   
-  // Lógica de aviso de hábito:
-  // 1. É uma instância recorrente (tem parent_task_id)
-  // 2. Não está concluída
-  // 3. O streak do template pai é 0 (indicando que falhou ontem)
-  const streakIsBroken = isRecurrentInstance && task.recurrence_streak === 0;
-  const shouldShowHabitWarning = isRecurrentInstance && !isCompleted && streakIsBroken;
+  // Lógica de recorrência removida
+  const shouldShowHabitWarning = false; 
 
   // Nova lógica de atraso: data de vencimento existe E é anterior ao início do dia de hoje E não está concluída
   const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !isCompleted;
@@ -216,32 +189,30 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
   return (
     <Card className={cn(
       "p-2 border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
-      isCompleted && !isRecurrentTemplate ? "opacity-70" : "card-hover-effect",
-      isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50" // Usar isTrulyOverdue
+      isCompleted ? "opacity-70" : "card-hover-effect",
+      isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50"
     )}>
       <div className="flex items-start gap-2">
-        {/* Checkbox só aparece se NÃO for um template */}
-        {!isRecurrentTemplate && (
-          <Checkbox
-            id={`task-${task.id}`}
-            checked={isCompleted}
-            onCheckedChange={(checked) => {
-              if (checked) {
-                completeTaskMutation.mutate(task.id);
-              } else {
-                uncompleteTaskMutation.mutate(task.id);
-              }
-            }}
-            className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0 mt-1 h-4 w-4"
-            disabled={completeTaskMutation.isPending || uncompleteTaskMutation.isPending || isClientTaskMirrored}
-          />
-        )}
+        {/* Checkbox */}
+        <Checkbox
+          id={`task-${task.id}`}
+          checked={isCompleted}
+          onCheckedChange={(checked) => {
+            if (checked) {
+              completeTaskMutation.mutate(task.id);
+            } else {
+              uncompleteTaskMutation.mutate(task.id);
+            }
+          }}
+          className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0 mt-1 h-4 w-4"
+          disabled={completeTaskMutation.isPending || uncompleteTaskMutation.isPending || isClientTaskMirrored}
+        />
         <div className="grid gap-0.5 flex-grow min-w-0">
           <label
             htmlFor={`task-${task.id}`}
             className={cn(
               "font-medium leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70 break-words text-sm",
-              isCompleted && !isRecurrentTemplate && "line-through text-muted-foreground"
+              isCompleted && "line-through text-muted-foreground"
             )}
           >
             {task.title}
@@ -281,12 +252,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
             <Edit className="h-3.5 w-3.5" />
             <span className="sr-only">Editar Tarefa</span>
           </Button>
-          {!isRecurrentTemplate && (
-            <Button variant="ghost" size="icon" onClick={handleAddSubtask} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
-              <PlusCircle className="h-3.5 w-3.5" />
-              <span className="sr-only">Adicionar Subtarefa</span>
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" onClick={handleAddSubtask} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <PlusCircle className="h-3.5 w-3.5" />
+            <span className="sr-only">Adicionar Subtarefa</span>
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
             <Trash2 className="h-3.5 w-3.5" />
             <span className="sr-only">Deletar Tarefa</span>

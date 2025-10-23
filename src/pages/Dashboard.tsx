@@ -22,7 +22,7 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Woe Comunicação", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
-  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" },
+  // { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Removido
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -34,9 +34,6 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
       recurrence_streak,
       task_tags(
         tags(id, name, color)
-      ),
-      parent_task:tasks!parent_task_id(
-        recurrence_streak
       ),
       subtasks:tasks!parent_task_id(
         id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
@@ -54,14 +51,10 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
-    // Se for uma instância, pega o streak do pai
-    recurrence_streak: task.parent_task?.[0]?.recurrence_streak || task.recurrence_streak || 0,
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
-      template_task_id: null, // Removendo referência ao campo inexistente
     })),
-    template_task_id: null, // Removendo referência ao campo inexistente
   })) || [];
   return mappedData;
 };
@@ -90,18 +83,8 @@ const Dashboard: React.FC = () => {
     setIsTaskFormOpen(false);
   };
 
-  // As tarefas do dashboard são todas as tarefas que não são templates (pois templates são gerenciados na página /recurring)
-  // E as instâncias recorrentes (que têm current_board: 'recurring')
-  const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none' || task.current_board === 'recurring' || task.overdue);
-
-  const overdueTasks = dashboardTasks.filter(t => t.overdue && !t.is_completed);
-  const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
-
-  // Adicionando o quadro de Atrasadas
-  const boardsToDisplay = [
-    ...BOARD_DEFINITIONS,
-    // Removido o quadro 'overdue' daqui
-  ];
+  // As tarefas do dashboard são todas as tarefas que não são templates e não estão concluídas
+  const dashboardTasks = allTasks.filter(task => !task.is_completed);
 
   if (isLoadingTasks) {
     return (
@@ -145,25 +128,22 @@ const Dashboard: React.FC = () => {
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
       <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {boardsToDisplay.map((board) => (
+        {BOARD_DEFINITIONS.map((board) => (
           <TaskListBoard
             key={board.id}
             title={board.title}
             tasks={dashboardTasks.filter(t => 
-              t.current_board === board.id && 
-              !t.is_completed
+              t.current_board === board.id
             )}
             isLoading={isLoadingTasks}
             error={errorTasks}
             refetchTasks={handleTaskUpdated}
             quickAddTaskInput={
-              board.id !== "recurring" && (
-                <QuickAddTaskInput
-                  originBoard={board.id}
-                  onTaskAdded={handleTaskUpdated}
-                  dueDate={new Date()}
-                />
-              )
+              <QuickAddTaskInput
+                originBoard={board.id}
+                onTaskAdded={handleTaskUpdated}
+                dueDate={new Date()}
+              />
             }
             originBoard={board.id}
             selectedDate={new Date()}

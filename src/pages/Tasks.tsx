@@ -22,7 +22,7 @@ const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
   { id: "today_medium_priority", title: "Hoje (Média Prioridade)" },
   { id: "week_low_priority", title: "Esta Semana (Baixa Prioridade)" },
   { id: "general", title: "Woe Comunicação" },
-  { id: "recurring", title: "Recorrentes" },
+  // { id: "recurring", title: "Recorrentes" }, // Removido
   { id: "client_tasks", title: "Tarefas de Cliente" },
   { id: "completed", title: "Concluídas" },
 ];
@@ -36,9 +36,6 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
       recurrence_streak,
       task_tags(
         tags(id, name, color)
-      ),
-      parent_task:tasks!parent_task_id(
-        recurrence_streak
       ),
       subtasks:tasks!parent_task_id(
         id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
@@ -66,16 +63,13 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
-    // Se for uma instância, pega o streak do pai
-    recurrence_streak: task.parent_task?.[0]?.recurrence_streak || task.recurrence_streak || 0,
+    // Recorrência removida, mas mantendo a estrutura de subtasks
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
-      template_task_id: null, // Removendo referência ao campo inexistente
     })),
     // Ensure date fields are Date objects if needed for form/display logic
     due_date: task.due_date ? parseISO(task.due_date) : null,
-    template_task_id: null, // Removendo referência ao campo inexistente
   })) || [];
   return mappedData;
 };

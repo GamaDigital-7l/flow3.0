@@ -1,5 +1,5 @@
-export type TaskRecurrenceType = "none" | "daily" | "weekly" | "monthly" | "yearly";
-export type TaskOriginBoard = "general" | "today_high_priority" | "today_medium_priority" | "urgent" | "completed" | "recurring" | "overdue" | "week_low_priority" | "client_tasks";
+export type TaskRecurrenceType = "none"; // Mantido 'none' como único valor
+export type TaskOriginBoard = "general" | "today_high_priority" | "today_medium_priority" | "urgent" | "completed" | "overdue" | "week_low_priority" | "client_tasks";
 export type TaskCurrentBoard = TaskOriginBoard;
 
 export interface Tag {
@@ -16,9 +16,9 @@ export interface Task {
   due_date: string | null; // ISO Date string
   time: string | null; // Time string (HH:MM:SS)
   is_completed: boolean;
-  recurrence_type: TaskRecurrenceType; // Tipo de recorrência (se for template)
-  recurrence_details: string | null;
-  recurrence_time: string | null;
+  recurrence_type: TaskRecurrenceType; // Tipo de recorrência (agora sempre 'none')
+  recurrence_details: string | null; // Removido, mas mantido como null para compatibilidade de DB
+  recurrence_time: string | null; // Removido, mas mantido como null para compatibilidade de DB
   origin_board: TaskOriginBoard;
   current_board: TaskCurrentBoard;
   is_priority: boolean;
@@ -32,21 +32,12 @@ export interface Task {
   updated_at: string;
   
   subtasks?: Task[]; // Adicionado para a árvore de tarefas
+  recurrence_streak?: number; // Mantido opcionalmente para evitar erros de tipagem em fetches antigos
 }
 
-export type TemplateFormOriginBoard = "general" | "today_priority" | "today_no_priority" | "jobs_woe_today";
+export type TemplateFormOriginBoard = "general" | "today_priority" | "today_no_priority" | "jobs_woe_today"; // Mantido para compatibilidade com outros forms, mas deve ser removido se não for usado
 
-export interface TemplateTask {
-  id: string;
-  title: string;
-  description?: string | null;
-  recurrence_type: TaskRecurrenceType;
-  recurrence_details?: string | null;
-  recurrence_time?: string | null;
-  origin_board: TemplateFormOriginBoard;
-  tags: Tag[];
-}
-
+// Removendo TemplateTask
 
 export const DAYS_OF_WEEK_MAP: { [key: string]: number } = {
   Sunday: 0,

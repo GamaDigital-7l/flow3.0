@@ -14,7 +14,6 @@ import Notes from "./pages/Notes";
 import Results from "./pages/Results";
 import Settings from "./pages/Settings";
 import Finance from "./pages/Finance";
-import RecurringTasks from "./pages/RecurringTasks";
 import Books from "./pages/Books";
 import BookDetails from "./pages/BookDetails";
 import BookReaderFullScreen from "./pages/BookReaderFullScreen";
@@ -133,9 +132,9 @@ function AppContent() {
             
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/recurring" element={<RecurringTasks />} />
+            {/* Rota /recurring removida */}
             <Route path="/finance" element={<Finance />} />
-            <Route path="/financial-management" element={<FinancialManagement />} /> {/* Nova Rota */}
+            <Route path="/financial-management" element={<FinancialManagement />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/study" element={<Study />} />
             <Route path="/health" element={<Health />} />

@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, CheckCircle2, Repeat, Loader2, CalendarDays } from 'lucide-react';
+import { DollarSign, TrendingUp, CheckCircle2, Repeat, Loader2, CalendarDays, ListTodo } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, isToday, isThisWeek, isThisMonth, startOfWeek, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
@@ -19,8 +19,6 @@ interface TaskMetric {
   id: string;
   is_completed: boolean;
   completed_at: string | null;
-  recurrence_type: string;
-  recurrence_streak: number; // Assumindo que este campo existe na tabela tasks
 }
 
 const fetchMetrics = async (userId: string): Promise<{ profile: Profile | null, tasks: TaskMetric[] }> => {
@@ -32,7 +30,7 @@ const fetchMetrics = async (userId: string): Promise<{ profile: Profile | null, 
       .single(),
     supabase
       .from("tasks")
-      .select("id, is_completed, completed_at, recurrence_type, recurrence_streak")
+      .select("id, is_completed, completed_at")
       .eq("user_id", userId)
       .order("completed_at", { ascending: false, nullsFirst: true })
   ]);
@@ -84,13 +82,7 @@ const DashboardResultsSummary: React.FC = () => {
   const completedThisWeek = data?.tasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') >= startOfThisWeek).length || 0;
   const completedThisMonth = data?.tasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') >= startOfThisMonth).length || 0;
   
-  // Cálculo do maior streak (assumindo que recurrence_streak existe na tabela tasks)
-  const maxStreak = data?.tasks.reduce((max, t) => {
-    if (t.recurrence_type === 'daily' && t.recurrence_streak > max) {
-      return t.recurrence_streak;
-    }
-    return max;
-  }, 0) || 0;
+  const totalTasks = data?.tasks.length || 0;
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
@@ -118,34 +110,12 @@ const DashboardResultsSummary: React.FC = () => {
 
       <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Tarefas Concluídas (Semana)</CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
+          <ListTodo className="h-4 w-4 text-blue-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-foreground">{completedThisWeek}</div>
-          <p className="text-xs text-muted-foreground">Concluídas esta semana.</p>
-        </CardContent>
-      </Card>
-
-      <Card className="frosted-glass">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Tarefas Concluídas (Mês)</CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-foreground">{completedThisMonth}</div>
-          <p className="text-xs text-muted-foreground">Concluídas este mês.</p>
-        </CardContent>
-      </Card>
-
-      <Card className="frosted-glass">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Maior Streak Diário</CardTitle>
-          <Repeat className="h-4 w-4 text-orange-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-foreground">{maxStreak}</div>
-          <p className="text-xs text-muted-foreground">Dias consecutivos.</p>
+          <div className="text-2xl font-bold text-foreground">{totalTasks}</div>
+          <p className="text-xs text-muted-foreground">Tarefas criadas.</p>
         </CardContent>
       </Card>
     </div>

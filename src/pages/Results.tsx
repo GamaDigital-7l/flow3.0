@@ -21,14 +21,15 @@ interface Profile {
 }
 
 interface TaskMetric extends Task {
-  recurrence_streak: number; // Assumindo que este campo existe no DB
+  // recurrence_streak removido, mas mantido para compatibilidade de fetch
+  recurrence_streak: number; 
 }
 
 const fetchAllTasks = async (userId: string): Promise<TaskMetric[]> => {
   const { data, error } = await supabase
     .from("tasks")
     .select(`
-      id, title, is_completed, completed_at, due_date, recurrence_type, recurrence_details, recurrence_streak
+      id, title, is_completed, completed_at, due_date
     `)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -88,18 +89,6 @@ const Results: React.FC = () => {
   const totalCompleted = completedTasks.length;
   const completionRate = totalTasks > 0 ? (totalCompleted / totalTasks) * 100 : 0;
 
-  // --- Métricas de Recorrência Diária ---
-  const dailyRecurringTemplates = allTasks.filter(t => t.recurrence_type === 'daily');
-  const totalDailyTemplates = dailyRecurringTemplates.length;
-  
-  // Maior streak (usando o campo recurrence_streak)
-  const maxStreak = allTasks.reduce((max, t) => {
-    if (t.recurrence_type === 'daily' && t.recurrence_streak > max) {
-      return t.recurrence_streak;
-    }
-    return max;
-  }, 0);
-
   // --- Renderização ---
   if (isLoading) {
     return (
@@ -145,14 +134,14 @@ const Results: React.FC = () => {
         </Card>
         <Card className="bg-card border-border shadow-sm frosted-glass card-hover-effect">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Maior Streak Diário</CardTitle>
-            <Repeat className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
+            <ListTodo className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {maxStreak}
+              {totalTasks}
             </div>
-            <p className="text-xs text-muted-foreground">Dias consecutivos.</p>
+            <p className="text-xs text-muted-foreground">Tarefas criadas.</p>
           </CardContent>
         </Card>
       </div>
@@ -187,31 +176,6 @@ const Results: React.FC = () => {
             <div className="text-2xl font-bold text-foreground">{completedThisMonth}</div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Tarefas Recorrentes Diárias (Streaks) */}
-      <h2 className="text-2xl font-bold text-foreground mb-4">Templates Recorrentes Diários</h2>
-      <div className="space-y-3">
-        {dailyRecurringTemplates.length > 0 ? (
-          dailyRecurringTemplates.map(task => (
-            <Card key={task.id} className="bg-card border-border shadow-sm p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <Repeat className="h-5 w-5 text-primary flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground truncate">{task.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Template de recorrência diária.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge className="bg-orange-500 text-white">Streak: {task.recurrence_streak}</Badge>
-              </div>
-            </Card>
-          ))
-        ) : (
-          <p className="text-muted-foreground">Nenhum template recorrente diário configurado.</p>
-        )}
       </div>
     </div>
   );

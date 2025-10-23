@@ -19,7 +19,7 @@ interface SidebarProps {
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Tarefas", href: "/tasks", icon: ListTodo },
-  { name: "Recorrentes", href: "/recurring", icon: Repeat },
+  // { name: "Recorrentes", href: "/recurring", icon: Repeat }, // Removido
   { name: "Financeiro", href: "/finance", icon: DollarSign },
   { name: "Metas", href: "/goals", icon: Target },
   { name: "Saúde", href: "/health", icon: Dumbbell },
