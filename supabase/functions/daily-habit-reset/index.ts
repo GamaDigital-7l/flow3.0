@@ -50,18 +50,18 @@ serve(async (req) => {
       const todayLocalDate = parseISO(todayLocal);
       const yesterdayLocalDate = parseISO(yesterdayLocal);
 
-      console.log(`[User ${userId}] Running habit reset for ${todayLocal} (TZ: ${userTimezone}).`);
+      console.log(`[User ${userId}] Running recurrence reset for ${todayLocal} (TZ: ${userTimezone}).`);
 
       // 1. Fetch all active habits that belong to yesterday
       const { data: yesterdayHabits, error: fetchHabitsError } = await supabase
-        .from('user_habits') // MUDANÇA: Nova tabela
+        .from('recurrence_instances') // MUDANÇA: Nova tabela
         .select('*')
         .eq('user_id', userId)
         .eq('paused', false)
         .eq('date_local', yesterdayLocal);
 
       if (fetchHabitsError) {
-        console.error(`[User ${userId}] Error fetching yesterday habits:`, fetchHabitsError);
+        console.error(`[User ${userId}] Error fetching yesterday recurrences:`, fetchHabitsError);
         continue;
       }
 
@@ -103,7 +103,7 @@ serve(async (req) => {
             completed: false,
           });
           
-          console.log(`[User ${userId}] Habit ${habit.title} missed on ${yesterdayLocal}. Streak reset.`);
+          console.log(`[User ${userId}] Recurrence ${habit.title} missed on ${yesterdayLocal}. Streak reset.`);
         } else if (isEligible && habit.completed_today) {
           // If completed yesterday, ensure alert is false
           habitUpdates.alert = false;
@@ -114,27 +114,27 @@ serve(async (req) => {
         }
       }
 
-      // 2. Batch Update Habits (Yesterday's metrics)
+      // 2. Batch Update Recurrence Instances (Yesterday's metrics)
       if (updates.length > 0) {
         const { error: updateHabitsError } = await supabase
-          .from('user_habits') // MUDANÇA: Nova tabela
+          .from('recurrence_instances') // MUDANÇA: Nova tabela
           .upsert(updates, { onConflict: 'id' });
-        if (updateHabitsError) console.error(`[User ${userId}] Error updating habits:`, updateHabitsError);
-        else console.log(`[User ${userId}] Updated ${updates.length} habit instances (yesterday's metrics).`);
+        if (updateHabitsError) console.error(`[User ${userId}] Error updating recurrence instances:`, updateHabitsError);
+        else console.log(`[User ${userId}] Updated ${updates.length} recurrence instances (yesterday's metrics).`);
       }
       
       // 3. Batch Insert History (Missed days)
       if (historyInserts.length > 0) {
         const { error: insertHistoryError } = await supabase
-          .from('user_habit_history') // MUDANÇA: Nova tabela
-          .upsert(historyInserts, { onConflict: 'recurrence_id, user_id, date_local' });
-        if (insertHistoryError) console.error(`[User ${userId}] Error inserting habit history:`, insertHistoryError);
+          .from('recurrence_history') // MUDANÇA: Nova tabela
+          .upsert(historyInserts, { onConflict: 'recurrence_id, date_local' });
+        if (insertHistoryError) console.error(`[User ${userId}] Error inserting recurrence history:`, insertHistoryError);
         else console.log(`[User ${userId}] Inserted ${historyInserts.length} history entries (missed days).`);
       }
       
       // 4. Ensure Today's Instance Exists (if eligible)
       const { data: existingTodayInstances, error: fetchExistingError } = await supabase
-        .from('user_habits') // MUDANÇA: Nova tabela
+        .from('recurrence_instances') // MUDANÇA: Nova tabela
         .select('recurrence_id')
         .eq('user_id', userId)
         .eq('date_local', todayLocal);
@@ -148,10 +148,10 @@ serve(async (req) => {
         
         // Fetch the latest state of the base habit (the one with the highest date_local)
         const { data: baseHabits, error: fetchBaseHabitsError } = await supabase
-            .rpc('get_latest_user_habit_instances', { user_id_input: userId }); // MUDANÇA: Nova função RPC
+            .rpc('get_latest_recurrence_instances', { user_id_input: userId }); // MUDANÇA: Nova função RPC
 
         if (fetchBaseHabitsError) {
-            console.error(`[User ${userId}] Error fetching base habits via RPC:`, fetchBaseHabitsError);
+            console.error(`[User ${userId}] Error fetching base recurrences via RPC:`, fetchBaseHabitsError);
         } else {
             for (const baseHabit of baseHabits) {
                 if (!existingRecurrenceIds.has(baseHabit.recurrence_id)) {
@@ -184,17 +184,17 @@ serve(async (req) => {
         
         if (newInstancesToInsert.length > 0) {
             const { error: insertNewError } = await supabase
-                .from('user_habits') // MUDANÇA: Nova tabela
+                .from('recurrence_instances') // MUDANÇA: Nova tabela
                 .insert(newInstancesToInsert);
                 
             if (insertNewError) console.error(`[User ${userId}] Error inserting new today instances:`, insertNewError);
-            else console.log(`[User ${userId}] Created ${newInstancesToInsert.length} new habit instances for today.`);
+            else console.log(`[User ${userId}] Created ${newInstancesToInsert.length} new recurrence instances for today.`);
         }
       }
     }
 
     return new Response(
-      JSON.stringify({ message: "Daily habit reset and metric update complete." }),
+      JSON.stringify({ message: "Daily recurrence reset and metric update complete." }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
 
