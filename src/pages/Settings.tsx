@@ -7,7 +7,6 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import ProfileManagementCard from "@/components/settings/ProfileManagementCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -21,23 +20,10 @@ const Settings: React.FC = () => {
   const userId = session?.user?.id;
   const userEmail = session?.user?.email;
 
-  const [isUpdatingProfileEmail, setIsUpdatingProfileEmail] = useState(false);
-
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {},
   });
-
-  // Função para garantir que o email do perfil esteja sincronizado (mantida por segurança)
-  const fetchProfileEmailStatus = useCallback(async () => {
-    // Esta função agora só serve para ser chamada após a sincronização do email
-    // A lógica de fetch de status de integração foi removida.
-  }, []);
-
-  useEffect(() => {
-    // Apenas para garantir que o ProfileManagementCard funcione
-    fetchProfileEmailStatus();
-  }, [fetchProfileEmailStatus]);
 
   const onSubmit = async () => {
     showSuccess("Configurações salvas com sucesso!");
@@ -49,14 +35,6 @@ const Settings: React.FC = () => {
       <p className="text-lg text-muted-foreground">
         Gerencie as configurações do seu aplicativo.
       </p>
-
-      <ProfileManagementCard
-        userId={userId}
-        userEmail={userEmail}
-        isUpdatingProfileEmail={isUpdatingProfileEmail}
-        setIsUpdatingProfileEmail={setIsUpdatingProfileEmail}
-        onProfileEmailSynced={fetchProfileEmailStatus}
-      />
 
       <Card className="w-full max-w-lg bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
         <CardHeader>
