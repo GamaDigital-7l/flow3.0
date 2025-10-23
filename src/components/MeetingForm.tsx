@@ -26,14 +26,12 @@ import { FormControl } from "@/components/ui/form"; // Importando FormControl
 export const meetingSchema = z.object({ // Exportar o schema
   id: z.string().optional(), // Adicionar id
   title: z.string().min(1, "O título da reunião é obrigatório."),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   date: z.date().default(new Date()),
   start_time: z.string().min(1, "O horário de início é obrigatório."),
   end_time: z.string().optional().nullable(),
-  location: z.string().optional(),
-  sendToGoogleCalendar: z.boolean().default(false), 
-  google_event_id: z.string().nullable().optional(), // Adicionar google_event_id
-  google_html_link: z.string().nullable().optional(), // Adicionar google_html_link
+  location: z.string().optional().nullable(),
+  // Campos do Google Calendar removidos do schema
 });
 
 export type MeetingFormValues = z.infer<typeof meetingSchema>;
@@ -56,14 +54,11 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ initialData, onMeetingSaved, 
       date: new Date(initialData.date),
     } : {
       title: "",
-      description: "",
+      description: null,
       date: new Date(),
       start_time: "",
       end_time: null,
-      location: "",
-      sendToGoogleCalendar: false,
-      google_event_id: null,
-      google_html_link: null,
+      location: null,
     },
   });
 
@@ -75,87 +70,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ initialData, onMeetingSaved, 
     setIsSubmitting(true);
 
     try {
-      let googleEventId: string | null = values.google_event_id || null;
-      let googleHtmlLink: string | null = values.google_html_link || null;
-      const currentMeetingId = values.id;
-
       const formattedDate = format(values.date, "yyyy-MM-dd");
-
-      if (values.sendToGoogleCalendar) {
-        if (!session?.access_token) {
-          showError("Sessão não encontrada. Faça login novamente para interagir com o Google Calendar.");
-          setIsSubmitting(false);
-          return;
-        }
-
-        if (googleEventId) {
-          const { data: googleData, error: googleError } = await supabase.functions.invoke('update-google-calendar-event', {
-            body: {
-              googleEventId: googleEventId,
-              title: values.title,
-              description: values.description,
-              date: formattedDate,
-              startTime: values.start_time,
-              endTime: values.end_time,
-              location: values.location,
-            },
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-          });
-
-          if (googleError) {
-            throw new Error(googleError.message || "Erro ao atualizar evento no Google Calendar.");
-          }
-          googleEventId = googleData.googleEventId;
-          googleHtmlLink = googleData.htmlLink;
-          showSuccess("Evento atualizado no Google Calendar!");
-        } else {
-          const { data: googleData, error: googleError } = await supabase.functions.invoke('create-google-calendar-event', {
-            body: {
-              title: values.title,
-              description: values.description,
-              date: formattedDate,
-              startTime: values.start_time,
-              endTime: values.end_time,
-              location: values.location,
-            },
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-          });
-
-          if (googleError) {
-            throw new Error(googleError.message || "Erro ao criar evento no Google Calendar.");
-          }
-          googleEventId = googleData.googleEventId;
-          googleHtmlLink = googleData.htmlLink;
-          showSuccess("Evento criado no Google Calendar!");
-        }
-      } else if (googleEventId) {
-        if (!session?.access_token) {
-          showError("Sessão não encontrada. Faça login novamente para interagir com o Google Calendar.");
-          setIsSubmitting(false);
-          return;
-        }
-        const { error: googleDeleteError } = await supabase.functions.invoke('delete-google-calendar-event', {
-          body: { googleEventId: googleEventId },
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
-
-        if (googleDeleteError) {
-          if (googleDeleteError.status === 404) {
-            console.warn(`Evento Google Calendar ${googleEventId} não encontrado, mas a exclusão foi solicitada. Prosseguindo com exclusão local.`);
-          } else {
-            throw new Error(googleDeleteError.message || "Erro ao deletar evento do Google Calendar.");
-          }
-        }
-        googleEventId = null;
-        googleHtmlLink = null;
-        showSuccess("Evento removido do Google Calendar!");
-      }
 
       const dataToSave = {
         title: values.title,
@@ -164,16 +79,15 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ initialData, onMeetingSaved, 
         start_time: values.start_time,
         end_time: values.end_time || null,
         location: values.location || null,
-        google_event_id: googleEventId, 
-        google_html_link: googleHtmlLink, 
+        // Campos do Google Calendar removidos
         updated_at: new Date().toISOString(),
       };
 
-      if (currentMeetingId) {
+      if (initialData?.id) {
         const { error } = await supabase
           .from("meetings")
           .update(dataToSave)
-          .eq("id", currentMeetingId)
+          .eq("id", initialData.id)
           .eq("user_id", userId);
 
         if (error) throw error;
@@ -237,7 +151,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ initialData, onMeetingSaved, 
               >
                 <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 {form.watch("date") ? (
-                  format(form.watch("date")!, "PPP") // FIX TS2554
+                  format(form.watch("date")!, "PPP")
                 ) : (
                   <span>Escolha uma data</span>
                 )}
@@ -290,22 +204,12 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ initialData, onMeetingSaved, 
           className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
         />
       </div>
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="sendToGoogleCalendar"
-          checked={form.watch("sendToGoogleCalendar")}
-          onCheckedChange={(checked) => form.setValue("sendToGoogleCalendar", checked as boolean)}
-          className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-        />
-        <Label htmlFor="sendToGoogleCalendar" className="text-foreground">
-          Enviar para Google Calendar
-        </Label>
-      </div>
+      
       <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
         {isSubmitting ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
-          form.watch("id") ? "Atualizar Reunião" : "Adicionar Reunião"
+          initialData?.id ? "Atualizar Reunião" : "Adicionar Reunião"
         )}
       </Button>
     </form>

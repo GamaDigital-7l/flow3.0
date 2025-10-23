@@ -11,8 +11,8 @@ import { ThemeToggle } from "../ThemeToggle"; // Importar ThemeToggle
 
 interface HeaderProps {
   onMenuClick: () => void;
-  deferredPrompt: Event | null;
-  onInstallClick: () => void;
+  deferredPrompt: Event | null; // Mantido para compatibilidade com Layout, mas não usado
+  onInstallClick: () => void; // Mantido para compatibilidade com Layout, mas não usado
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onInstallClick }) => {
@@ -45,13 +45,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
         </Link>
       </div>
       <div className="flex items-center gap-2">
-        <ThemeToggle /> {/* Adicionado o botão de troca de tema */}
-        {deferredPrompt && (
-          <Button variant="ghost" size="icon" onClick={onInstallClick} className="text-primary hover:text-primary-light h-8 w-8">
-            <Download className="h-4 w-4" />
-            <span className="sr-only">Instalar Aplicativo</span>
-          </Button>
-        )}
+        <ThemeToggle />
+        {/* Botão de instalação PWA removido */}
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8">
           <Bell className="h-4 w-4" />
           <span className="sr-only">Notificações</span>

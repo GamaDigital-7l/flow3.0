@@ -12,8 +12,8 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  deferredPrompt: Event | null;
-  onInstallClick: () => void;
+  deferredPrompt: Event | null; // Mantido para compatibilidade com Layout, mas não usado
+  onInstallClick: () => void; // Mantido para compatibilidade com Layout, mas não usado
 }
 
 const navItems = [
@@ -27,7 +27,6 @@ const navItems = [
   { name: "Livros", href: "/books", icon: BookOpen },
   { name: "Notas", href: "/notes", icon: Notebook },
   { name: "Resultados", href: "/results", icon: BarChart3 },
-  // { name: "Briefing", href: "/briefing", icon: ListTodo }, // REMOVIDO
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
@@ -82,12 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPromp
               Configurações
             </Button>
           </Link>
-          {deferredPrompt && (
-            <Button onClick={onInstallClick} className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 h-9 px-3 text-sm">
-              <Download className="mr-2 h-4 w-4" />
-              Instalar App
-            </Button>
-          )}
+          {/* Botão de instalação PWA removido */}
           <Button onClick={handleLogout} variant="destructive" className="w-full h-9 px-3 text-sm">
             Sair
           </Button>

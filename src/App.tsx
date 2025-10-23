@@ -97,8 +97,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 function AppContent() {
   const { session, isLoading } = useSession();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
-  const location = useLocation();
+  
+  // Removendo deferredPrompt e handleInstallClick
 
   const handleOnline = () => setIsOnline(true);
   const handleOffline = () => setIsOnline(false);
@@ -112,29 +112,6 @@ function AppContent() {
     };
   }, []);
 
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const handleInstallClick = useCallback(() => {
-    if (deferredPrompt) {
-      (deferredPrompt as any).prompt();
-      (deferredPrompt as any).userChoice.then((choiceResult: { outcome: string }) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt');
-        } else {
-          console.log('User dismissed the install prompt');
-        }
-        setDeferredPrompt(null);
-      });
-    }
-  }, [deferredPrompt]);
-
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Carregando sessão...</div>;
   }
@@ -146,12 +123,11 @@ function AppContent() {
         {/* Rotas Públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/approval/:uniqueId" element={<NotFound />} />
-        {/* Rota pública /briefing/:briefingId removida */}
         <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
 
         {/* Rotas Protegidas */}
         <Route element={<ProtectedRoute session={session} />}>
-          <Route element={<Layout isOnline={isOnline} deferredPrompt={deferredPrompt} onInstallClick={handleInstallClick} />}>
+          <Route element={<Layout isOnline={isOnline} deferredPrompt={null} onInstallClick={() => {}} />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             
             <Route path="/dashboard" element={<Dashboard />} />
@@ -166,7 +142,6 @@ function AppContent() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/books" element={<Books />} />
             <Route path="/books/:id" element={<BookDetails />} />
-            {/* Rotas /briefing e /briefing/:briefingId/responses removidas */}
           </Route>
         </Route>
         

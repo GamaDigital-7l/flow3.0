@@ -26,29 +26,14 @@ const MeetingItem: React.FC<MeetingItemProps> = ({ meeting, refetchMeetings }) =
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingMeeting, setEditingMeeting] = React.useState<MeetingFormValues & { id: string } | undefined>(undefined);
 
-  const handleDeleteMeeting = async (meetingId: string, googleEventId: string | null) => {
+  const handleDeleteMeeting = async (meetingId: string) => {
     if (!userId) {
       showError("Usuário não autenticado.");
       return;
     }
     if (window.confirm("Tem certeza que deseja deletar esta reunião?")) {
       try {
-        if (googleEventId && session?.access_token) {
-          const { error: googleDeleteError } = await supabase.functions.invoke('delete-google-calendar-event', {
-            body: { googleEventId: googleEventId },
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-          });
-          if (googleDeleteError) {
-            if (googleDeleteError.status === 404) {
-              console.warn(`Evento Google Calendar ${googleEventId} não encontrado, mas a exclusão foi solicitada. Prosseguindo com exclusão local.`);
-            } else {
-              throw new Error(googleDeleteError.message || "Erro ao deletar evento do Google Calendar.");
-            }
-          }
-          showSuccess("Evento removido do Google Calendar!");
-        }
+        // Lógica de exclusão do Google Calendar removida
 
         const { error } = await supabase
           .from("meetings")
@@ -60,7 +45,6 @@ const MeetingItem: React.FC<MeetingItemProps> = ({ meeting, refetchMeetings }) =
         showSuccess("Reunião deletada com sucesso!");
         refetchMeetings();
         queryClient.invalidateQueries({ queryKey: ["futureMeetings", userId] });
-        queryClient.invalidateQueries({ queryKey: ["googleEvents", userId] });
       } catch (err: any) {
         showError("Erro ao deletar reunião: " + err.message);
         console.error("Erro ao deletar reunião:", err);
@@ -72,14 +56,11 @@ const MeetingItem: React.FC<MeetingItemProps> = ({ meeting, refetchMeetings }) =
     setEditingMeeting({
       id: meetingToEdit.id,
       title: meetingToEdit.title,
-      description: meetingToEdit.description || "",
+      description: meetingToEdit.description || null,
       date: new Date(meetingToEdit.date),
       start_time: meetingToEdit.start_time,
       end_time: meetingToEdit.end_time || null,
-      location: meetingToEdit.location || "",
-      sendToGoogleCalendar: !!meetingToEdit.google_event_id,
-      google_event_id: meetingToEdit.google_event_id,
-      google_html_link: meetingToEdit.google_html_link,
+      location: meetingToEdit.location || null,
     });
     setIsFormOpen(true);
   };
@@ -100,18 +81,14 @@ const MeetingItem: React.FC<MeetingItemProps> = ({ meeting, refetchMeetings }) =
             <MapPin className="h-3 w-3 flex-shrink-0" /> {meeting.location}
           </p>
         )}
-        {meeting.google_html_link && (
-          <a href={meeting.google_html_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-            <LinkIcon className="h-3 w-3 flex-shrink-0" /> Ver no Google Calendar
-          </a>
-        )}
+        {/* Link do Google Calendar removido */}
       </div>
       <div className="flex-shrink-0 flex gap-1">
         <Button variant="ghost" size="icon" onClick={() => handleEditMeeting(meeting)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
           <Edit className="h-4 w-4" />
           <span className="sr-only">Editar Reunião</span>
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => handleDeleteMeeting(meeting.id, meeting.google_event_id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
+        <Button variant="ghost" size="icon" onClick={() => handleDeleteMeeting(meeting.id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
           <Trash2 className="h-4 w-4" />
           <span className="sr-only">Deletar Reunião</span>
         </Button>
