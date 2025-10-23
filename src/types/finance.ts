@@ -92,6 +92,7 @@ export interface FinancialGoal {
   current_amount: number;
   target_date: string | null; // ISO date string
   linked_account_id: string | null;
+  status: 'pending' | 'in_progress' | 'completed' | 'archived'; // Adicionado status
   created_at: string;
   // Relações (opcionais, para joins)
   linked_account?: FinancialAccount;

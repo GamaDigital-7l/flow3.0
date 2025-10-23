@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
-import { format, subDays, isSameDay, getDay, parseISO, differenceInDays } from 'date-fns';
+import { format, subDays, isSameDay, getDay, differenceInDays } from 'date-fns';
+import { parseISO } from '@/lib/utils'; // Usando parseISO do utils
 import * as dateFnsTz from 'date-fns-tz'; // Importação padrão
 
 // Solução robusta para lidar com exportações mistas no Vite

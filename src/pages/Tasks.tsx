@@ -18,6 +18,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitListBoard from "@/components/dashboard/HabitListBoard"; // Importar HabitListBoard
 import { useTodayHabits } from "@/hooks/useHabits"; // Importar hook de hábitos
+import HabitItem from "@/components/HabitItem"; // Importar HabitItem
 
 const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
   { id: "today_high_priority", title: "Hoje (Alta Prioridade)" },
@@ -85,6 +86,9 @@ const getBoardTitle = (boardId: TaskOriginBoard) => {
   }
 };
 
+// Definindo um tipo de união para as abas, incluindo 'recurrence'
+type TaskTab = TaskCurrentBoard | "recurrence";
+
 const Tasks: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -92,14 +96,14 @@ const Tasks: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [activeBoard, setActiveBoard] = useState<TaskCurrentBoard>("today_high_priority");
+  const [activeBoard, setActiveBoard] = useState<TaskTab>("today_high_priority");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
   const { data: tasks, isLoading: isLoadingTasks, error: errorTasks, refetch: refetchTasks } = useQuery<Task[], Error>({
     queryKey: ["tasks", userId, activeBoard],
-    queryFn: () => fetchTasks(userId!, activeBoard),
-    enabled: !!userId,
+    queryFn: () => fetchTasks(userId!, activeBoard as TaskCurrentBoard),
+    enabled: !!userId && activeBoard !== "recurrence",
   });
   
   const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits(); // Usando o novo hook
@@ -116,7 +120,7 @@ const Tasks: React.FC = () => {
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
-    setIsFormOpen(true);
+    setIsTaskFormOpen(true); // Corrigido: setIsFormOpen -> setIsTaskFormOpen
   };
 
   const handleAddTask = () => {
@@ -172,7 +176,7 @@ const Tasks: React.FC = () => {
                 initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } as any : undefined}
                 onTaskSaved={handleTaskUpdated}
                 onClose={() => setIsTaskFormOpen(false)}
-                initialOriginBoard={activeBoard}
+                initialOriginBoard={activeBoard as TaskOriginBoard}
             />
           </DialogContent>
         </Dialog>
@@ -183,7 +187,7 @@ const Tasks: React.FC = () => {
           {/* Adicionando a aba de Hábitos Recorrentes */}
           <Button
             variant={activeBoard === "recurrence" ? "default" : "outline"}
-            onClick={() => setActiveBoard("recurrence" as TaskCurrentBoard)}
+            onClick={() => setActiveBoard("recurrence")}
             className="flex-shrink-0"
           >
             <Repeat className="mr-2 h-4 w-4" /> Recorrentes ({todayHabits?.length || 0})
@@ -196,7 +200,7 @@ const Tasks: React.FC = () => {
               onClick={() => setActiveBoard(board.id)}
               className="flex-shrink-0"
             >
-              {board.title} ({tasks?.length || 0})
+              {board.title} ({activeBoard === board.id ? (tasks?.length || 0) : 0})
             </Button>
           ))}
         </div>
@@ -223,7 +227,7 @@ const Tasks: React.FC = () => {
       ) : (
         <Card className="bg-card border-border shadow-lg frosted-glass">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard)}</CardTitle>
+            <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard as TaskOriginBoard)}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {tasks && tasks.length > 0 ? (
@@ -250,7 +254,7 @@ const Tasks: React.FC = () => {
               initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } as any : undefined}
               onTaskSaved={handleTaskUpdated}
               onClose={() => setIsTaskFormOpen(false)}
-              initialOriginBoard={activeBoard}
+              initialOriginBoard={activeBoard as TaskOriginBoard}
           />
         </DialogContent>
       </Dialog>

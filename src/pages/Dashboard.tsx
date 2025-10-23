@@ -164,7 +164,6 @@ const Dashboard: React.FC = () => {
               />
             }
             originBoard={board.id}
-            selectedDate={new Date()}
           />
         ))}
       </div>

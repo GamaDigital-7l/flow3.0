@@ -5,7 +5,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, Repeat, Edit, CalendarDays, Pause, BarChart3, Play } from "lucide-react";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast"; // Importado showSuccess
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import HabitForm from "@/components/HabitForm";
 import HabitItem from "@/components/HabitItem";
