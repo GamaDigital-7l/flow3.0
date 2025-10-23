@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, parseISO as dateFnsParseISO } from 'date-fns'; // Importando format e parseISO
-import { toZonedTime } from 'date-fns-tz';
+import * as dateFnsTz from 'date-fns-tz'; // Importação padrão
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts

@@ -4,7 +4,7 @@ import { useAllHabitDefinitions } from "@/hooks/useHabits";
 import { useSession } from "@/integrations/supabase/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Repeat, Edit, CalendarDays, Pause, BarChart3 } from "lucide-react";
+import { PlusCircle, Loader2, Repeat, Edit, CalendarDays, Pause, BarChart3, Play } from "lucide-react";
 import { showError } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import HabitForm from "@/components/HabitForm";
@@ -15,10 +15,14 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Label } from "@/components/ui/label";
 
 const Recurrence: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
+  const queryClient = useQueryClient();
   // Usamos habitDefinitions que busca a última instância de cada recurrence_id
   const { habitDefinitions, isLoading, error, refetch } = useAllHabitDefinitions(); 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -29,6 +33,27 @@ const Recurrence: React.FC = () => {
     setIsFormOpen(false);
     setEditingHabit(undefined);
   };
+  
+  const handlePauseToggle = useMutation({
+    mutationFn: async ({ recurrenceId, paused }: { recurrenceId: string, paused: boolean }) => {
+      if (!userId) throw new Error("Usuário não autenticado.");
+      // Atualiza todas as instâncias com o mesmo recurrence_id
+      const { error } = await supabase
+        .from("habits")
+        .update({ paused: paused, updated_at: new Date().toISOString() })
+        .eq("recurrence_id", recurrenceId)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: (data, variables) => {
+      showSuccess(`Hábito ${variables.paused ? 'pausado' : 'retomado'} com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ["todayHabits", userId] });
+      queryClient.invalidateQueries({ queryKey: ["allHabitDefinitions", userId] });
+    },
+    onError: (err: any) => {
+      showError("Erro ao pausar/retomar hábito: " + err.message);
+    },
+  });
 
   if (isLoading) {
     return (
@@ -97,7 +122,7 @@ const Recurrence: React.FC = () => {
                     <Button variant="ghost" size="icon" onClick={() => { setEditingHabit(habit); setIsFormOpen(true); }} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handlePauseToggle.mutate(!habit.paused)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
+                    <Button variant="ghost" size="icon" onClick={() => handlePauseToggle.mutate({ recurrenceId: habit.recurrence_id, paused: true })} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
                       <Pause className="h-4 w-4" />
                     </Button>
                   </div>
@@ -165,7 +190,7 @@ const Recurrence: React.FC = () => {
             {pausedHabits.map(habit => (
               <div key={habit.recurrence_id} className="p-3 border border-border rounded-lg bg-muted/20 flex justify-between items-center">
                 <p className="font-semibold text-muted-foreground line-through">{habit.title}</p>
-                <Button variant="ghost" size="icon" onClick={() => handlePauseToggle.mutate(false)} className="h-7 w-7 text-green-500 hover:bg-green-500/10">
+                <Button variant="ghost" size="icon" onClick={() => handlePauseToggle.mutate({ recurrenceId: habit.recurrence_id, paused: false })} className="h-7 w-7 text-green-500 hover:bg-green-500/10">
                   <Play className="h-4 w-4" />
                 </Button>
               </div>
