@@ -20,6 +20,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { FinancialAccount } from "@/types/finance";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
 
 const proLaboreSchema = z.object({
   id: z.string().optional(),
@@ -31,7 +32,7 @@ const proLaboreSchema = z.object({
     (val) => (val === "" ? null : Number(val)),
     z.number().int().min(1, "O dia deve ser entre 1 e 31.").max(31, "O dia deve ser entre 1 e 31.").nullable(),
   ).refine(val => val !== null, "O dia de pagamento é obrigatório."),
-  target_account_id: z.string().min(1, "A conta alvo é obrigatória."),
+  //target_account_id: z.string().min(1, "A conta alvo é obrigatória."),
 });
 
 export type ProLaboreFormValues = z.infer<typeof proLaboreSchema>;
@@ -55,6 +56,7 @@ const fetchAccounts = async (userId: string): Promise<FinancialAccount[]> => {
 const ProLaboreForm: React.FC<ProLaboreFormProps> = ({ initialData, onProLaboreSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
+  const queryClient = useQueryClient();
 
   const form = useForm<ProLaboreFormValues>({
     resolver: zodResolver(proLaboreSchema),
@@ -62,11 +64,11 @@ const ProLaboreForm: React.FC<ProLaboreFormProps> = ({ initialData, onProLaboreS
       ...initialData,
       amount: initialData.amount || 0,
       payment_day_of_month: initialData.payment_day_of_month || undefined,
-      target_account_id: initialData.target_account_id || "",
+      //target_account_id: initialData.target_account_id || "",
     } : {
       amount: 0,
       payment_day_of_month: undefined,
-      target_account_id: "",
+      //target_account_id: "",
     },
   });
 
@@ -86,7 +88,7 @@ const ProLaboreForm: React.FC<ProLaboreFormProps> = ({ initialData, onProLaboreS
       const dataToSave = {
         amount: values.amount,
         payment_day_of_month: values.payment_day_of_month,
-        target_account_id: values.target_account_id,
+        //target_account_id: values.target_account_id,
         updated_at: new Date().toISOString(),
       };
 
@@ -149,35 +151,6 @@ const ProLaboreForm: React.FC<ProLaboreFormProps> = ({ initialData, onProLaboreS
         {form.formState.errors.payment_day_of_month && (
           <p className="text-red-500 text-sm mt-1">
             {form.formState.errors.payment_day_of_month.message}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="target_account_id" className="text-foreground">Conta Alvo</Label>
-        <Select
-          onValueChange={(value) => form.setValue("target_account_id", value)}
-          value={form.watch("target_account_id") || ""}
-          disabled={isLoadingAccounts}
-        >
-          <SelectTrigger id="target_account_id" className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
-            {isLoadingAccounts ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin flex-shrink-0" /> Carregando contas...
-              </div>
-            ) : (
-              <SelectValue placeholder="Selecionar conta alvo" />
-            )}
-          </SelectTrigger>
-          <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
-            {accounts?.map(account => (
-              <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {form.formState.errors.target_account_id && (
-          <p className="text-red-500 text-sm mt-1">
-            {form.formState.errors.target_account_id.message}
           </p>
         )}
       </div>
