@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@/tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { FinancialAccount, FinancialCategory } from '@/types/finance';
@@ -14,6 +14,7 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import FinancialAccountForm from '@/components/finance/FinancialAccountForm';
 import FinancialCategoryForm from '@/components/finance/FinancialCategoryForm';
 import { cn } from '@/lib/utils';
+import QuickCategoryForm from '@/components/finance/QuickCategoryForm';
 
 const fetchAccounts = async (userId: string): Promise<FinancialAccount[]> => {
   const { data, error } = await supabase
@@ -60,6 +61,7 @@ const FinancialManagement: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<FinancialAccount | undefined>(undefined);
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<FinancialCategory | undefined>(undefined);
+  const [isQuickCategoryFormOpen, setIsQuickCategoryFormOpen] = useState(false);
 
   const handleAccountSaved = () => {
     refetchAccounts();
@@ -112,14 +114,6 @@ const FinancialManagement: React.FC = () => {
       showError("Erro ao deletar categoria: " + err.message);
     },
   });
-
-  if (isLoadingAccounts || isLoadingCategories) {
-    return (
-      <div className="flex items-center justify-center p-4 text-primary">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Carregando gerenciamento financeiro...
-      </div>
-    );
-  }
 
   return (
     <div className="page-content-wrapper space-y-6">
@@ -187,26 +181,47 @@ const FinancialManagement: React.FC = () => {
           <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
             <Tag className="h-5 w-5 text-green-500" /> Categorias
           </CardTitle>
-          <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditingCategory(undefined)} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Categoria
-              </Button>
-            </DialogTrigger>
-            <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-              <DialogHeader>
-                <DialogTitle className="text-foreground">Adicionar Nova Categoria</DialogTitle>
-                <DialogDescription className="text-muted-foreground">
-                  Crie categorias para organizar suas receitas e despesas.
-                </DialogDescription>
-              </DialogHeader>
-              <FinancialCategoryForm
-                initialData={editingCategory}
-                onCategorySaved={handleCategorySaved}
-                onClose={() => setIsCategoryFormOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Categoria
+                </Button>
+              </DialogTrigger>
+              <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+                <DialogHeader>
+                  <DialogTitle className="text-foreground">Adicionar Nova Categoria</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    Crie categorias para organizar suas receitas e despesas.
+                  </DialogDescription>
+                </DialogHeader>
+                <FinancialCategoryForm
+                  initialData={editingCategory}
+                  onCategorySaved={handleCategorySaved}
+                  onClose={() => setIsCategoryFormOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isQuickCategoryFormOpen} onOpenChange={setIsQuickCategoryFormOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Rápida
+                </Button>
+              </DialogTrigger>
+              <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+                <DialogHeader>
+                  <DialogTitle className="text-foreground">Adicionar Categoria Rápida</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    Crie uma nova categoria rapidamente.
+                  </DialogDescription>
+                </DialogHeader>
+                <QuickCategoryForm
+                  onCategorySaved={handleCategorySaved}
+                  onClose={() => setIsQuickCategoryFormOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {categories && categories.length > 0 ? (
