@@ -95,7 +95,7 @@ const StudySessionForm: React.FC<StudySessionFormProps> = ({ initialData, onSess
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl frosted-glass card-hover-effect">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl card-hover-effect">
         <FormField
           control={form.control}
           name="title"

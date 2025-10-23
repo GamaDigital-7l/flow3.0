@@ -40,7 +40,7 @@ const NoteViewer: React.FC<NoteViewerProps> = ({ note, onEdit }) => {
   };
 
   return (
-    <div className="p-3 space-y-3 bg-card rounded-xl frosted-glass card-hover-effect">
+    <div className="p-3 space-y-3 bg-card rounded-xl card-hover-effect">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground">{note.title || "Nota Sem Título"}</h2>
         <Button variant="ghost" size="icon" onClick={() => onEdit(note)} className="text-blue-500 hover:bg-blue-500/10 h-8 w-8">

@@ -46,7 +46,7 @@ const fetchFinanceSummary = async (userId: string): Promise<FinanceSummary> => {
 const FinanceSummarySkeleton: React.FC = () => (
   <div className="grid gap-4 md:grid-cols-3">
     {[...Array(3)].map((_, i) => (
-      <Card key={i} className="frosted-glass">
+      <Card key={i} className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-5 w-5 rounded-full" />
@@ -83,7 +83,7 @@ const DashboardFinanceSummary: React.FC = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Receitas do Mês</CardTitle>
           {/* Usando text-green-500 para receitas (feedback positivo) */}
@@ -95,7 +95,7 @@ const DashboardFinanceSummary: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Despesas do Mês</CardTitle>
           {/* Usando text-primary para despesas (destaque) */}
@@ -107,7 +107,7 @@ const DashboardFinanceSummary: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Saldo Atual</CardTitle>
           <DollarSign className="h-4 w-4 text-foreground" />

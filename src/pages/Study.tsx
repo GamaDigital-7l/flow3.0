@@ -131,7 +131,7 @@ const Study: React.FC = () => {
       </p>
 
       {/* Resumo */}
-      <Card className="mb-8 bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="mb-8 bg-card border-border shadow-lg card-hover-effect">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Resumo de Estudos</CardTitle>
         </CardHeader>
@@ -144,7 +144,7 @@ const Study: React.FC = () => {
       </Card>
 
       {/* Lista de Sessões */}
-      <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="bg-card border-border shadow-lg card-hover-effect">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Sessões Registradas ({sessions?.length || 0})</CardTitle>
         </CardHeader>

@@ -20,7 +20,7 @@ const MotivationalQuoteCard: React.FC = () => {
   }, []);
 
   return (
-    <Card className="bg-card border-border shadow-sm frosted-glass card-hover-effect">
+    <Card className="bg-card border-border shadow-sm card-hover-effect">
       <CardContent className="p-6 flex items-center gap-4">
         <Lightbulb className="h-8 w-8 text-yellow-400 flex-shrink-0" />
         <div>

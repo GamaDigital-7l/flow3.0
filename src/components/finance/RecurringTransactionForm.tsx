@@ -310,12 +310,12 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             control={form.control}
             name="is_active"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={field.onChange}
-                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
                   />
                 </FormControl>
                   <div className="space-y-1 leading-none">

@@ -83,7 +83,7 @@ const CompanyGoals: React.FC = () => {
   };
 
   return (
-    <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+    <Card className="bg-card border border-border rounded-xl shadow-sm card-hover-effect">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2 flex-1 min-w-0 break-words">
           <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" /> Metas Financeiras
@@ -118,7 +118,7 @@ const CompanyGoals: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Alvo: {formatCurrency(goal.target_amount)} | Atual: {formatCurrency(goal.current_amount)}</p>
                 {goal.target_date && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3" /> Data Alvo: {format(new Date(goal.target_date), "PPP")} {/* FIX TS2554 */}
+                    <CalendarDays className="h-3 w-3" /> Data Alvo: {format(new Date(goal.target_date), "PPP")}
                   </p>
                 )}
               </div>

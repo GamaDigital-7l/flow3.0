@@ -84,7 +84,7 @@ const CompanyBudgets: React.FC = () => {
   };
 
   return (
-    <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+    <Card className="bg-card border border-border rounded-xl shadow-sm card-hover-effect">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2 flex-1 min-w-0 break-words">
           <DollarSign className="h-5 w-5 text-red-500 flex-shrink-0" /> Orçamentos
@@ -119,7 +119,7 @@ const CompanyBudgets: React.FC = () => {
                 <p className="font-semibold text-foreground truncate">{budget.name}</p>
                 <p className="text-sm text-muted-foreground">Valor: {formatCurrency(budget.amount)} | Tipo: {budget.type === 'income' ? 'Receita' : 'Despesa'}</p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> Período: {format(new Date(budget.start_date), "dd/MM/yyyy")} - {format(new Date(budget.end_date), "dd/MM/yyyy")} {/* FIX TS2554 (x2) */}
+                  <CalendarDays className="h-3 w-3" /> Período: {format(new Date(budget.start_date), "dd/MM/yyyy")} - {format(new Date(budget.end_date), "dd/MM/yyyy")}
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">

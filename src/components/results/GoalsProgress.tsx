@@ -45,7 +45,7 @@ const GoalsProgress: React.FC = () => {
   }
 
   return (
-    <Card className="bg-card border-border shadow-sm frosted-glass card-hover-effect">
+    <Card className="bg-card border-border shadow-sm card-hover-effect">
       <CardHeader>
         <CardTitle className="text-foreground flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" /> Metas Ativas
@@ -58,7 +58,7 @@ const GoalsProgress: React.FC = () => {
               <p className="font-semibold text-foreground">{goal.title}</p>
               {goal.target_date && (
                 <p className="text-xs text-muted-foreground">
-                  Prazo: {format(new Date(goal.target_date), "PPP")} {/* FIX TS2554 */}
+                  Prazo: {format(new Date(goal.target_date), "PPP")}
                 </p>
               )}
             </div>

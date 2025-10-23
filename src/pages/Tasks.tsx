@@ -213,7 +213,7 @@ const Tasks: React.FC = () => {
 
       {/* Conteúdo da Aba de Hábitos */}
       {activeBoard === "recurrence" ? (
-        <Card className="bg-card border-border shadow-lg frosted-glass">
+        <Card className="bg-card border-border shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
               <Repeat className="h-5 w-5 text-status-recurring" /> Hábitos Recorrentes de Hoje
@@ -230,7 +230,7 @@ const Tasks: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-card border-border shadow-lg frosted-glass">
+        <Card className="bg-card border-border shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard as TaskOriginBoard)}</CardTitle>
           </CardHeader>

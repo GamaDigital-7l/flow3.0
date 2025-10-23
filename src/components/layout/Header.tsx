@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 border-b border-border bg-background px-3 lg:px-4 shadow-sm frosted-glass pt-[var(--sat)]">
+    <header className="fixed top-0 left-0 right-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 border-b border-border bg-card px-3 lg:px-4 shadow-sm pt-[var(--sat)]">
       <Button
         variant="ghost"
         size="icon"

@@ -52,14 +52,14 @@ const DashboardResultsSummary: React.FC = () => {
     queryKey: ["profileDashboardSummary", userId],
     queryFn: () => fetchMetrics(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
   });
 
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-3">
         {[...Array(3)].map((_, i) => (
-          <Card key={i} className="frosted-glass">
+          <Card key={i} className="bg-card border border-border rounded-xl shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Skeleton className="h-4 w-1/2" />
               <Skeleton className="h-5 w-5 rounded-full" />
@@ -86,7 +86,7 @@ const DashboardResultsSummary: React.FC = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Pontos de Produtividade</CardTitle>
           <TrendingUp className="h-4 w-4 text-primary" />
@@ -97,7 +97,7 @@ const DashboardResultsSummary: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Tarefas Concluídas (Hoje)</CardTitle>
           <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -108,7 +108,7 @@ const DashboardResultsSummary: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
           <ListTodo className="h-4 w-4 text-blue-500" />

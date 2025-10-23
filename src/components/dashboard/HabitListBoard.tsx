@@ -26,7 +26,7 @@ const HabitListBoard: React.FC<HabitListBoardProps> = ({
 
   if (isLoading) {
     return (
-      <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
         <CardHeader className="p-3 pb-2">
           <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <Repeat className="h-4 w-4 text-status-recurring" /> Hábitos Recorrentes
@@ -41,7 +41,7 @@ const HabitListBoard: React.FC<HabitListBoardProps> = ({
 
   if (error) {
     return (
-      <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
         <CardHeader className="p-3 pb-2">
           <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <Repeat className="h-4 w-4 text-status-recurring" /> Hábitos Recorrentes
@@ -57,7 +57,7 @@ const HabitListBoard: React.FC<HabitListBoardProps> = ({
   const activeHabits = habits.filter(h => !h.paused);
 
   return (
-    <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect flex flex-col">
+    <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1 flex-shrink-0">
         <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
           <Repeat className="h-4 w-4 text-status-recurring" /> Hábitos Recorrentes ({activeHabits.length})

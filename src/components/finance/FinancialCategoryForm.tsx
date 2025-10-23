@@ -92,7 +92,7 @@ const FinancialCategoryForm: React.FC<FinancialCategoryFormProps> = ({ initialDa
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl frosted-glass">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl">
       <div>
         <Label htmlFor="name" className="text-foreground">Nome da Categoria</Label>
         <Input

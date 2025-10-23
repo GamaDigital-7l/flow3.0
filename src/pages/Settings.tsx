@@ -36,7 +36,7 @@ const Settings: React.FC = () => {
         Gerencie as configurações do seu aplicativo.
       </p>
 
-      <Card className="w-full max-w-lg bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="w-full max-w-lg bg-card border border-border rounded-xl shadow-sm card-hover-effect">
         <CardHeader>
           <CardTitle className="text-foreground">Configurações Gerais</CardTitle>
           <CardDescription className="text-muted-foreground">

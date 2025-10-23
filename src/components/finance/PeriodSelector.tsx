@@ -35,7 +35,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ currentPeriod, onPeriod
   };
 
   return (
-    <div className="flex flex-col gap-2 p-4 bg-card border border-border rounded-xl shadow-sm frosted-glass">
+    <div className="flex flex-col gap-2 p-4 bg-card border border-border rounded-xl shadow-sm">
       {/* Controles de Mês */}
       <div className="flex items-center gap-2 w-full">
         <Button variant="ghost" size="icon" onClick={() => onPeriodChange(subMonths(currentPeriod, 1))} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground h-9 w-9 flex-shrink-0">

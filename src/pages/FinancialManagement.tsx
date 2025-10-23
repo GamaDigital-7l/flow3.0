@@ -131,7 +131,7 @@ const FinancialManagement: React.FC = () => {
       </p>
 
       {/* Seção de Contas */}
-      <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="bg-card border-border shadow-lg card-hover-effect">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
             <Wallet className="h-5 w-5 text-blue-500" /> Contas
@@ -182,7 +182,7 @@ const FinancialManagement: React.FC = () => {
       </Card>
 
       {/* Seção de Categorias */}
-      <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="bg-card border-border shadow-lg card-hover-effect">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
             <Tag className="h-5 w-5 text-green-500" /> Categorias

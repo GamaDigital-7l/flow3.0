@@ -220,7 +220,7 @@ const Health: React.FC = () => {
       </p>
 
       {/* Resumo de Peso */}
-      <Card className="mb-8 bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="mb-8 bg-card border-border shadow-lg card-hover-effect">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
             <Scale className="h-5 w-5 text-blue-500" /> Peso Atual
@@ -228,14 +228,14 @@ const Health: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex justify-between items-center">
-            <p className="text-lg font-medium text-muted-foreground">Última Medição ({latestWeightMetric ? format(parseISO(latestWeightMetric.date), "PPP") : 'N/A'}):</p> {/* FIX TS2554 */}
+            <p className="text-lg font-medium text-muted-foreground">Última Medição ({latestWeightMetric ? format(parseISO(latestWeightMetric.date), "PPP") : 'N/A'}):</p>
             <p className="text-2xl font-bold text-blue-500">{currentWeight} kg</p>
           </div>
         </CardContent>
       </Card>
 
       {/* Metas Ativas */}
-      <Card className="mb-8 bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="mb-8 bg-card border-border shadow-lg card-hover-effect">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Metas de Saúde Ativas ({goals?.length || 0})</CardTitle>
         </CardHeader>
@@ -272,7 +272,7 @@ const Health: React.FC = () => {
                   <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                     {targetDate && (
                       <p className="flex items-center gap-1">
-                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP")} {/* FIX TS2554 */}
+                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP")}
                       </p>
                     )}
                     {daysRemaining !== null && (
@@ -291,7 +291,7 @@ const Health: React.FC = () => {
       </Card>
 
       {/* Últimas Métricas */}
-      <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="bg-card border-border shadow-lg card-hover-effect">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Últimas Métricas ({metrics?.length || 0})</CardTitle>
         </CardHeader>
@@ -313,7 +313,7 @@ const Health: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-4 w-4" /> {format(parseISO(metric.date), "PPP")} {/* FIX TS2554 */}
+                  <CalendarDays className="h-4 w-4" /> {format(parseISO(metric.date), "PPP")}
                 </p>
                 {metric.notes && (
                   <p className="text-xs text-muted-foreground mt-2 border-t pt-1 line-clamp-2">{metric.notes}</p>

@@ -133,7 +133,7 @@ const Goals: React.FC = () => {
       </p>
 
       {/* Metas Ativas */}
-      <Card className="mb-8 bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="mb-8 bg-card border-border shadow-lg card-hover-effect">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Metas Ativas ({activeGoals.length})</CardTitle>
         </CardHeader>
@@ -170,7 +170,7 @@ const Goals: React.FC = () => {
                   <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                     {targetDate && (
                       <p className="flex items-center gap-1">
-                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP")} {/* FIX TS2554 */}
+                        <CalendarIcon className="h-3 w-3" /> Prazo: {format(targetDate, "PPP")}
                       </p>
                     )}
                     {daysRemaining !== null && (
@@ -190,7 +190,7 @@ const Goals: React.FC = () => {
 
       {/* Metas Concluídas */}
       {completedGoals.length > 0 && (
-        <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
+        <Card className="bg-card border-border shadow-lg card-hover-effect">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-green-600 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5" /> Concluídas ({completedGoals.length})
@@ -200,7 +200,7 @@ const Goals: React.FC = () => {
             {completedGoals.map(goal => (
               <div key={goal.id} className="p-3 border border-green-500/50 rounded-lg bg-green-500/10">
                 <p className="font-semibold text-foreground line-through">{goal.title}</p>
-                <p className="text-xs text-muted-foreground">Concluída em: {format(parseISO(goal.updated_at), "PPP")}</p> {/* FIX TS2554 */}
+                <p className="text-xs text-muted-foreground">Concluída em: {format(parseISO(goal.updated_at), "PPP")}</p>
               </div>
             ))}
           </CardContent>

@@ -68,22 +68,22 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
   const filteredCategories = categories.filter(c => c.type === currentType && c.scope === currentScope);
 
   const saveBudgetMutation = useMutation({
-    mutationFn: async (data: BudgetFormValues) => {
+    mutationFn: async (values: BudgetFormValues) => {
       if (!userId) throw new Error("Usuário não autenticado.");
 
-      const payload = {
-        ...data,
+      const dataToSave = {
+        ...values,
         user_id: userId,
-        start_date: format(convertToUtc(data.start_date)!, 'yyyy-MM-dd'),
-        end_date: format(convertToUtc(data.end_date)!, 'yyyy-MM-dd'),
-        category_id: data.category_id || null,
+        start_date: format(convertToUtc(values.start_date)!, 'yyyy-MM-dd'),
+        end_date: format(convertToUtc(values.end_date)!, 'yyyy-MM-dd'),
+        category_id: values.category_id || null,
       };
 
       if (initialData?.id) {
-        const { error } = await supabase.from('budgets').update(payload).eq('id', initialData.id).eq('user_id', userId);
+        const { error } = await supabase.from('budgets').update(dataToSave).eq('id', initialData.id).eq('user_id', userId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('budgets').insert(payload);
+        const { error } = await supabase.from('budgets').insert(dataToSave);
         if (error) throw error;
       }
     },
@@ -98,8 +98,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onBudgetSaved, onC
     },
   });
 
-  const onSubmit = (data: BudgetFormValues) => {
-    saveBudgetMutation.mutate(data);
+  const onSubmit = (values: BudgetFormValues) => {
+    saveBudgetMutation.mutate(values);
   };
 
   if (isDataLoading) {

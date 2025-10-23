@@ -38,7 +38,7 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
 
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Receitas</CardTitle>
           <DollarSign className="h-4 w-4 text-green-500" />
@@ -50,7 +50,7 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Despesas</CardTitle>
           <DollarSign className="h-4 w-4 text-primary" />
@@ -62,7 +62,7 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Resultado do Mês</CardTitle>
           {isResultPositive ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-primary" />}
@@ -82,7 +82,7 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Saldo de Caixa</CardTitle>
           <Wallet className="h-4 w-4 text-foreground" />
@@ -94,7 +94,7 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="frosted-glass">
+      <Card className="bg-card border border-border rounded-xl shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Projeção do Mês</CardTitle>
           <TrendingUp className="h-4 w-4 text-foreground" />

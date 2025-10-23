@@ -44,7 +44,7 @@ const QuickNoteCreator: React.FC<QuickNoteCreatorProps> = ({ onNoteCreated, user
 
   return (
     <div className="w-full flex justify-center mb-4">
-      <Card className="w-full max-w-2xl bg-card border border-border rounded-xl shadow-md frosted-glass card-hover-effect">
+      <Card className="w-full max-w-2xl bg-card border border-border rounded-xl shadow-md card-hover-effect">
         <CardContent className="p-2 flex items-center gap-2">
           <Input
             placeholder="Criar uma nota..."

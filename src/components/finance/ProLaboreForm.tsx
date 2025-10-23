@@ -119,7 +119,7 @@ const ProLaboreForm: React.FC<ProLaboreFormProps> = ({ initialData, onProLaboreS
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl frosted-glass">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl">
       <div>
         <Label htmlFor="amount" className="text-foreground">Valor do Pro Labore</Label>
         <Input

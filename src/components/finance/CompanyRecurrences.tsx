@@ -85,7 +85,7 @@ const CompanyRecurrences: React.FC = () => {
   };
 
   return (
-    <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+    <Card className="bg-card border border-border rounded-xl shadow-sm card-hover-effect">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
           <Repeat className="h-5 w-5 text-orange-500" /> Transações Recorrentes
@@ -121,7 +121,7 @@ const CompanyRecurrences: React.FC = () => {
                   {formatCurrency(rec.amount)} ({rec.frequency})
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> Próximo Vencimento: {format(new Date(rec.next_due_date), "PPP")} {/* FIX TS2554 */}
+                  <Clock className="h-3 w-3" /> Próximo Vencimento: {format(new Date(rec.next_due_date), "PPP")}
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">

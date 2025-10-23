@@ -106,7 +106,7 @@ const Recurrence: React.FC = () => {
       </p>
 
       {/* Hábitos Ativos */}
-      <Card className="mb-8 bg-card border-border shadow-lg frosted-glass card-hover-effect">
+      <Card className="mb-8 bg-card border-border shadow-lg card-hover-effect">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-green-500" /> Hábitos Ativos ({activeHabits.length})
@@ -180,7 +180,7 @@ const Recurrence: React.FC = () => {
 
       {/* Hábitos Pausados */}
       {pausedHabits.length > 0 && (
-        <Card className="bg-card border-border shadow-lg frosted-glass card-hover-effect">
+        <Card className="bg-card border-border shadow-lg card-hover-effect">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-muted-foreground flex items-center gap-2">
               <Pause className="h-5 w-5" /> Hábitos Pausados ({pausedHabits.length})
