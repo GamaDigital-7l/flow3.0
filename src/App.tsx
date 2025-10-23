@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionContextProvider, useSession } from "@/integrations/supabase/auth";
 import Layout from "./components/layout/Layout";
@@ -31,19 +30,17 @@ import { showError } from "@/utils/toast";
 // Main App component wrapper for context providers
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <SessionContextProvider>
-        <PersistQueryClientProvider
-          client={queryClient}
-          persistOptions={{ persister }}
-        >
-          <Toaster position="top-right" richColors />
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
-        </PersistQueryClientProvider>
-      </SessionContextProvider>
-    </ThemeProvider>
+    <SessionContextProvider>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister }}
+      >
+        <Toaster position="top-right" richColors />
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </PersistQueryClientProvider>
+    </SessionContextProvider>
   );
 }
 

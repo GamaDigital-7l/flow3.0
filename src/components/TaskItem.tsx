@@ -257,17 +257,17 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
           </p>
         </div>
         <div className="flex-shrink-0 flex gap-1">
-          <Button variant="ghost" size="icon" onClick={() => handleEditTask(task)} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
+          <Button variant="ghost" size="icon" onClick={() => handleEditTask(task)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
             <Edit className="h-4 w-4" />
             <span className="sr-only">Editar Tarefa</span>
           </Button>
           {!isRecurrentTemplate && ( // Não permite subtarefas em templates
-            <Button variant="ghost" size="icon" onClick={handleAddSubtask} className="h-7 w-7 text-green-500 hover:bg-green-500/10">
+            <Button variant="ghost" size="icon" onClick={handleAddSubtask} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
               <PlusCircle className="h-4 w-4" />
               <span className="sr-only">Adicionar Subtarefa</span>
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-red-500 hover:bg-red-500/10">
+          <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
             <Trash2 className="h-4 w-4" />
             <span className="sr-only">Deletar Tarefa</span>
           </Button>
