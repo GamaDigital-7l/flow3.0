@@ -6,16 +6,7 @@ import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, differenceInDays } from 'date-fns';
 import { parseISO } from '@/lib/utils'; // Usando parseISO do utils
-import * as dateFnsTz from 'date-fns-tz'; // Importação padrão
-
-// Solução robusta para lidar com exportações mistas no Vite
-const utcToZonedTime = (date: Date, timezone: string) => {
-  if (typeof (dateFnsTz as any).utcToZonedTime === 'function') {
-    return (dateFnsTz as any).utcToZonedTime(date, timezone);
-  }
-  // Fallback para o cenário onde a função está aninhada em 'default'
-  return (dateFnsTz as any).default.utcToZonedTime(date, timezone);
-};
+import { utcToZonedTime } from 'date-fns-tz'; // Importação direta
 
 // Fetch the user's timezone from profile
 const fetchUserTimezone = async (userId: string): Promise<string> => {
