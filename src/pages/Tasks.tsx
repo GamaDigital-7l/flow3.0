@@ -6,7 +6,7 @@ import { Task, TaskCurrentBoard, TaskOriginBoard, TaskRecurrenceType, DAYS_OF_WE
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, Filter, CalendarDays, Repeat, Edit, Trash2 } from "lucide-react";
-import { showError, showSuccess } from "@/utils/toast";
+import { showError } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
@@ -32,14 +32,12 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
   let query = supabase
     .from("tasks")
     .select(`
-      id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
-      origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+      id,
       task_tags(
         tags(id, name, color)
       ),
       subtasks:tasks!parent_task_id(
-        id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
-        origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+        id,
         task_tags(
           tags(id, name, color)
         )
@@ -155,7 +153,7 @@ const Tasks: React.FC = () => {
           <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
             <DialogHeader>
               <DialogTitle className="text-foreground">{editingTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-muted-foreground">
                 {editingTask ? "Atualize os detalhes da sua tarefa." : "Defina uma nova tarefa para o seu dia."}
               </DialogDescription>
             </DialogHeader>

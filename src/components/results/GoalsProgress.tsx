@@ -58,7 +58,7 @@ const GoalsProgress: React.FC = () => {
               <p className="font-semibold text-foreground">{goal.title}</p>
               {goal.target_date && (
                 <p className="text-xs text-muted-foreground">
-                  Prazo: {format(new Date(goal.target_date), "PPP")} {/* FIX TS2554 */}
+                  Prazo: {format(new Date(goal.target_date), "PPP")}
                 </p>
               )}
             </div>

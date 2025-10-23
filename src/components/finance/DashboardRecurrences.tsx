@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from "@/integrations/supabase/auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Repeat, Loader2 } from 'lucide-react';
 import { RecurringTransaction } from '@/types/finance';
 import { formatCurrency } from '@/utils/formatters';
