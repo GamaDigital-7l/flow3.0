@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
-import { format, parseISO as dateFnsParseISO } from 'date-fns';
+import { format, parseISO as dateFnsParseISO, FormatDistanceOptions } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { twMerge } from "tailwind-merge"
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
 export function parseISO(dateString: string | Date): Date {
@@ -40,7 +40,7 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   const dateObj = date instanceof Date ? date : parseISO(date);
   
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
-  return format(dateObj, formatString, { locale: ptBR }); 
+  return format(dateObj, formatString, { locale: ptBR } as FormatDistanceOptions);
 }
 
 /**

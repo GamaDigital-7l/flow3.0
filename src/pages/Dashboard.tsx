@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
 import { isToday } from "date-fns";
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
-import { Task, TaskCurrentBoard } from "@/types/task";
+import { Task, TaskCurrentBoard } from "@/types/task"; // Importar Task e TaskOriginBoard
 import { ListTodo, Loader2, AlertCircle, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
@@ -23,6 +23,7 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Woe Comunicação", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
+  { id: "client_tasks", title: "Tarefas de Cliente", icon: <ListTodo className="h-5 w-5" />, color: "text-foreground" },
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -154,7 +155,6 @@ const Dashboard: React.FC = () => {
               />
             }
             originBoard={board.id}
-            selectedDate={new Date()}
           />
         ))}
       </div>
