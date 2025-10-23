@@ -5,7 +5,16 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, parseISO, differenceInDays } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz'; // Importação nomeada direta
+import * as dateFnsTz from 'date-fns-tz'; // Importação padrão
+
+// Solução robusta para lidar com exportações mistas no Vite
+const utcToZonedTime = (date: Date, timezone: string) => {
+  if (typeof (dateFnsTz as any).utcToZonedTime === 'function') {
+    return (dateFnsTz as any).utcToZonedTime(date, timezone);
+  }
+  // Fallback para o cenário onde a função está aninhada em 'default'
+  return (dateFnsTz as any).default.utcToZonedTime(date, timezone);
+};
 
 // Fetch the user's timezone from profile
 const fetchUserTimezone = async (userId: string): Promise<string> => {

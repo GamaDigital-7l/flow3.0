@@ -23,7 +23,16 @@ import { useSession } from "@/integrations/supabase/auth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Habit, HabitFrequency, WEEKDAY_LABELS } from "@/types/habit";
 import { format } from "date-fns";
-import { utcToZonedTime } from "date-fns-tz"; // Importação nomeada direta
+import * as dateFnsTz from "date-fns-tz"; // Importação padrão
+
+// Solução robusta para lidar com exportações mistas no Vite
+const utcToZonedTime = (date: Date, timezone: string) => {
+  if (typeof (dateFnsTz as any).utcToZonedTime === 'function') {
+    return (dateFnsTz as any).utcToZonedTime(date, timezone);
+  }
+  // Fallback para o cenário onde a função está aninhada em 'default'
+  return (dateFnsTz as any).default.utcToZonedTime(date, timezone);
+};
 
 const habitSchema = z.object({
   title: z.string().min(1, "O título é obrigatório."),
