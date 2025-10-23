@@ -24,6 +24,18 @@ export function cn(...inputs: ClassValue[]) {
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 
 /**
+ * Obtém a data local de hoje no formato YYYY-MM-DD, usando o fuso horário do navegador.
+ * Isso é usado como fallback para a Edge Function.
+ */
+export function getTodayLocalString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Converte uma data local (ou string) para uma data UTC pura (sem informação de tempo/fuso)
  * formatada como 'yyyy-MM-dd'. Isso é usado para salvar datas de vencimento no DB.
  */

@@ -5,10 +5,10 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, differenceInDays } from 'date-fns';
-import { parseISO } from '@/lib/utils'; // Usando parseISO do utils
-import { utcToZonedTime } from 'date-fns-tz'; // Importação direta
+import { parseISO, getTodayLocalString } from '@/lib/utils'; // Usando parseISO e getTodayLocalString do utils
+// Removendo importação de date-fns-tz
 
-// Fetch the user's timezone from profile
+// Fetch the user's timezone from profile (mantido para a lógica de métricas, mas não para a data de hoje)
 const fetchUserTimezone = async (userId: string): Promise<string> => {
   const { data, error } = await supabase
     .from('profiles')
@@ -33,9 +33,8 @@ function isDayEligible(date: Date, frequency: string, weekdays: number[] | null)
 
 // Fetch today's active habit instances
 const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
-  const timezone = await fetchUserTimezone(userId);
-  const nowInUserTimezone = utcToZonedTime(new Date(), timezone);
-  const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
+  // Usamos a data local do navegador como proxy para a data local do usuário
+  const todayLocal = getTodayLocalString();
 
   const { data, error } = await supabase
     .from('habits')
@@ -104,9 +103,8 @@ export const useToggleHabitCompletion = () => {
     mutationFn: async ({ habit, completed }: { habit: Habit, completed: boolean }) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
-      const timezone = await fetchUserTimezone(userId);
-      const nowInUserTimezone = utcToZonedTime(new Date(), timezone);
-      const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
+      // Usando a data local do navegador para o cálculo de métricas
+      const todayLocal = getTodayLocalString();
       
       // 1. Update the current instance (habit.id)
       const { data: updatedInstance, error: updateError } = await supabase
@@ -173,7 +171,7 @@ export const useToggleHabitCompletion = () => {
       const startDate = parseISO(creationData.date_local);
       let currentDate = startDate;
       
-      // Iterate from start date up to yesterday (or today if completing today)
+      // Iterate from start date up to today
       const endDate = parseISO(todayLocal);
       
       while (currentDate <= endDate) {
@@ -199,7 +197,7 @@ export const useToggleHabitCompletion = () => {
         currentDate = subDays(currentDate, -1); // Add one day
       }
       
-      const totalEligibleDays = historyData.length; // Approximation, better calculated via RPC/DB
+      const totalEligibleDays = historyData.length; // Approximation, better calculated via DB
       const newSuccessRate = totalEligibleDays > 0 ? (newTotalCompleted / totalEligibleDays) * 100 : 0;
 
       // 4. Update ALL instances of this recurrence_id with the new metrics
