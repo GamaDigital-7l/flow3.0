@@ -24,11 +24,12 @@ const fetchCompanyTransactions = async (userId: string, period: Date): Promise<F
   const start = format(startOfMonth(period), "yyyy-MM-dd");
   const end = format(endOfMonth(period), "yyyy-MM-dd");
 
-  // Otimizando o select para buscar apenas campos essenciais e relações leves
+  // Otimizando o select para buscar todos os campos obrigatórios e relações leves
   const { data, error } = await supabase
     .from("financial_transactions")
     .select(`
-      id, date, description, amount, type, is_recurrent_instance,
+      id, user_id, date, description, amount, type, is_recurrent_instance,
+      category_id, account_id, payment_method, client_id, created_at, updated_at,
       category:financial_categories!financial_transactions_category_id_fkey(id, name, type),
       account:financial_accounts(id, name, type),
       client:clients(id, name)
@@ -39,7 +40,8 @@ const fetchCompanyTransactions = async (userId: string, period: Date): Promise<F
     .order("date", { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  // O mapeamento de tipos deve ser suficiente agora que todos os campos estão selecionados
+  return data as FinancialTransaction[] || [];
 };
 
 const formatCurrency = (value: number) => {
