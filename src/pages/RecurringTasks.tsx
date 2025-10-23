@@ -15,7 +15,7 @@ import RecurringTaskItem from "@/components/recurring/RecurringTaskItem";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { Progress } from "@/components/ui/progress";
 import { BarChart } from "recharts"; // Importando BarChart para o gráfico
-import { sql } from '@supabase/postgrest-js';
+// import { sql } from '@supabase/postgrest-js'; // REMOVIDO: Não exportado no cliente
 import { cn } from "@/lib/utils";
 
 interface TemplateWithMetrics extends RecurringTask {
@@ -31,7 +31,8 @@ const fetchRecurringTemplates = async (userId: string): Promise<TemplateWithMetr
       history:recurring_history(date_local, completed)
     `)
     .eq("user_id", userId)
-    .eq('recurrence_id', supabase.rpc('get_recurrence_id', { task_id: sql.column('id') }))
+    // CORREÇÃO: Usando string literal para a chamada RPC, pois 'sql' não está disponível no cliente.
+    .eq('recurrence_id', 'id') 
     .order("title", { ascending: true });
 
   if (error) throw error;
