@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useTransition } from "react";
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionContextProvider, useSession } from "@/integrations/supabase/auth";
 import Layout from "./components/layout/Layout";
@@ -99,8 +99,6 @@ function AppContent() {
   const { session, isLoading } = useSession();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
-  // Removendo deferredPrompt e handleInstallClick
-
   const handleOnline = () => setIsOnline(true);
   const handleOffline = () => setIsOnline(false);
 
