@@ -41,7 +41,10 @@ interface Briefing {
 }
 
 const fetchBriefing = async (briefingId: string): Promise<Briefing | null> => {
-  const response = await fetch(`${supabaseUrl}/functions/v1/fetch-public-briefing?briefingId=${briefingId}`);
+  // Usando a URL completa da Edge Function
+  const edgeFunctionUrl = `${supabaseUrl}/functions/v1/fetch-public-briefing?briefingId=${briefingId}`;
+  
+  const response = await fetch(edgeFunctionUrl);
   
   if (response.status === 404) return null;
   if (!response.ok) {
@@ -71,6 +74,7 @@ const BriefingPublicView: React.FC = () => {
 
   const submitResponse = useMutation({
     mutationFn: async (response: any) => {
+      // A submissão usa a API REST, que deve ter RLS configurado para INSERT anônimo (true)
       const { data, error } = await supabase
         .from('briefing_responses')
         .insert({
