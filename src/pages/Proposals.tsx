@@ -142,25 +142,43 @@ const Proposals: React.FC = () => {
     },
   });
   
-  const handleGenerateLink = (proposal: Proposal) => {
-    if (!proposal.unique_link_id) {
-      showError("Erro: Proposta não possui um ID de link único.");
+  const handleGenerateLink = async (proposal: Proposal) => {
+    if (!userId) {
+      showError("Usuário não autenticado.");
       return;
     }
-    
-    // Assumindo que a URL base é a raiz do seu app
-    const publicLink = `${window.location.origin}/proposal/${proposal.unique_link_id}`;
-    
-    // Atualiza o status para 'sent' se for 'draft'
-    if (proposal.status === 'draft') {
-      supabase.from('proposals').update({ status: 'sent', updated_at: new Date().toISOString() }).eq('id', proposal.id).then(({ error }) => {
-        if (error) console.error("Erro ao atualizar status para 'sent':", error);
-        else refetch();
-      });
-    }
 
-    setCurrentProposalLink({ link: publicLink, clientName: proposal.client_name });
-    setIsLinkModalOpen(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-approval-link', {
+        body: {
+          clientId: proposal.client_id,
+          monthYearRef: format(new Date(), "yyyy-MM"),
+        },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error("Erro ao gerar link de aprovação:", error);
+        showError("Erro ao gerar link de aprovação: " + error.message);
+        return;
+      }
+
+      const publicLink = `${window.location.origin}/proposal/${data.uniqueId}`;
+      setCurrentProposalLink({ link: publicLink, clientName: proposal.client_name });
+      setIsLinkModalOpen(true);
+
+      // Atualiza o status para 'sent' se for 'draft'
+      if (proposal.status === 'draft') {
+        supabase.from('proposals').update({ status: 'sent', updated_at: new Date().toISOString() }).eq('id', proposal.id).then(({ error }) => {
+          if (error) console.error("Erro ao atualizar status para 'sent':", error);
+          else refetch();
+        });
+      }
+    } catch (err: any) {
+      showError("Erro ao gerar link: " + err.message);
+    }
   };
 
   const handleCopyLink = (link: string, message: boolean) => {
@@ -364,6 +382,29 @@ const Proposals: React.FC = () => {
           </PaginationContent>
         </Pagination>
       </div>
+
+      {/* Modal para exibir o link */}
+      <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Link da Proposta</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Compartilhe este link com o cliente para que ele possa visualizar a proposta.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input value={currentProposalLink?.link} readOnly className="bg-input border-border text-foreground focus-visible:ring-ring" />
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => handleCopyLink(currentProposalLink?.link || '')} className="w-1/2 mr-2">
+                <Copy className="mr-2 h-4 w-4" /> Copiar Link
+              </Button>
+              <Button onClick={() => handleCopyLink(currentProposalLink?.link || '', true)} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+                <Send className="mr-2 h-4 w-4" /> WhatsApp
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
