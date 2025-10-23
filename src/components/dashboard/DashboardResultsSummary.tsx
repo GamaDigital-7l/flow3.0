@@ -5,9 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, CheckCircle2, Repeat, Loader2 } from 'lucide-react';
+import { DollarSign, TrendingUp, CheckCircle2, Repeat, Loader2, CalendarDays } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
+import { format, isToday, isThisWeek, isThisMonth, startOfWeek, startOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale/pt-BR';
+import { formatDateTime } from '@/lib/utils';
 
 interface Profile {
   points: number;
@@ -75,7 +77,12 @@ const DashboardResultsSummary: React.FC = () => {
   }
 
   const today = format(new Date(), 'yyyy-MM-dd');
+  const startOfThisWeek = format(startOfWeek(new Date(), { weekStartsOn: 0 }), 'yyyy-MM-dd');
+  const startOfThisMonth = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+
   const completedToday = data?.tasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === today).length || 0;
+  const completedThisWeek = data?.tasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') >= startOfThisWeek).length || 0;
+  const completedThisMonth = data?.tasks.filter(t => t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') >= startOfThisMonth).length || 0;
   
   // Cálculo do maior streak (assumindo que recurrence_streak existe na tabela tasks)
   const maxStreak = data?.tasks.reduce((max, t) => {
@@ -106,6 +113,28 @@ const DashboardResultsSummary: React.FC = () => {
         <CardContent>
           <div className="text-2xl font-bold text-foreground">{completedToday}</div>
           <p className="text-xs text-muted-foreground">Concluídas hoje.</p>
+        </CardContent>
+      </Card>
+
+      <Card className="frosted-glass">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Tarefas Concluídas (Semana)</CardTitle>
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-foreground">{completedThisWeek}</div>
+          <p className="text-xs text-muted-foreground">Concluídas esta semana.</p>
+        </CardContent>
+      </Card>
+
+      <Card className="frosted-glass">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Tarefas Concluídas (Mês)</CardTitle>
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-foreground">{completedThisMonth}</div>
+          <p className="text-xs text-muted-foreground">Concluídas este mês.</p>
         </CardContent>
       </Card>
 
