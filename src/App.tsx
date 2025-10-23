@@ -104,7 +104,7 @@ function AppContent() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const handleOnline = () => setIsOnline(true);
-  const handleOffline = () => setIsOnline(false);
+  const handleOffline = () => setIsOffline(false);
 
   useEffect(() => {
     window.addEventListener('online', handleOnline);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@/tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/integrations/supabase/auth';
 import { Proposal, ProposalStatus, PROPOSAL_STATUS_LABELS, ProposalItem } from '@/types/proposal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -363,38 +364,6 @@ const Proposals: React.FC = () => {
           </PaginationContent>
         </Pagination>
       </div>
-      
-      {/* Modal de Link de Envio */}
-      <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
-        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Link de Proposta Enviado</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Use os botões abaixo para enviar o link para {currentProposalLink?.clientName}.
-            </DialogDescription>
-          </DialogHeader>
-          {currentProposalLink && (
-            <div className="space-y-4">
-              <div className="p-3 bg-secondary rounded-lg break-all text-sm text-foreground border border-border">
-                {currentProposalLink.link}
-              </div>
-              <Button 
-                onClick={() => handleCopyLink(currentProposalLink.link, true)}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Copy className="mr-2 h-4 w-4" /> Copiar Mensagem + Link (WhatsApp)
-              </Button>
-              <Button 
-                onClick={() => handleCopyLink(currentProposalLink.link, false)}
-                variant="outline"
-                className="w-full border-border text-foreground hover:bg-accent"
-              >
-                <Copy className="mr-2 h-4 w-4" /> Copiar Apenas Link
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
