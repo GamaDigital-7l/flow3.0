@@ -26,6 +26,7 @@ const Books = lazy(() => import("./pages/Books"));
 const BookDetails = lazy(() => import("./pages/BookDetails"));
 const BookReaderFullScreen = lazy(() => import("./pages/BookReaderFullScreen"));
 const Proposals = lazy(() => import("./pages/Proposals")); // NOVO: Proposals
+const PublicProposalPage = lazy(() => import("./pages/PublicProposalPage")); // NOVO: PublicProposalPage
 
 
 // Main App component wrapper for context providers
@@ -127,7 +128,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/approval/:uniqueId" element={<NotFound />} />
           <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
-          <Route path="/proposal/:uniqueId" element={<NotFound />} /> {/* Placeholder para a página pública */}
+          <Route path="/proposal/:uniqueId" element={<PublicProposalPage />} /> {/* Rota Pública da Proposta */}
 
           {/* Rotas Protegidas */}
           <Route element={<ProtectedRoute session={session} />}>
@@ -146,7 +147,7 @@ function AppContent() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/books" element={<Books />} />
               <Route path="/books/:id" element={<BookDetails />} />
-              <Route path="/proposals" element={<Proposals />} /> {/* NOVO: Proposals */}
+              <Route path="/proposals" element={<Proposals />} />
             </Route>
           </Route>
           
