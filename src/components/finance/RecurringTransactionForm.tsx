@@ -296,29 +296,27 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           )}
         </FormField>
 
-        <div className="flex items-center space-x-2">
-          <FormField
-            control={form.control}
-            name="is_active"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel className="text-foreground">Recorrência Ativa</FormLabel>
-                  <FormDescription className="text-muted-foreground">
-                    Desative para pausar a recorrência.
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="is_active"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="text-foreground">Recorrência Ativa</FormLabel>
+                <FormDescription className="text-muted-foreground">
+                  Desative para pausar a recorrência.
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
