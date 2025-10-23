@@ -44,8 +44,8 @@
     --radius: 0.75rem; 
 
     /* Cores de status (Minimalista Light) */
-    --status-success: 140 70% 48%; // Mantido para feedback positivo
-    --status-alert: 45 90% 50%; // Mantido para avisos
+    --status-success: 140 70% 48%; /* Mantido para feedback positivo */
+    --status-alert: 45 90% 50%; /* Mantido para avisos */
     --status-overdue: 340 80% 51%; /* Rosa para urgência */
     --status-urgent: 340 80% 51%; /* Rosa para urgência */
     --status-today: 340 80% 51%; /* Rosa para hoje */
