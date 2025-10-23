@@ -14,7 +14,7 @@ import { formatDateTime, formatTime, parseISO } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { isToday, isTomorrow } from "date-fns"; // Import isToday
+import { isToday, isTomorrow, isPast } from "date-fns"; // Import isToday
 
 interface TaskItemProps {
   task: Task;
@@ -243,6 +243,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
           {shouldShowHabitWarning && (
             <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
               <AlertCircle className="h-3 w-3 flex-shrink-0" /> Não quebre o hábito!
+            </p>
+          )}
+          {task.due_date && isPast(parseISO(task.due_date)) && !task.is_completed && (
+            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3 flex-shrink-0" /> Atenção: Tarefa Atrasada!
             </p>
           )}
         </div>
