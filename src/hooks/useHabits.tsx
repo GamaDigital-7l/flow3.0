@@ -5,7 +5,10 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, parseISO, differenceInDays } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz'; // Importação nomeada corrigida
+import dateFnsTz from 'date-fns-tz'; // Importação padrão
+
+// Acessando a função utcToZonedTime através da propriedade default
+const utcToZonedTime = dateFnsTz.utcToZonedTime || (dateFnsTz as any).default.utcToZonedTime;
 
 // Fetch the user's timezone from profile
 const fetchUserTimezone = async (userId: string): Promise<string> => {
@@ -187,7 +190,7 @@ export const useToggleHabitCompletion = () => {
       // 4. Trigger metric recalculation (client-side logic for streak/total update)
       // Since we updated the history, we can now trigger a refetch of all definitions
       // to get the latest metrics (which should be updated by the DB triggers/logic, 
-      // but since we don't have complex triggers, we rely on the client to refresh the view).
+      // but since we rely on the client to refresh the view).
       
       return updatedInstance;
     },
