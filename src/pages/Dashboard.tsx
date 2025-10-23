@@ -31,13 +31,13 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
     .select(`
-      id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+      id, title, description, due_date, time, is_completed, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
       task_tags(
         tags(id, name, color)
       ),
       subtasks:tasks!parent_task_id(
-        id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
+        id, title, description, due_date, time, is_completed, 
         origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
         task_tags(
           tags(id, name, color)

@@ -17,9 +17,9 @@ export interface Task {
   due_date: string | null; // ISO Date string
   time: string | null; // Time string (HH:MM:SS)
   is_completed: boolean;
-  recurrence_type: TaskRecurrenceType; 
-  recurrence_details: string | null; 
-  recurrence_time: string | null; 
+  // recurrence_type: TaskRecurrenceType; // REMOVIDO
+  // recurrence_details: string | null; // REMOVIDO
+  // recurrence_time: string | null; // REMOVIDO
   origin_board: TaskOriginBoard;
   current_board: TaskCurrentBoard;
   is_priority: boolean;
@@ -33,7 +33,7 @@ export interface Task {
   updated_at: string;
   
   subtasks?: Task[]; 
-  recurrence_streak?: number; // Mantido como opcional para compatibilidade de fetch
+  // recurrence_streak?: number; // REMOVIDO
 }
 
 export const DAYS_OF_WEEK_MAP: { [key: string]: number } = {
