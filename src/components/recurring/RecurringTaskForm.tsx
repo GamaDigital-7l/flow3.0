@@ -21,12 +21,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { RecurringTask, TaskRecurrenceType, DAYS_OF_WEEK_MAP, DAYS_OF_WEEK_LABELS } from "@/types/task";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
-const FREQUENCY_OPTIONS: TaskRecurrenceType[] = ['daily', 'weekly', 'custom'];
+const FREQUENCY_OPTIONS = ['daily', 'weekly', 'custom'] as const;
+type RecurrenceType = typeof FREQUENCY_OPTIONS[number];
 
 const recurringTaskSchema = z.object({
   title: z.string().min(1, "O título é obrigatório."),

@@ -8,7 +8,7 @@ import { Task, DAYS_OF_WEEK_MAP } from "@/types/task";
 import { format, isToday, isThisWeek, isThisMonth, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, differenceInDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, XCircle, Loader2, TrendingUp, CalendarDays, AlertCircle, Repeat } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, TrendingUp, CalendarDays, AlertCircle, Repeat, ListTodo } from "lucide-react";
 import { showError } from "@/utils/toast";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";

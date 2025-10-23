@@ -45,19 +45,17 @@ interface FinancialGoalFormProps {
 const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGoalSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const { categories, isLoading: isDataLoading } = useFinancialData();
+  const { accounts, isLoading: isDataLoading } = useFinancialData(); // Changed categories to accounts
   const queryClient = useQueryClient();
 
   const form = useForm<FinancialGoalFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || "",
-      amount: initialData?.amount || 0,
-      type: initialData?.type || 'expense',
-      start_date: initialData?.start_date ? parseISO(initialData.start_date) : new Date(),
-      end_date: initialData?.end_date ? parseISO(initialData.end_date) : new Date(),
-      category_id: initialData?.category_id || '',
-      scope: initialData?.scope || 'company',
+      target_amount: initialData?.target_amount || 0,
+      current_amount: initialData?.current_amount || 0,
+      target_date: initialData?.target_date ? parseISO(initialData.target_date) : undefined,
+      status: initialData?.status || 'pending',
     },
   });
 
@@ -68,10 +66,13 @@ const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGo
     }
 
     const goalData = {
-      ...values,
+      name: values.name,
+      target_amount: values.target_amount,
+      current_amount: values.current_amount,
+      status: values.status,
       user_id: userId,
       target_date: values.target_date ? format(convertToUtc(values.target_date)!, 'yyyy-MM-dd') : null,
-      //linked_account_id: values.linked_account_id,
+      linked_account_id: initialData?.linked_account_id || null, // Mantendo o linked_account_id existente ou null
     };
 
     try {

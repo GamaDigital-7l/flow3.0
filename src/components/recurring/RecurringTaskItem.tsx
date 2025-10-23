@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import RecurringTaskForm from "./RecurringTaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 
 interface RecurringTaskItemProps {
   task: RecurringTask;

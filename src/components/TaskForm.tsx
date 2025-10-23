@@ -20,10 +20,10 @@ import TagSelector from "./TagSelector";
 import TimePicker from "./TimePicker";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { TaskRecurrenceType, TaskOriginBoard, Task } from "@/types/task";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Importando FormDescription
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import TaskBasicInfo from "./task/TaskBasicInfo";
 import TaskCategorization from "./task/TaskCategorization";
-import TaskScheduling from "./task/TaskScheduling"; // Mantido para evitar erro de importação, mas será limpo
+// import TaskScheduling from "./task/TaskScheduling"; // REMOVIDO
 
 const taskSchema = z.object({
   id: z.string().optional(),
@@ -69,8 +69,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       recurrence_type: "none", // Forçado para none
       recurrence_details: null,
       recurrence_time: null,
-      origin_board: initialData?.origin_board || initialOriginBoard || "general",
-      current_board: initialData?.current_board || initialOriginBoard || "general",
+      origin_board: (initialData?.origin_board || initialOriginBoard || "general") as TaskOriginBoard,
+      current_board: (initialData?.current_board || initialOriginBoard || "general") as TaskOriginBoard,
       is_priority: initialData?.is_priority || false,
       client_name: initialData?.client_name || null,
       parent_task_id: initialData?.parent_task_id || parentTaskId || null,

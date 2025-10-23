@@ -115,7 +115,7 @@ const FinancialAccountForm: React.FC<FinancialAccountFormProps> = ({ initialData
       <div>
         <Label htmlFor="type" className="text-foreground">Tipo de Conta</Label>
         <Select
-          onValueChange={(value) => form.setValue("type", value)}
+          onValueChange={(value) => form.setValue("type", value as "checking" | "savings" | "investment" | "cash")}
           value={form.watch("type") || ""}
         >
           <SelectTrigger id="type" className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
