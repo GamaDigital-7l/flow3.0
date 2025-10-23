@@ -8,11 +8,9 @@ interface TaskForAdjustment {
 }
 
 /**
- * Retorna o status de conclusão ajustado para tarefas recorrentes.
- * Como agora usamos o modelo de instanciação, a verificação é direta.
+ * Retorna o status de conclusão ajustado.
  */
 export const getAdjustedTaskCompletionStatus = (task: TaskForAdjustment): boolean => {
-  // Com o novo modelo de instanciação, a Edge Function garante que a tarefa
-  // do dia seja uma nova instância não concluída.
+  // Como a recorrência foi removida, o status é direto.
   return task.is_completed;
 };

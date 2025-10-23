@@ -22,23 +22,16 @@ const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
   { id: "today_medium_priority", title: "Hoje (Média Prioridade)" },
   { id: "week_low_priority", title: "Esta Semana (Baixa Prioridade)" },
   { id: "general", title: "Woe Comunicação" },
-  { id: "recurring", title: "Hábitos" }, // Adicionado
   { id: "client_tasks", title: "Tarefas de Cliente" },
   { id: "completed", title: "Concluídas" },
 ];
 
 const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task[]> => {
-  if (board === 'recurring') {
-    // Tarefas recorrentes são gerenciadas na página /recurring
-    return [];
-  }
-  
   let query = supabase
     .from("tasks")
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-      recurrence_streak,
       task_tags(
         tags(id, name, color)
       ),
@@ -68,7 +61,6 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
-    // Recorrência removida, mas mantendo a estrutura de subtasks
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
@@ -85,7 +77,8 @@ const getBoardTitle = (boardId: TaskOriginBoard) => {
     case "today_medium_priority": return "Hoje (Média Prioridade)";
     case "week_low_priority": return "Esta Semana (Baixa Prioridade)";
     case "general": return "Woe Comunicação";
-    case "recurring": return "Hábitos Recorrentes";
+    case "client_tasks": return "Tarefas de Cliente";
+    case "completed": return "Concluídas";
     default: return boardId;
   }
 };
@@ -105,7 +98,7 @@ const Tasks: React.FC = () => {
   const { data: tasks, isLoading: isLoadingTasks, error: errorTasks, refetch: refetchTasks } = useQuery<Task[], Error>({
     queryKey: ["tasks", userId, activeBoard],
     queryFn: () => fetchTasks(userId!, activeBoard),
-    enabled: !!userId && activeBoard !== 'recurring',
+    enabled: !!userId,
   });
 
   const handleTaskUpdated = () => {
@@ -179,16 +172,10 @@ const Tasks: React.FC = () => {
             <Button
               key={board.id}
               variant={activeBoard === board.id ? "default" : "outline"}
-              onClick={() => {
-                if (board.id === 'recurring') {
-                  navigate('/recurring');
-                } else {
-                  setActiveBoard(board.id);
-                }
-              }}
+              onClick={() => setActiveBoard(board.id)}
               className="flex-shrink-0"
             >
-              {board.title} ({board.id !== 'recurring' ? (tasks?.length || 0) : '...'})
+              {board.title} ({tasks?.length || 0})
             </Button>
           ))}
         </div>
@@ -199,12 +186,10 @@ const Tasks: React.FC = () => {
           <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard)}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {activeBoard !== 'recurring' && tasks && tasks.length > 0 ? (
+          {tasks && tasks.length > 0 ? (
             tasks.map(task => (
               <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
             ))
-          ) : activeBoard === 'recurring' ? (
-            <p className="text-muted-foreground">Acesse a página de Hábitos para gerenciar.</p>
           ) : (
             <p className="text-muted-foreground">Nenhuma tarefa encontrada nesta categoria.</p>
           )}

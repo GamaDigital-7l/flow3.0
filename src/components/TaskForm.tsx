@@ -23,7 +23,6 @@ import { TaskRecurrenceType, TaskOriginBoard, Task } from "@/types/task";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import TaskBasicInfo from "./task/TaskBasicInfo";
 import TaskCategorization from "./task/TaskCategorization";
-// import TaskScheduling from "./task/TaskScheduling"; // REMOVIDO
 
 const taskSchema = z.object({
   id: z.string().optional(),
@@ -218,7 +217,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
           )}
         />
 
-        {/* TaskScheduling removido, pois não há recorrência */}
         <TaskCategorization form={form} />
 
         <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveTaskMutation.isPending}>

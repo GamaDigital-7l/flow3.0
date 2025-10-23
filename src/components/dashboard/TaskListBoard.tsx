@@ -22,8 +22,6 @@ interface TaskListBoardProps {
   refetchTasks: () => void;
   quickAddTaskInput?: React.ReactNode;
   originBoard?: TaskOriginBoard;
-  selectedDate?: Date; // Nova prop
-  children?: React.ReactNode; // Adicionado children
 }
 
 const TaskListBoard: React.FC<TaskListBoardProps> = ({
@@ -34,8 +32,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
   refetchTasks,
   quickAddTaskInput,
   originBoard = "general",
-  selectedDate, // Recebe a data selecionada
-  children, // Recebe children
 }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -121,20 +117,14 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
       {/* Aplicando altura máxima e scroll interno */}
       <div className="max-h-[85vh] overflow-y-auto custom-scrollbar flex-1">
         <CardContent className={contentPaddingClass}>
-          {/* Renderiza children se fornecido (usado para RecurringTaskItem) */}
-          {children}
-          
-          {/* Renderiza tarefas normais se não houver children e houver tarefas */}
-          {!children && taskTree.length === 0 ? (
+          {taskTree.length === 0 ? (
             <p className="text-muted-foreground text-xs">Nenhuma tarefa encontrada para este quadro.</p>
           ) : (
-            !children && (
-              <div className={itemSpacingClass}>
-                {taskTree.map((task) => (
-                  <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} compactMode={compactMode} />
-                ))}
-              </div>
-            )
+            <div className={itemSpacingClass}>
+              {taskTree.map((task) => (
+                <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} compactMode={compactMode} />
+              ))}
+            </div>
           )}
         </CardContent>
       </div>

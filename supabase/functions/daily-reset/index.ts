@@ -38,7 +38,7 @@ serve(async (req) => {
 
       const nowUtc = new Date();
       const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
-      const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd"); // Definindo a variável
+      const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd");
 
       console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString} no fuso horário ${userTimezone}.`);
 
@@ -73,10 +73,6 @@ serve(async (req) => {
         if (updateOverdueError) console.error(`[User ${userId}] Erro ao atualizar tarefas atrasadas:`, updateOverdueError);
         else console.log(`[User ${userId}] Movidas ${overdueUpdates.length} tarefas para 'overdue'.`);
       }
-      
-      // A Edge Function instantiate-template-tasks cuida da criação de novas instâncias.
-      // Não há mais lógica de recorrência aqui.
-
     }
 
     return new Response(
