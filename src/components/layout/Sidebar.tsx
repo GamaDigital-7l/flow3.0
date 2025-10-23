@@ -20,7 +20,6 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Tarefas", href: "/tasks", icon: ListTodo },
   { name: "Recorrentes", href: "/recurring", icon: Repeat },
-  // { name: "Padrão", href: "/standard-tasks", icon: Repeat }, // Item removido
   { name: "Financeiro", href: "/finance", icon: DollarSign },
   { name: "Metas", href: "/goals", icon: Target },
   { name: "Saúde", href: "/health", icon: Dumbbell },
@@ -28,7 +27,7 @@ const navItems = [
   { name: "Livros", href: "/books", icon: BookOpen },
   { name: "Notas", href: "/notes", icon: Notebook },
   { name: "Resultados", href: "/results", icon: BarChart3 },
-  { name: "Briefing", href: "/briefing", icon: ListTodo },
+  // { name: "Briefing", href: "/briefing", icon: ListTodo }, // REMOVIDO
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
