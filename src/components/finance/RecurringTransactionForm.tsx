@@ -294,7 +294,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
               <FormMessage />
             </FormItem>
           )}
-        </div>
+        </FormField>
 
         <div className="flex items-center space-x-2">
           <FormField
