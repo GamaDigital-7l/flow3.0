@@ -52,7 +52,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ currentPeriod, onPeriod
           <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
             {generateMonthOptions().map((date) => {
               const value = format(date, "yyyy-MM");
-              // Corrigindo a chamada de format para a sintaxe da v3
+              // FIX TS2554: Passando o objeto de locale
               const label = format(date, "MMMM yyyy", { locale: ptBR }); 
               return <SelectItem key={value} value={value}>{label}</SelectItem>;
             })}

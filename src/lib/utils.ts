@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import * as dateFns from 'date-fns';
+import { parseISO as dateFnsParseISO, format as dateFnsFormat } from 'date-fns'; // Importando funções diretamente
 import * as dateFnsTz from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 
@@ -8,7 +8,7 @@ import { ptBR } from 'date-fns/locale';
 export function parseISO(dateString: string | Date): Date {
   if (dateString instanceof Date) return dateString;
   // Usar date-fns parseISO para melhor compatibilidade com strings ISO
-  return dateFns.parseISO(dateString);
+  return dateFnsParseISO(dateString);
 }
 
 export function formatISO(date: Date): string {
@@ -54,8 +54,8 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   const dateObj = date instanceof Date ? date : parseISO(date);
   
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
-  // Corrigindo a chamada de format para a sintaxe da v3
-  return dateFns.format(dateObj, formatString, { locale: ptBR }); 
+  // FIX TS2554: Usando dateFnsFormat e passando o objeto de opções
+  return dateFnsFormat(dateObj, formatString, { locale: ptBR }); 
 }
 
 /**
