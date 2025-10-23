@@ -17,9 +17,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
-const DASHBOARD_BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
+const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
+  { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
+  { id: "general", title: "Geral", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
+  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-5 w-5" />, color: "text-orange-500" }, // Adicionado icon e color
   { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
 ];
 
@@ -86,6 +89,9 @@ const Dashboard: React.FC = () => {
   // E as instâncias recorrentes (que têm current_board: 'recurring')
   const dashboardTasks = allTasks.filter(task => task.recurrence_type === 'none' || task.current_board === 'recurring');
 
+  const overdueTasks = dashboardTasks.filter(t => t.current_board === 'overdue' && !t.is_completed);
+  const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
+
   if (isLoadingTasks) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
@@ -126,9 +132,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
-      <h2 className="text-xl font-bold text-foreground pt-4">Tarefas Urgentes</h2>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        {DASHBOARD_BOARD_DEFINITIONS.map((board) => (
+      <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {BOARD_DEFINITIONS.map((board) => (
           <TaskListBoard
             key={board.id}
             title={board.title}
@@ -140,7 +146,7 @@ const Dashboard: React.FC = () => {
             error={errorTasks}
             refetchTasks={handleTaskUpdated}
             quickAddTaskInput={
-              board.id !== "overdue" && (
+              board.id !== "overdue" && board.id !== "recurring" && (
                 <QuickAddTaskInput
                   originBoard={board.id}
                   onTaskAdded={handleTaskUpdated}
@@ -154,7 +160,7 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Seção de Resumos (Financeiro e Produtividade) */}
+      {/* Seção de Resumos (Financeiro e Produtividade) - MOVIDA PARA O FINAL */}
       <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Resumos e Métricas</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <div className="lg:col-span-2 xl:col-span-2">
