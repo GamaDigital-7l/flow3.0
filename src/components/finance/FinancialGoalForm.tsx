@@ -18,6 +18,7 @@ import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess } from '@/utils/toast';
 import { useFinancialData } from '@/hooks/useFinancialData';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -109,98 +110,99 @@ const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGo
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Nome da Meta</FormLabel>
-            <FormControl>
-              <Input placeholder="Ex: Aposentadoria" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="target_amount"
+          name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Valor Alvo (R$)</FormLabel>
+              <FormLabel>Nome da Meta</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="100000.00"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                />
+                <Input placeholder="Ex: Aposentadoria" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="current_amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Valor Atual (R$)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <FormField
-        control={form.control}
-        name="target_date"
-        render={({ field }) => (
-          <FormItem className="flex flex-col">
-            <FormLabel>Data Alvo (Opcional)</FormLabel>
-            <Popover>
-              <PopoverTrigger asChild>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="target_amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor Alvo (R$)</FormLabel>
                 <FormControl>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !field.value && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                    {field.value ? formatDateTime(field.value, false) : <span>Selecione uma data</span>}
-                  </Button>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="100000.00"
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  />
                 </FormControl>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={field.value}
-                  onSelect={field.onChange}
-                  initialFocus
-                  locale={ptBR}
-                />
-              </PopoverContent>
-            </Popover>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="current_amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor Atual (R$)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="target_date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Data Alvo (Opcional)</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                      {field.value ? formatDateTime(field.value, false) : <span>Selecione uma data</span>}
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
@@ -221,4 +223,4 @@ const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGo
   );
 };
 
-export default BudgetForm;
+export default FinancialGoalForm;
