@@ -6,11 +6,11 @@
 
 @layer base {
   :root {
-    /* Light Theme (Default) - Gama Flow - ALTO CONTRASTE E CLAREZA */
-    --background: 210 20% 98%; /* #F8FAFC - Fundo principal muito claro */
-    --foreground: 222.2 84% 4.9%; /* #12141A - Texto principal escuro */
-
-    --card: 0 0% 100%; /* #FFFFFF - Fundo dos cards */
+    /* Light Theme - Minimalista */
+    --background: 210 20% 96%; /* #F4F5F7 */
+    --foreground: 222.2 84% 4.9%; /* #1A1A1A */
+    
+    --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 222.2 84% 4.9%;
     --card-rgb: 255, 255, 255;
 
@@ -18,16 +18,16 @@
     --popover-foreground: 222.2 84% 4.9%;
 
     --primary: 340 80% 51%; /* #ED1857 - Gama Pink */
-    --primary-hover: 340 80% 60%; /* #FF2E6E - Versão mais viva */
+    --primary-hover: 340 80% 60%; /* #FF2E6E */
     --primary-foreground: 0 0% 100%; /* Branco */
     --primary-light: 340 80% 60%;
 
-    --secondary: 210 40% 94%; /* #F0F3F6 - Cinza claro para secundário */
-    --secondary-hover: 210 40% 90%; /* Hover secundário */
+    --secondary: 210 40% 94%; /* #F1F2F4 - Fundo de botões/inputs secundários */
+    --secondary-hover: 210 40% 90%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 94%; /* Cinza claro para muted */
-    --muted-foreground: 215.4 16.3% 46.9%; /* #61656F - Cinza médio */
+    --muted-foreground: 215.4 16.3% 46.9%; /* #6B7280 - Texto secundário */
 
     --accent: 210 40% 94%; /* Cinza claro para accent */
     --accent-foreground: 222.2 47.4% 11.2%;
@@ -35,31 +35,31 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 85%; /* #D1D4DB - Borda visível */
-    --border-rgb: 209, 212, 219;
+    --border: 214.3 31.8% 89%; /* #E2E4E8 - Borda suave */
+    --border-rgb: 226, 228, 232;
     --input: 0 0% 100%; /* Input branco */
     --ring: 340 80% 51%; /* Gama Pink */
 
-    /* Arredondamento: Aumentando o raio padrão para 0.75rem (12px) */
+    /* Arredondamento: Mantido em 0.75rem */
     --radius: 0.75rem; 
 
-    /* Cores de status (Light) */
-    --status-success: 140 70% 48%;
-    --status-alert: 45 90% 50%;
-    --status-overdue: #4C2EFF;
-    --status-urgent: #5F77FF;
-    --status-today: #4CAF50;
-    --status-completed: rgba(200, 200, 200, 0.5);
-    --status-recurring: #9370DB;
+    /* Cores de status (Minimalista Light) */
+    --status-success: 140 70% 48%; // Mantido para feedback positivo
+    --status-alert: 45 90% 50%; // Mantido para avisos
+    --status-overdue: 340 80% 51%; /* Rosa para urgência */
+    --status-urgent: 340 80% 51%; /* Rosa para urgência */
+    --status-today: 340 80% 51%; /* Rosa para hoje */
+    --status-completed: 215.4 16.3% 46.9%; /* Cinza para concluído */
+    --status-recurring: 340 80% 51%; /* Rosa para recorrência */
 
-    /* Sidebar Colors (Light Mode) - Fundo ligeiramente diferente do background principal */
-    --sidebar-background: 210 20% 96%; /* #F3F5F7 */
+    /* Sidebar Colors (Light Mode) */
+    --sidebar-background: 210 20% 98%; /* #F9FAFB */
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-primary: 340 80% 51%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 90%; /* Mais escuro para hover */
+    --sidebar-accent: 210 40% 94%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 85%;
+    --sidebar-border: 214.3 31.8% 89%;
     --sidebar-ring: 340 80% 51%;
 
     /* Variáveis para safe areas */
@@ -69,29 +69,28 @@
     --sar: env(safe-area-inset-right);
   }
 
-  /* Tema Escuro (Dark Mode) - Suave e Confortável */
+  /* Tema Escuro (Dark Mode) - Minimalista */
   .dark {
-    --background: 220 15% 8%; /* #15181F - Fundo principal mais escuro e suave */
-    --foreground: 210 20% 98%; /* #FFFFFF - Texto primário */
+    --background: 220 15% 8%; /* #141416 */
+    --foreground: 210 20% 98%; /* #EDEDED */
     
-    --card: 220 15% 12%; /* #1D2028 - Fundo dos cards (suave) */
+    --card: 220 15% 12%; /* #1C1D21 */
     --card-foreground: 210 20% 98%;
-    --card-rgb: 29, 32, 40;
+    --card-rgb: 28, 29, 33;
 
     --popover: 220 15% 12%;
     --popover-foreground: 210 20% 98%;
 
     --primary: 340 80% 51%; /* #ED1857 - Gama Pink */
-    --primary-hover: 340 80% 60%; /* #FF2E6E - Hover */
-    --primary-foreground: 0 0% 100%; /* Branco */
-    --primary-light: 340 80% 60%;
+    --primary-hover: 340 80% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 18%; /* #2B2E38 - Botão secundário/Bordas */
-    --secondary-hover: 220 15% 22%; /* #353946 - Hover secundário */
+    --secondary: 220 15% 18%; /* #2A2B2F */
+    --secondary-hover: 220 15% 22%;
     --secondary-foreground: 210 20% 98%;
 
-    --muted: 220 15% 18%; /* #2B2E38 - Scrollbar/Placeholders */
-    --muted-foreground: 215 14% 75%; /* #B4B8C2 - Texto secundário */
+    --muted: 220 15% 18%;
+    --muted-foreground: 215 14% 75%; /* #A1A1A1 */
 
     --accent: 220 15% 18%;
     --accent-foreground: 210 20% 98%;
@@ -99,21 +98,21 @@
     --destructive: 0 80% 50%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 220 15% 18%; /* #2B2E38 - Bordas sutis */
-    --border-rgb: 43, 46, 56;
+    --border: 220 15% 18%; /* #2A2B2F */
+    --border-rgb: 42, 43, 47;
     --input: 220 15% 18%;
-    --ring: 340 80% 51%; /* Gama Pink */
+    --ring: 340 80% 51%;
 
-    /* Cores de status (Dark) */
+    /* Cores de status (Minimalista Dark) */
     --status-success: 140 70% 48%;
     --status-alert: 45 90% 50%;
-    --status-overdue: #4C2EFF;
-    --status-urgent: #5F77FF;
-    --status-today: #4CAF50;
-    --status-completed: rgba(169, 169, 184, 0.2);
-    --status-recurring: #9370DB;
+    --status-overdue: 340 80% 51%;
+    --status-urgent: 340 80% 51%;
+    --status-today: 340 80% 51%;
+    --status-completed: 215 14% 75%;
+    --status-recurring: 340 80% 51%;
 
-    /* Cores específicas para a Sidebar (ajustadas para a nova paleta) */
+    /* Sidebar Colors (Dark Mode) */
     --sidebar-background: 220 15% 8%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 340 80% 51%;
@@ -130,15 +129,15 @@
     @apply border-border;
   }
   html {
-    scroll-behavior: smooth; /* Rolagem suave */
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden; /* CRÍTICO: Garante que não haja overflow lateral */
+    overflow-x: hidden;
     min-height: 100vh;
-    width: 100vw; /* CRÍTICO: Garante que o body tenha a largura exata da viewport */
+    width: 100vw;
   }
   
   #root {
@@ -147,7 +146,8 @@
     padding-bottom: var(--sab);
     padding-left: var(--sal);
     padding-right: var(--sar);
-    width: 100%; /* Garante que o root não exceda 100% */
+    width: 100%;
+    box-sizing: border-box; /* Garante que o padding não cause overflow */
   }
 
   /* Para navegadores Webkit (Chrome, Safari) */
@@ -204,32 +204,30 @@
     @apply max-w-full h-auto;
   }
 
-  /* Efeito de Frosted Glass (vidro fosco) */
+  /* REMOVIDO: Efeito de Frosted Glass (vidro fosco) */
   .frosted-glass {
-    background-color: rgba(var(--card-rgb), 0.6);
-    backdrop-filter: blur(10px) saturate(180%);
-    -webkit-backdrop-filter: blur(10px) saturate(180%);
-    border: 1px solid rgba(var(--border-rgb), 0.3);
+    /* Removido backdrop-filter e background-color com transparência */
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
   }
 }
 
-/* Utilitário para gradientes sutis */
+/* REMOVIDO: Utilitário para gradientes sutis */
 .bg-gradient-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  background: hsl(var(--primary));
 }
 
-/* Estilo para ícones monocromáticos */
+/* REMOVIDO: Estilo para ícones monocromáticos e glow */
 .icon-mono {
   @apply text-foreground;
 }
 
-/* Estilo para ícones com glow */
 .icon-glow {
-  @apply text-secondary;
-  filter: drop-shadow(0 0 3px rgba(95, 119, 255, 0.7));
+  @apply text-primary; /* Usar primary para destaque */
+  filter: none;
 }
 
-/* Estilo para botões com glow */
+/* REMOVIDO: Estilo para botões com glow */
 .btn-glow {
   @apply relative overflow-hidden;
 }
@@ -241,18 +239,18 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle at center, rgba(95, 119, 255, 0.3) 0%, transparent 70%);
+  background: none;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out;
+  transition: none;
   z-index: 0;
 }
 
 .btn-glow:hover::before {
-  opacity: 1;
+  opacity: 0;
 }
 
 .btn-glow:hover {
-  box-shadow: 0 0 10px rgba(95, 119, 255, 0.6), 0 0 20px rgba(76, 46, 255, 0.5);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
@@ -261,14 +259,24 @@
   z-index: 1;
 }
 
-/* Estilo para o efeito de elevação no hover de cards */
+/* Estilo para o efeito de elevação no hover de cards (Minimalista) */
 .card-hover-effect {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra inicial mínima */
+}
+
+.dark .card-hover-effect {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .card-hover-effect:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 15px rgba(95, 119, 255, 0.2);
+  transform: translateY(-2px);
+  /* Sombra sutil de elevação */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dark .card-hover-effect:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Estilos para links de navegação da Sidebar */
@@ -278,8 +286,8 @@
   }
 
   .nav-link-active {
-    /* Aumentando o contraste no modo claro */
-    @apply bg-sidebar-accent text-sidebar-primary shadow-sm;
+    /* Usando primary/10 para fundo suave e primary para texto */
+    @apply bg-primary/10 text-primary shadow-sm;
   }
 
   .nav-link-inactive {
@@ -327,13 +335,12 @@
 
 /* Ajustes para o layout principal */
 .main-content-area {
-  /* Remove padding lateral no mobile, confiando no padding do #root */
-  @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-0; /* Removendo padding aqui */
+  @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-0;
 }
 
 /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
 .page-content-wrapper {
   @apply p-3 md:p-4 lg:p-6;
-  width: 100%; /* Garante que o wrapper não exceda 100% */
-  box-sizing: border-box; /* Inclui padding e border na largura total */
+  width: 100%;
+  box-sizing: border-box;
 }

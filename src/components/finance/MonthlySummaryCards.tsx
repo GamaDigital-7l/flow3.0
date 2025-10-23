@@ -38,7 +38,7 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
 
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Receitas</CardTitle>
           <DollarSign className="h-4 w-4 text-green-500" />
@@ -50,10 +50,10 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Despesas</CardTitle>
-          <DollarSign className="h-4 w-4 text-red-500" />
+          <DollarSign className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-foreground">
@@ -62,19 +62,19 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Resultado do Mês</CardTitle>
-          {isResultPositive ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
+          {isResultPositive ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-primary" />}
         </CardHeader>
         <CardContent>
-          <div className={cn("text-2xl font-bold", isResultPositive ? "text-green-500" : "text-red-500")}>
+          <div className={cn("text-2xl font-bold", isResultPositive ? "text-green-500" : "text-primary")}>
             {isLoading ? renderLoading() : formatCurrency(result)}
           </div>
           <p className="text-xs text-muted-foreground">
             {isLoading ? renderLoading() : (
               <>
-                {isComparisonPositive ? <ArrowUp className="inline h-3 w-3 mr-1 text-green-500" /> : <ArrowDown className="inline h-3 w-3 mr-1 text-red-500" />}
+                {isComparisonPositive ? <ArrowUp className="inline h-3 w-3 mr-1 text-green-500" /> : <ArrowDown className="inline h-3 w-3 mr-1 text-primary" />}
                 {formatCurrency(Math.abs(resultComparison))} vs mês anterior
               </>
             )}
@@ -82,10 +82,10 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Saldo de Caixa</CardTitle>
-          <Wallet className="h-4 w-4 text-primary" />
+          <Wallet className="h-4 w-4 text-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-foreground">
@@ -94,10 +94,10 @@ const MonthlySummaryCards: React.FC<MonthlySummaryCardsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
+      <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Projeção do Mês</CardTitle>
-          <TrendingUp className="h-4 w-4 text-blue-500" />
+          <TrendingUp className="h-4 w-4 text-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-foreground">

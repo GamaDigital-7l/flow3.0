@@ -86,6 +86,7 @@ const DashboardFinanceSummary: React.FC = () => {
       <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Receitas do Mês</CardTitle>
+          {/* Usando text-green-500 para receitas (feedback positivo) */}
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
@@ -97,10 +98,11 @@ const DashboardFinanceSummary: React.FC = () => {
       <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Despesas do Mês</CardTitle>
-          <TrendingDown className="h-4 w-4 text-red-500" />
+          {/* Usando text-primary para despesas (destaque) */}
+          <TrendingDown className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-500">{formatCurrency(total_expense)}</div>
+          <div className="text-2xl font-bold text-primary">{formatCurrency(total_expense)}</div>
           <p className="text-xs text-muted-foreground">Total de saídas</p>
         </CardContent>
       </Card>
@@ -108,10 +110,11 @@ const DashboardFinanceSummary: React.FC = () => {
       <Card className="frosted-glass">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Saldo Atual</CardTitle>
-          <DollarSign className="h-4 w-4 text-primary" />
+          <DollarSign className="h-4 w-4 text-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          {/* Usando text-green-600 para positivo e text-primary para negativo */}
+          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-primary'}`}>
             {formatCurrency(balance)}
           </div>
           <p className="text-xs text-muted-foreground">Receitas - Despesas</p>

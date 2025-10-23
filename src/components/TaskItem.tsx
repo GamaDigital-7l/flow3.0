@@ -26,21 +26,25 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
   const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !task.is_completed;
 
   if (task.is_completed) {
-    return <Badge className="bg-status-completed text-foreground/80 h-5 px-1.5 text-xs">Concluída</Badge>;
+    // Cinza suave para concluído
+    return <Badge className="bg-status-completed/20 text-status-completed h-5 px-1.5 text-xs">Concluída</Badge>;
   }
   
   // Se não estiver atrasada, verifica outras condições
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
     if (isToday(dueDate)) {
+      // Rosa para Hoje
       return <Badge className="bg-status-today text-white h-5 px-1.5 text-xs">Hoje</Badge>;
     }
     if (isTomorrow(dueDate)) {
-      return <Badge variant="secondary" className="h-5 px-1.5 text-xs">Amanhã</Badge>;
+      // Cinza claro para Amanhã
+      return <Badge variant="secondary" className="bg-muted/50 text-muted-foreground h-5 px-1.5 text-xs">Amanhã</Badge>;
     }
   }
   
   if (task.is_priority) {
+    // Rosa para Prioridade
     return <Badge className="bg-status-urgent text-white h-5 px-1.5 text-xs">Prioridade</Badge>;
   }
   
@@ -186,7 +190,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = f
     <Card className={cn(
       "border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
       isCompleted ? "opacity-70" : "card-hover-effect",
-      isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50",
+      // Usando a cor primária para destaque de atraso
+      isTrulyOverdue && "border-status-overdue ring-1 ring-status-overdue/50",
       compactMode ? "p-1.5" : "p-2" // Ajuste de padding
     )}>
       <div className="flex items-start gap-2">
@@ -226,7 +231,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = f
               </Badge>
             ))}
             {task.client_name && (
-              <Badge variant="secondary" className="bg-blue-500/20 text-blue-500 border-blue-500/50 h-5 px-1.5 text-xs">
+              <Badge variant="secondary" className="bg-muted/50 text-muted-foreground h-5 px-1.5 text-xs">
                 <Users className="h-3 w-3 mr-1" /> {task.client_name}
               </Badge>
             )}
@@ -240,7 +245,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = f
             </p>
           )}
           {isTrulyOverdue && (
-            <p className={cn("text-red-500 mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
+            <p className={cn("text-status-overdue mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
               <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> Atenção: Tarefa Atrasada!
             </p>
           )}
