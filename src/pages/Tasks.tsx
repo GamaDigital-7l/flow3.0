@@ -5,7 +5,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskCurrentBoard, TaskOriginBoard, TaskRecurrenceType, DAYS_OF_WEEK_LABELS } from "@/types/task";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Filter, CalendarDays, Repeat, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Loader2, Filter, CalendarDays, Repeat, Edit, Trash2, ListTodo, AlertCircle, Users } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
@@ -16,16 +16,17 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useLocation } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
 
-const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
-  { id: "today_high_priority", title: "Hoje (Alta Prioridade)" },
-  { id: "today_medium_priority", title: "Hoje (Média Prioridade)" },
-  { id: "week_low_priority", title: "Esta Semana (Baixa Prioridade)" },
-  { id: "general", title: "Geral" },
-  { id: "recurring", title: "Recorrentes" },
-  { id: "overdue", title: "Atrasadas" },
-  { id: "client_tasks", title: "Tarefas de Cliente" },
-  { id: "completed", title: "Concluídas" },
+const ALL_TASK_BOARDS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode }[] = [
+  { id: "today_high_priority", title: "Hoje (Alta)", icon: <ListTodo className="h-4 w-4" /> },
+  { id: "today_medium_priority", title: "Hoje (Média)", icon: <ListTodo className="h-4 w-4" /> },
+  { id: "week_low_priority", title: "Esta Semana", icon: <CalendarDays className="h-4 w-4" /> },
+  { id: "general", title: "Geral", icon: <ListTodo className="h-4 w-4" /> },
+  { id: "recurring", title: "Recorrentes", icon: <Repeat className="h-4 w-4" /> },
+  { id: "overdue", title: "Atrasadas", icon: <AlertCircle className="h-4 w-4" /> },
+  { id: "client_tasks", title: "Clientes", icon: <Users className="h-4 w-4" /> },
+  { id: "completed", title: "Concluídas", icon: <CheckCircle2 className="h-4 w-4" /> },
 ];
 
 const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task[]> => {
@@ -71,20 +72,15 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
       template_task_id: null, // Removendo referência ao campo inexistente
     })),
     // Ensure date fields are Date objects if needed for form/display logic
-    due_date: task.due_date ? parseISO(task.due_date) : null,
+    due_date: task.due_date, // Mantendo como string para consistência com o tipo Task
     template_task_id: null, // Removendo referência ao campo inexistente
   })) || [];
   return mappedData;
 };
 
 const getBoardTitle = (boardId: TaskOriginBoard) => {
-  switch (boardId) {
-    case "today_high_priority": return "Hoje (Alta Prioridade)";
-    case "today_medium_priority": return "Hoje (Média Prioridade)";
-    case "week_low_priority": return "Esta Semana (Baixa Prioridade)";
-    case "general": return "Geral";
-    default: return boardId;
-  }
+  const board = ALL_TASK_BOARDS.find(b => b.id === boardId);
+  return board ? board.title : boardId;
 };
 
 const Tasks: React.FC = () => {
@@ -97,7 +93,7 @@ const Tasks: React.FC = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
-
+  // Query para buscar as tarefas do board ativo
   const { data: tasks, isLoading: isLoadingTasks, error: errorTasks, refetch: refetchTasks } = useQuery<Task[], Error>({
     queryKey: ["tasks", userId, activeBoard],
     queryFn: () => fetchTasks(userId!, activeBoard),
@@ -143,7 +139,7 @@ const Tasks: React.FC = () => {
     <div className="page-content-wrapper">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-          <CalendarDays className="h-7 w-7 text-primary" /> Minhas Tarefas
+          <ListTodo className="h-7 w-7 text-primary" /> Minhas Tarefas
         </h1>
         
         <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
@@ -160,7 +156,7 @@ const Tasks: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
             <TaskForm
-                initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } as any : undefined}
+                initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date ? parseISO(editingTask.due_date) : undefined } as any : undefined}
                 onTaskSaved={handleTaskUpdated}
                 onClose={() => setIsTaskFormOpen(false)}
                 initialOriginBoard={activeBoard}
@@ -169,37 +165,53 @@ const Tasks: React.FC = () => {
         </Dialog>
       </div>
 
-      <div className="mb-6 overflow-x-auto pb-2">
-        <div className="flex flex-nowrap gap-2 min-w-max">
-          {TASK_BOARDS.map(board => (
-            <Button
-              key={board.id}
-              variant={activeBoard === board.id ? "default" : "outline"}
-              onClick={() => setActiveBoard(board.id)}
-              className="flex-shrink-0"
-            >
-              {board.title} ({tasks?.length || 0})
-            </Button>
-          ))}
+      <Tabs value={activeBoard} onValueChange={(value) => setActiveBoard(value as TaskCurrentBoard)} className="w-full">
+        {/* Lista de Tabs (Scrollable no mobile) */}
+        <div className="mb-4 overflow-x-auto pb-2">
+          <TabsList className="flex flex-nowrap gap-1 min-w-max bg-muted/50 border border-border/50">
+            {ALL_TASK_BOARDS.map(board => (
+              <TabsTrigger
+                key={board.id}
+                value={board.id}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm h-9"
+              >
+                {board.icon}
+                {board.title}
+                <span className="text-xs font-semibold ml-1">({tasks?.length || 0})</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
-      </div>
 
-      <Card className="bg-card border-border shadow-lg frosted-glass">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard)}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {tasks && tasks.length > 0 ? (
-            tasks.map(task => (
-              <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
-            ))
-          ) : (
-            <p className="text-muted-foreground">Nenhuma tarefa encontrada nesta categoria.</p>
-          )}
-        </CardContent>
-      </Card>
+        {/* Conteúdo das Tabs */}
+        <TabsContent value={activeBoard} className="mt-0">
+          <Card className="bg-card border-border shadow-lg frosted-glass">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-foreground">{getBoardTitle(activeBoard)}</CardTitle>
+              {activeBoard !== "overdue" && activeBoard !== "recurring" && activeBoard !== "completed" && (
+                <div className="mt-2">
+                  <QuickAddTaskInput
+                    originBoard={activeBoard}
+                    onTaskAdded={refetchTasks}
+                    dueDate={new Date()}
+                  />
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {tasks && tasks.length > 0 ? (
+                tasks.map(task => (
+                  <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
+                ))
+              ) : (
+                <p className="text-muted-foreground">Nenhuma tarefa encontrada nesta categoria.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {/* Dialog para edição de Tarefa Comum */}
+      {/* Dialog para edição de Tarefa Comum (Mantido fora das TabsContent) */}
       <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
         <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
           <DialogHeader>
@@ -209,7 +221,7 @@ const Tasks: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <TaskForm
-              initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } as any : undefined}
+              initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date ? parseISO(editingTask.due_date) : undefined } as any : undefined}
               onTaskSaved={handleTaskUpdated}
               onClose={() => setIsTaskFormOpen(false)}
               initialOriginBoard={activeBoard}
