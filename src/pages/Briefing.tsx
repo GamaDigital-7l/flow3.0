@@ -47,9 +47,10 @@ interface Briefing {
 
 const fetchBriefings = async (userId: string): Promise<Briefing[]> => {
   if (!userId) return [];
+  // Consulta simplificada para evitar problemas de tipagem ou complexidade
   const { data, error } = await supabase
     .from('briefing_forms')
-    .select('*')
+    .select('id, title, description, form_structure, updated_at, display_mode')
     .eq('created_by', userId)
     .order('updated_at', { ascending: false });
 
@@ -120,7 +121,9 @@ const BriefingPage: React.FC = () => {
   }
 
   if (error) {
-    return <div className="text-destructive p-8">Erro ao carregar briefings: {error.message}</div>;
+    // Se o erro for 404, pode ser um problema de configuração da API.
+    // Exibimos uma mensagem clara.
+    return <div className="text-destructive p-8">Erro ao carregar briefings. Verifique a configuração da tabela 'briefing_forms' no Supabase. Detalhes: {error.message}</div>;
   }
 
   return (
