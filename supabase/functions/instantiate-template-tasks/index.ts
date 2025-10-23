@@ -54,6 +54,7 @@ serve(async (req) => {
           origin_board,
           is_priority,
           client_name,
+          recurrence_streak,
           task_tags (tag_id)
         `)
         .eq('user_id', userId)
@@ -72,15 +73,15 @@ serve(async (req) => {
         if (template.recurrence_type === 'daily') {
           shouldInstantiate = true;
         } else if (template.recurrence_type === 'weekly' && template.recurrence_details) {
-          // Detalhes são strings de dias da semana separados por vírgula (ex: "1,3,5")
+          // Detalhes são strings de dias da semana separados por vírgula (ex: "Monday,Wednesday")
           const days = template.recurrence_details.split(',').map(day => {
             // Mapeamento de string de dia (Monday, Tuesday) para número (1, 2)
             const dayMap: { [key: string]: number } = {
               "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3,
               "Thursday": 4, "Friday": 5, "Saturday": 6
             };
-            return dayMap[day] !== undefined ? dayMap[day] : parseInt(day);
-          }).filter(n => !isNaN(n));
+            return dayMap[day];
+          }).filter(n => n !== undefined);
           
           shouldInstantiate = days.includes(currentDayOfWeek);
         } else if (template.recurrence_type === 'monthly' && template.recurrence_details) {
@@ -101,7 +102,7 @@ serve(async (req) => {
             continue;
           }
           if (existingInstance && existingInstance.length > 0) {
-            console.log(`[User ${userId}] Instância de "${template.title}" (template ${template.id}) já existe para hoje.`);
+            console.log(`[User ${userId}] Instância de "${template.title}" (template ${template.id}) já existe para hoje. Pulando.`);
             continue;
           }
 
@@ -125,6 +126,8 @@ serve(async (req) => {
             current_board: 'recurring', // Todas as instâncias vão para o quadro 'recurring'
             client_name: template.client_name,
             parent_task_id: template.id, // Link para o template (usando parent_task_id para instâncias)
+            // O recurrence_streak da instância é o mesmo do template pai no momento da criação
+            recurrence_streak: template.recurrence_streak || 0, 
             created_at: nowUtc.toISOString(),
             updated_at: nowUtc.toISOString(),
           });

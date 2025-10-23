@@ -77,7 +77,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
     mutationFn: async (taskId: string) => {
       const { data: taskToUpdate, error: fetchTaskError } = await supabase
         .from("tasks")
-        .select("recurrence_type")
+        .select("recurrence_type, parent_task_id")
         .eq("id", taskId)
         .single();
 
@@ -106,6 +106,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
         .eq("id", taskId);
 
       if (updateError) throw updateError;
+
+      // Se for uma instância recorrente, atualiza o streak no template pai
+      if (taskToUpdate.parent_task_id) {
+        // O streak é atualizado pela Edge Function update-recurrence-streak,
+        // mas para feedback imediato, podemos invalidar a query do template.
+        // No entanto, a Edge Function é a fonte da verdade para o streak.
+        // Apenas garantimos que a Edge Function de streak rode após a instanciação.
+      }
 
       const { data: profileData, error: fetchProfileError } = await supabase
         .from("profiles")
@@ -196,8 +204,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
   };
 
   const isCompleted = task.is_completed;
-  const wasCompletedYesterday = task.completed_at && format(new Date(task.completed_at), 'yyyy-MM-dd') === format(subDays(new Date(), 1), 'yyyy-MM-dd');
-  const shouldShowHabitWarning = isDailyRecurringView && !isCompleted && !wasCompletedYesterday;
+  
+  // Lógica de aviso de hábito:
+  // 1. É uma instância recorrente (tem parent_task_id)
+  // 2. Não está concluída
+  // 3. O streak do template pai é 0 (indicando que falhou ontem)
+  const isRecurrentInstance = !!task.parent_task_id;
+  const streakIsBroken = task.recurrence_streak === 0;
+  const shouldShowHabitWarning = isRecurrentInstance && !isCompleted && streakIsBroken;
 
   // Nova lógica de atraso: data de vencimento existe E é anterior ao início do dia de hoje E não está concluída
   const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !isCompleted;

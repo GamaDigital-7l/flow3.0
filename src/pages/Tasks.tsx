@@ -33,8 +33,12 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
     .select(`
       id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
+      recurrence_streak,
       task_tags(
         tags(id, name, color)
+      ),
+      parent_task:tasks!parent_task_id(
+        recurrence_streak
       ),
       subtasks:tasks!parent_task_id(
         id, title, description, due_date, time, is_completed, recurrence_type, recurrence_details, 
@@ -62,6 +66,8 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
+    // Se for uma instância, pega o streak do pai
+    recurrence_streak: task.parent_task?.[0]?.recurrence_streak || task.recurrence_streak || 0,
     subtasks: task.subtasks.map((sub: any) => ({
       ...sub,
       tags: sub.task_tags.map((t: any) => t.tags),
@@ -109,7 +115,7 @@ const Tasks: React.FC = () => {
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
-    setIsTaskFormOpen(true);
+    setIsFormOpen(true);
   };
 
   const handleAddTask = () => {
