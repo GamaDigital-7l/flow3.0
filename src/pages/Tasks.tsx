@@ -48,12 +48,16 @@ const fetchTasks = async (userId: string, board: TaskCurrentBoard): Promise<Task
     `)
     .eq("user_id", userId)
     .eq("current_board", board)
-    .is("parent_task_id", null);
+    .is("parent_task_id", null); // Apenas tarefas raiz
 
   if (board === 'completed') {
     query = query.order("completed_at", { ascending: false });
   } else {
-    query = query.order("is_priority", { ascending: false }).order("due_date", { ascending: true, nullsFirst: false });
+    // Ordenação otimizada: prioridade > data de vencimento > data de criação
+    query = query
+      .order("is_priority", { ascending: false })
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
   }
 
   const { data, error } = await query;
@@ -104,6 +108,7 @@ const Tasks: React.FC = () => {
     queryKey: ["tasks", userId, activeBoard],
     queryFn: () => fetchTasks(userId!, activeBoard as TaskCurrentBoard),
     enabled: !!userId && activeBoard !== "recurrence",
+    staleTime: 1000 * 60 * 1, // 1 minuto de cache
   });
   
   const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits(); // Usando o novo hook

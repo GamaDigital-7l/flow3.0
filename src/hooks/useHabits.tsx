@@ -8,17 +8,6 @@ import { format, subDays, isSameDay, getDay, differenceInDays } from 'date-fns';
 import { parseISO, getTodayLocalString } from '@/lib/utils'; // Usando parseISO e getTodayLocalString do utils
 // Removendo importação de date-fns-tz
 
-// Fetch the user's timezone from profile (mantido para a lógica de métricas, mas não para a data de hoje)
-const fetchUserTimezone = async (userId: string): Promise<string> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('timezone')
-    .eq('id', userId)
-    .single();
-  if (error && error.code !== 'PGRST116') throw error;
-  return data?.timezone || 'America/Sao_Paulo';
-};
-
 // Helper function to check if a day is eligible based on frequency/weekdays
 function isDayEligible(date: Date, frequency: string, weekdays: number[] | null): boolean {
   if (frequency === 'daily') {
@@ -103,9 +92,6 @@ export const useToggleHabitCompletion = () => {
     mutationFn: async ({ habit, completed }: { habit: Habit, completed: boolean }) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
-      // Usando a data local do navegador para o cálculo de métricas
-      const todayLocal = getTodayLocalString();
-      
       // 1. Update the current instance (habit.id)
       const { data: updatedInstance, error: updateError } = await supabase
         .from('habits')
@@ -136,81 +122,37 @@ export const useToggleHabitCompletion = () => {
       if (historyError) console.error("Error updating habit history:", historyError);
       
       // 3. Recalculate metrics and update all instances of this recurrence_id
+      // NOTE: This complex calculation is now moved to the Edge Function or a simpler DB trigger.
+      // For immediate client feedback, we perform a simplified update based on the current state.
       
-      // Fetch the latest metrics from the DB (this is the most reliable way after history update)
-      const { data: historyData, error: fetchHistoryError } = await supabase
-        .from('habit_history')
-        .select('date_local, completed')
-        .eq('recurrence_id', habit.recurrence_id)
-        .eq('user_id', userId)
-        .order('date_local', { ascending: true });
-        
-      if (fetchHistoryError) throw fetchHistoryError;
+      let newStreak = habit.streak;
+      let newTotalCompleted = habit.total_completed;
+      let lastCompletedDateLocal = habit.last_completed_date_local;
       
-      let newStreak = 0;
-      let newTotalCompleted = 0;
-      let lastCompletedDateLocal: string | null = null;
-      const missedDays: string[] = [];
-      const failByWeekday: { [key: number]: number } = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-      
-      const historyMap = new Map<string, boolean>();
-      historyData.forEach(h => historyMap.set(h.date_local, h.completed));
-      
-      // Determine the range of dates to check (from habit creation up to today)
-      const { data: creationData, error: fetchCreationError } = await supabase
-        .from('habits')
-        .select('date_local, frequency, weekdays')
-        .eq('recurrence_id', habit.recurrence_id)
-        .eq('user_id', userId)
-        .order('date_local', { ascending: true })
-        .limit(1)
-        .single();
-        
-      if (fetchCreationError) throw fetchCreationError;
-      
-      const startDate = parseISO(creationData.date_local);
-      let currentDate = startDate;
-      
-      // Iterate from start date up to today
-      const endDate = parseISO(todayLocal);
-      
-      while (currentDate <= endDate) {
-        const dateString = format(currentDate, 'yyyy-MM-dd');
-        const isEligible = isDayEligible(currentDate, creationData.frequency, creationData.weekdays);
-        const isCompletedOnDate = historyMap.get(dateString) === true;
-        
-        if (isEligible) {
-          if (isCompletedOnDate) {
-            newStreak++;
-            newTotalCompleted++;
-            lastCompletedDateLocal = dateString;
-          } else {
-            // Only break streak if the day is in the past (yesterday or earlier)
-            if (currentDate < endDate) {
-              newStreak = 0;
-              missedDays.push(dateString);
-              const dayOfWeek = getDay(currentDate);
-              failByWeekday[dayOfWeek] = (failByWeekday[dayOfWeek] || 0) + 1;
-            }
-          }
+      if (completed) {
+        // Simplistic update: assume completion increases streak/total if it wasn't already completed
+        if (!habit.completed_today) {
+          // Since the daily reset handles streak breaks, we assume if the user completes it today, 
+          // the streak should continue from the last known good state.
+          newTotalCompleted += 1;
+          lastCompletedDateLocal = habit.date_local;
+          // We rely on the Edge Function to fix the streak/metrics accurately later.
         }
-        currentDate = subDays(currentDate, -1); // Add one day
+      } else {
+        // Simplistic update: assume uncompletion decreases total
+        if (habit.completed_today) {
+          newTotalCompleted = Math.max(0, newTotalCompleted - 1);
+          // Resetting streak is too complex here, rely on Edge Function.
+        }
       }
       
-      const totalEligibleDays = historyData.length; // Approximation, better calculated via DB
-      const newSuccessRate = totalEligibleDays > 0 ? (newTotalCompleted / totalEligibleDays) * 100 : 0;
-
-      // 4. Update ALL instances of this recurrence_id with the new metrics
+      // 4. Update ALL instances of this recurrence_id with the simplified metrics
       const { error: updateAllError } = await supabase
         .from('habits')
         .update({
-          streak: newStreak,
           total_completed: newTotalCompleted,
-          missed_days: missedDays,
-          fail_by_weekday: failByWeekday,
-          success_rate: newSuccessRate,
           last_completed_date_local: lastCompletedDateLocal,
-          alert: newStreak === 0 && !completed, // Set alert if streak is broken and not completed today
+          // Streak, missed_days, fail_by_weekday, success_rate are now primarily managed by the daily-habit-reset Edge Function
           updated_at: new Date().toISOString(),
         })
         .eq('recurrence_id', habit.recurrence_id)

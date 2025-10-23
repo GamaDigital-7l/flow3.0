@@ -84,6 +84,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
 
       if (initialData?.recurrence_id) {
         // Update: Update all instances sharing the recurrence_id
+        // We only update the definition fields (title, description, frequency, weekdays, paused)
         const { error } = await supabase
           .from("habits")
           .update(dataToSave)
@@ -93,7 +94,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
         if (error) throw error;
         showSuccess("Hábito atualizado com sucesso!");
       } else {
-        // Create: Insert the first instance for today
+        // Create: Insert the first instance for today, initializing metrics
         const recurrenceId = crypto.randomUUID();
         const { error } = await supabase.from("habits").insert({
           ...dataToSave,
@@ -114,6 +115,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
       }
     },
     onSuccess: () => {
+      // Invalidate both queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["todayHabits", userId] });
       queryClient.invalidateQueries({ queryKey: ["allHabitDefinitions", userId] });
       onHabitSaved();

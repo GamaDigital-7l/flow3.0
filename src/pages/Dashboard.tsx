@@ -28,6 +28,8 @@ const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.Reac
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
+  // Otimização: Buscar todas as tarefas (incluindo subtasks) para que o TaskListBoard possa construir a árvore.
+  // A filtragem por board é feita no cliente para evitar múltiplas chamadas de rede no dashboard.
   const { data, error } = await supabase
     .from("tasks")
     .select(`
@@ -35,27 +37,18 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
       origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
       task_tags(
         tags(id, name, color)
-      ),
-      subtasks:tasks!parent_task_id(
-        id, title, description, due_date, time, is_completed, 
-        origin_board, current_board, is_priority, overdue, parent_task_id, client_name, created_at, completed_at, updated_at,
-        task_tags(
-          tags(id, name, color)
-        )
       )
     `)
     .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }); // Ordenação por criação para estabilidade
+
   if (error) {
     throw error;
   }
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
-    subtasks: task.subtasks.map((sub: any) => ({
-      ...sub,
-      tags: sub.task_tags.map((t: any) => t.tags),
-    })),
+    subtasks: [], // Subtasks serão construídas no TaskListBoard
   })) || [];
   return mappedData;
 };
@@ -69,9 +62,10 @@ const Dashboard: React.FC = () => {
     queryKey: ["allTasks", userId],
     queryFn: () => fetchTasks(userId!),
     enabled: !!userId,
+    staleTime: 1000 * 60 * 1, // 1 minuto de cache para tarefas
   });
   
-  const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits(); // Usando o novo hook
+  const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits();
   
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
 
@@ -93,7 +87,7 @@ const Dashboard: React.FC = () => {
     refetchHabits();
   };
 
-  // As tarefas do dashboard são todas as tarefas que não são templates e não estão concluídas
+  // As tarefas do dashboard são todas as tarefas que não estão concluídas
   const dashboardTasks = allTasks.filter(task => !task.is_completed);
 
   if (isLoadingTasks || isLoadingHabits) {

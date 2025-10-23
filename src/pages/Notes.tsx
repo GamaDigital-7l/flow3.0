@@ -86,12 +86,14 @@ const Notes: React.FC = () => {
     queryKey: ["notes", userId],
     queryFn: () => fetchNotes(userId!),
     enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
   });
 
   const { data: availableTags, isLoading: isLoadingTags, error: tagsError, refetch: refetchTags } = useQuery<Tag[], Error>({
     queryKey: ["tags", userId],
     queryFn: () => fetchTags(userId!),
     enabled: !!userId,
+    staleTime: 1000 * 60 * 60, // 1 hora de cache para tags
   });
 
   const [isFormOpen, setIsFormOpen] = useState(false);
