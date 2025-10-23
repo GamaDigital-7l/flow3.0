@@ -40,7 +40,8 @@ serve(async (req) => {
 
     for (const user of users || []) {
       const userId = user.id;
-      const userTimezone = user.timezone || 'America/Sao_Paulo';
+      // Usando America/Sao_Paulo como fallback, conforme solicitado
+      const userTimezone = user.timezone || 'America/Sao_Paulo'; 
 
       const nowUtc = new Date();
       const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
@@ -48,82 +49,99 @@ serve(async (req) => {
       // Yesterday and Today in user's local date string (YYYY-MM-DD)
       const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
       const yesterdayLocal = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd");
-      const todayLocalDate = parseISO(todayLocal);
       const yesterdayLocalDate = parseISO(yesterdayLocal);
 
       console.log(`[User ${userId}] Running habit reset for ${todayLocal} (TZ: ${userTimezone}).`);
 
-      // 1. Fetch all active habits that belong to yesterday or today (to ensure we catch the transition)
-      const { data: activeHabits, error: fetchHabitsError } = await supabase
-        .from('habits')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('paused', false)
-        .or(`date_local.eq.${yesterdayLocal},date_local.eq.${todayLocal}`);
+      // 1. Fetch the latest instance for all habits (to get the most recent metrics)
+      const { data: baseHabits, error: fetchBaseHabitsError } = await supabase
+          .rpc('get_latest_habit_instances', { user_id_input: userId });
 
-      if (fetchHabitsError) {
-        console.error(`[User ${userId}] Error fetching active habits:`, fetchHabitsError);
-        continue;
+      if (fetchBaseHabitsError) {
+          console.error(`[User ${userId}] Error fetching base habits via RPC:`, fetchBaseHabitsError);
+          continue;
       }
-
+      
       const updates = [];
       const historyInserts = [];
+      const newInstancesToInsert = [];
       const recurrenceIdsToProcess = new Set<string>();
 
-      for (const habit of activeHabits || []) {
-        recurrenceIdsToProcess.add(habit.recurrence_id);
-        const habitUpdates: any = { id: habit.id, updated_at: nowUtc.toISOString() };
-        const habitDateLocal = parseISO(habit.date_local);
-        const weekdays = habit.weekdays || [];
-
-        // --- A. Handle Yesterday's Habit (Missed Day Check) ---
+      for (const baseHabit of baseHabits) {
+        recurrenceIdsToProcess.add(baseHabit.recurrence_id);
+        const habitDateLocal = parseISO(baseHabit.date_local);
+        const weekdays = baseHabit.weekdays || [];
+        
+        // --- A. Process Yesterday's Habit (Missed Day Check) ---
+        // Only process if the latest instance is for yesterday and it was eligible
         if (isSameDay(habitDateLocal, yesterdayLocalDate)) {
-          const isEligible = isDayEligible(habitDateLocal, habit.frequency, weekdays);
-
-          if (isEligible && !habit.completed_today) {
-            // 1. Missed Day: Update metrics
+          const isEligibleYesterday = isDayEligible(yesterdayLocalDate, baseHabit.frequency, weekdays);
+          
+          if (isEligibleYesterday && !baseHabit.completed_today && !baseHabit.paused) {
+            // Missed Day: Update metrics on the yesterday's instance
+            const habitUpdates: any = { id: baseHabit.id, updated_at: nowUtc.toISOString() };
             habitUpdates.streak = 0;
-            habitUpdates.missed_days = [...habit.missed_days, habit.date_local];
+            habitUpdates.missed_days = [...baseHabit.missed_days, baseHabit.date_local];
             
             // Update fail_by_weekday
-            const dayOfWeek = getDay(habitDateLocal);
-            const currentFails = habit.fail_by_weekday[dayOfWeek] || 0;
+            const dayOfWeek = getDay(yesterdayLocalDate);
+            const currentFails = baseHabit.fail_by_weekday[dayOfWeek] || 0;
             habitUpdates.fail_by_weekday = {
-              ...habit.fail_by_weekday,
+              ...baseHabit.fail_by_weekday,
               [dayOfWeek]: currentFails + 1,
             };
+            habitUpdates.alert = true; 
+            updates.push(habitUpdates);
             
-            // 2. Insert history entry for missed day
+            // Insert history entry for missed day
             historyInserts.push({
-              recurrence_id: habit.recurrence_id,
+              recurrence_id: baseHabit.recurrence_id,
               user_id: userId,
-              date_local: habit.date_local,
+              date_local: baseHabit.date_local,
               completed: false,
             });
-            
-            // 3. Set alert if streak is broken
-            habitUpdates.alert = true; 
-            console.log(`[User ${userId}] Habit ${habit.title} missed on ${yesterdayLocal}. Streak reset.`);
-          } else if (isEligible && habit.completed_today) {
+            console.log(`[User ${userId}] Habit ${baseHabit.title} missed on ${yesterdayLocal}. Streak reset.`);
+          } else if (isEligibleYesterday && baseHabit.completed_today) {
             // If completed yesterday, ensure alert is false
-            habitUpdates.alert = false;
-          }
-          
-          // Recalculate success rate (requires fetching all history, too complex for here, relying on client/future RPC)
-        }
-
-        // --- B. Handle Today's Habit (Alert Check) ---
-        if (isSameDay(habitDateLocal, todayLocalDate)) {
-          // If today's instance exists, check if the streak was broken yesterday (streak=0)
-          if (habit.streak === 0 && !habit.completed_today) {
-             habitUpdates.alert = true;
-          } else {
-             habitUpdates.alert = false;
+            const habitUpdates: any = { id: baseHabit.id, updated_at: nowUtc.toISOString(), alert: false };
+            updates.push(habitUpdates);
           }
         }
         
-        if (Object.keys(habitUpdates).length > 2) { // Check if there are actual updates besides id and updated_at
-          updates.push(habitUpdates);
+        // --- B. Ensure Today's Instance Exists (if eligible) ---
+        if (!isSameDay(habitDateLocal, parseISO(todayLocal))) {
+            const isEligibleToday = isDayEligible(nowInUserTimezone, baseHabit.frequency, weekdays);
+            
+            if (isEligibleToday && !baseHabit.paused) {
+                // Create new instance for today, inheriting metrics from the latest instance
+                // Note: If yesterday was missed, the metrics (streak, missed_days, fail_by_weekday) 
+                // should be the updated ones from step A, but since we are iterating over baseHabits 
+                // fetched before step A, we must rely on the DB update in step 2 to fix the metrics 
+                // for the new instance later, or fetch the updated metrics. 
+                // For simplicity and performance, we rely on the client to fetch the final state.
+                
+                // We set the alert based on the *current* streak (which might be 0 if yesterday was missed)
+                const alertStatus = baseHabit.streak === 0 && isSameDay(habitDateLocal, yesterdayLocalDate) && !baseHabit.completed_today;
+
+                newInstancesToInsert.push({
+                    recurrence_id: baseHabit.recurrence_id,
+                    user_id: userId,
+                    title: baseHabit.title,
+                    description: baseHabit.description,
+                    frequency: baseHabit.frequency,
+                    weekdays: baseHabit.weekdays,
+                    paused: baseHabit.paused,
+                    completed_today: false,
+                    date_local: todayLocal,
+                    last_completed_date_local: baseHabit.last_completed_date_local,
+                    streak: baseHabit.streak,
+                    total_completed: baseHabit.total_completed,
+                    missed_days: baseHabit.missed_days,
+                    fail_by_weekday: baseHabit.fail_by_weekday,
+                    success_rate: baseHabit.success_rate,
+                    alert: alertStatus,
+                });
+            }
         }
       }
 
@@ -133,7 +151,7 @@ serve(async (req) => {
           .from('habits')
           .upsert(updates, { onConflict: 'id' });
         if (updateHabitsError) console.error(`[User ${userId}] Error updating habits:`, updateHabitsError);
-        else console.log(`[User ${userId}] Updated ${updates.length} habit instances.`);
+        else console.log(`[User ${userId}] Updated ${updates.length} habit instances (yesterday metrics/alerts).`);
       }
       
       // 3. Batch Insert History (Missed days)
@@ -145,63 +163,13 @@ serve(async (req) => {
         else console.log(`[User ${userId}] Inserted ${historyInserts.length} history entries.`);
       }
       
-      // 4. Ensure Today's Instance Exists (if eligible)
-      const { data: existingTodayInstances, error: fetchExistingError } = await supabase
-        .from('habits')
-        .select('recurrence_id')
-        .eq('user_id', userId)
-        .eq('date_local', todayLocal);
-        
-      if (fetchExistingError) {
-        console.error(`[User ${userId}] Error fetching existing today instances:`, fetchExistingError);
-      } else {
-        const existingRecurrenceIds = new Set(existingTodayInstances.map(i => i.recurrence_id));
-        
-        const newInstancesToInsert = [];
-        
-        // Fetch the latest state of the base habit (the one with the highest date_local)
-        const { data: baseHabits, error: fetchBaseHabitsError } = await supabase
-            .rpc('get_latest_habit_instances', { user_id_input: userId });
-
-        if (fetchBaseHabitsError) {
-            console.error(`[User ${userId}] Error fetching base habits via RPC:`, fetchBaseHabitsError);
-        } else {
-            for (const baseHabit of baseHabits) {
-                if (!existingRecurrenceIds.has(baseHabit.recurrence_id)) {
-                    const isEligibleToday = isDayEligible(todayLocalDate, baseHabit.frequency, baseHabit.weekdays);
-                    
-                    if (isEligibleToday) {
-                        // Create new instance for today, inheriting metrics from the latest instance
-                        newInstancesToInsert.push({
-                            recurrence_id: baseHabit.recurrence_id,
-                            user_id: userId,
-                            title: baseHabit.title,
-                            description: baseHabit.description,
-                            frequency: baseHabit.frequency,
-                            weekdays: baseHabit.weekdays,
-                            paused: baseHabit.paused,
-                            completed_today: false,
-                            date_local: todayLocal,
-                            last_completed_date_local: baseHabit.last_completed_date_local,
-                            streak: baseHabit.streak,
-                            total_completed: baseHabit.total_completed,
-                            missed_days: baseHabit.missed_days,
-                            fail_by_weekday: baseHabit.fail_by_weekday,
-                            success_rate: baseHabit.success_rate,
-                            alert: baseHabit.streak === 0, // Set alert if streak was broken yesterday
-                        });
-                    }
-                }
-            }
-        }
-        
-        if (newInstancesToInsert.length > 0) {
-            const { error: insertNewError } = await supabase
-                .from('habits')
-                .insert(newInstancesToInsert);
-            if (insertNewError) console.error(`[User ${userId}] Error inserting new today instances:`, insertNewError);
-            else console.log(`[User ${userId}] Created ${newInstancesToInsert.length} new habit instances for today.`);
-        }
+      // 4. Batch Insert Today's New Instances
+      if (newInstancesToInsert.length > 0) {
+          const { error: insertNewError } = await supabase
+              .from('habits')
+              .insert(newInstancesToInsert);
+          if (insertNewError) console.error(`[User ${userId}] Error inserting new today instances:`, insertNewError);
+          else console.log(`[User ${userId}] Created ${newInstancesToInsert.length} new habit instances for today.`);
       }
     }
 

@@ -24,7 +24,7 @@ interface TaskListBoardProps {
   originBoard?: TaskOriginBoard;
 }
 
-const TaskListBoard: React.FC<TaskListBoardProps> = ({
+const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
   title,
   tasks,
   isLoading,
@@ -130,6 +130,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
       </div>
     </Card>
   );
-};
+});
 
 export default TaskListBoard;

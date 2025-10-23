@@ -116,7 +116,6 @@ export const useToggleHabitCompletion = () => {
       const timezone = await fetchUserTimezone(userId);
       const nowInUserTimezone = utcToZonedTime(new Date(), timezone);
       const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
-      const tomorrowLocal = format(subDays(nowInUserTimezone, -1), "yyyy-MM-dd");
       
       // 1. Update the current instance (habit.id)
       const { data: updatedInstance, error: updateError } = await supabase
@@ -147,62 +146,94 @@ export const useToggleHabitCompletion = () => {
         
       if (historyError) console.error("Error updating habit history:", historyError);
       
-      // 3. Create/Ensure Tomorrow's Instance exists (only if completing today)
-      if (completed && isSameDay(parseISO(habit.date_local), parseISO(todayLocal))) {
-        // We rely on the daily job to handle eligibility, but we ensure tomorrow's instance exists if completed today.
+      // 3. Recalculate metrics and update all instances of this recurrence_id
+      
+      // Fetch the latest metrics from the DB (this is the most reliable way after history update)
+      const { data: historyData, error: fetchHistoryError } = await supabase
+        .from('habit_history')
+        .select('date_local, completed')
+        .eq('recurrence_id', habit.recurrence_id)
+        .eq('user_id', userId)
+        .order('date_local', { ascending: true });
         
-        // Check if tomorrow's instance already exists
-        const { data: existingTomorrow, error: checkError } = await supabase
-          .from('habits')
-          .select('id')
-          .eq('recurrence_id', habit.recurrence_id)
-          .eq('user_id', userId)
-          .eq('date_local', tomorrowLocal)
-          .limit(1);
-          
-        if (checkError) console.error("Error checking tomorrow's habit:", checkError);
-
-        if (!existingTomorrow || existingTomorrow.length === 0) {
-          // Inherit metrics from the current instance (which is the latest completed state)
-          const newStreak = habit.streak + 1;
-          const newTotalCompleted = habit.total_completed + 1;
-          
-          const tomorrowPayload = {
-            recurrence_id: habit.recurrence_id,
-            user_id: userId,
-            title: habit.title,
-            description: habit.description,
-            frequency: habit.frequency,
-            weekdays: habit.weekdays,
-            paused: habit.paused,
-            completed_today: false,
-            date_local: tomorrowLocal,
-            last_completed_date_local: todayLocal,
-            streak: newStreak,
-            total_completed: newTotalCompleted,
-            missed_days: habit.missed_days,
-            fail_by_weekday: habit.fail_by_weekday,
-            success_rate: habit.success_rate, // Will be recalculated by client/job
-            alert: false,
-          };
-          
-          const { error: insertTomorrowError } = await supabase
-            .from('habits')
-            .insert(tomorrowPayload);
-            
-          if (insertTomorrowError) console.error("Error inserting tomorrow's habit:", insertTomorrowError);
+      if (fetchHistoryError) throw fetchHistoryError;
+      
+      let newStreak = 0;
+      let newTotalCompleted = 0;
+      let lastCompletedDateLocal: string | null = null;
+      const missedDays: string[] = [];
+      const failByWeekday: { [key: number]: number } = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      
+      const historyMap = new Map<string, boolean>();
+      historyData.forEach(h => historyMap.set(h.date_local, h.completed));
+      
+      // Determine the range of dates to check (from habit creation up to today)
+      const { data: creationData, error: fetchCreationError } = await supabase
+        .from('habits')
+        .select('date_local, frequency, weekdays')
+        .eq('recurrence_id', habit.recurrence_id)
+        .eq('user_id', userId)
+        .order('date_local', { ascending: true })
+        .limit(1)
+        .single();
+        
+      if (fetchCreationError) throw fetchCreationError;
+      
+      const startDate = parseISO(creationData.date_local);
+      let currentDate = startDate;
+      
+      // Iterate from start date up to yesterday (or today if completing today)
+      const endDate = parseISO(todayLocal);
+      
+      while (currentDate <= endDate) {
+        const dateString = format(currentDate, 'yyyy-MM-dd');
+        const isEligible = isDayEligible(currentDate, creationData.frequency, creationData.weekdays);
+        const isCompletedOnDate = historyMap.get(dateString) === true;
+        
+        if (isEligible) {
+          if (isCompletedOnDate) {
+            newStreak++;
+            newTotalCompleted++;
+            lastCompletedDateLocal = dateString;
+          } else {
+            // Only break streak if the day is in the past (yesterday or earlier)
+            if (currentDate < endDate) {
+              newStreak = 0;
+              missedDays.push(dateString);
+              const dayOfWeek = getDay(currentDate);
+              failByWeekday[dayOfWeek] = (failByWeekday[dayOfWeek] || 0) + 1;
+            }
+          }
         }
+        currentDate = subDays(currentDate, -1); // Add one day
       }
       
-      // 4. Trigger metric recalculation (client-side logic for streak/total update)
-      // Since we updated the history, we can now trigger a refetch of all definitions
-      // to get the latest metrics (which should be updated by the DB triggers/logic, 
-      // but since we rely on the client to refresh the view).
+      const totalEligibleDays = historyData.length; // Approximation, better calculated via RPC/DB
+      const newSuccessRate = totalEligibleDays > 0 ? (newTotalCompleted / totalEligibleDays) * 100 : 0;
+
+      // 4. Update ALL instances of this recurrence_id with the new metrics
+      const { error: updateAllError } = await supabase
+        .from('habits')
+        .update({
+          streak: newStreak,
+          total_completed: newTotalCompleted,
+          missed_days: missedDays,
+          fail_by_weekday: failByWeekday,
+          success_rate: newSuccessRate,
+          last_completed_date_local: lastCompletedDateLocal,
+          alert: newStreak === 0 && !completed, // Set alert if streak is broken and not completed today
+          updated_at: new Date().toISOString(),
+        })
+        .eq('recurrence_id', habit.recurrence_id)
+        .eq('user_id', userId);
+        
+      if (updateAllError) throw updateAllError;
       
       return updatedInstance;
     },
     onSuccess: (data, variables) => {
       showSuccess(`Hábito ${variables.completed ? 'concluído' : 'revertido'} com sucesso!`);
+      // Invalidate all relevant queries to force UI update with new metrics
       queryClient.invalidateQueries({ queryKey: ["todayHabits", userId] });
       queryClient.invalidateQueries({ queryKey: ["allHabitDefinitions", userId] });
     },
