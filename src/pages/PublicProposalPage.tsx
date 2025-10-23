@@ -62,7 +62,8 @@ const fetchProposalData = async (uniqueId: string): Promise<ProposalData | null>
       .update({ status: 'viewed', viewed_at: new Date().toISOString() })
       .eq("id", proposal.id);
     
-    // TODO: Adicionar histórico de visualização (Etapa 8)
+    // Nota: A notificação de visualização via Telegram deve ser implementada via DB trigger ou outra Edge Function,
+    // mas por enquanto, a atualização do status 'viewed' é suficiente.
   }
 
   return proposal as ProposalData;
@@ -73,6 +74,7 @@ const PublicProposalPage: React.FC = () => {
   const navigate = useNavigate();
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   const { data: proposal, isLoading, error, refetch } = useQuery<ProposalData | null, Error>({
     queryKey: ["publicProposal", uniqueId],
@@ -130,7 +132,6 @@ const PublicProposalPage: React.FC = () => {
       if (!response.ok) {
         const errorBody = await response.json();
         console.error("Edge Function Error:", errorBody);
-        // Não lançamos erro fatal aqui, apenas avisamos que a notificação falhou
         showInfo("Status atualizado, mas a notificação/integração financeira falhou. Verifique o log.");
       }
 
@@ -140,6 +141,9 @@ const PublicProposalPage: React.FC = () => {
       showSuccess(`Proposta ${newStatus === 'accepted' ? 'Aceita' : 'Rejeitada'} com sucesso!`);
       refetch(); // Atualiza o status na tela
       setIsRejectionModalOpen(false);
+      if (newStatus === 'accepted') {
+        setShowWhatsAppModal(true);
+      }
     },
     onError: (err: any) => {
       showError("Erro ao atualizar status: " + err.message);
@@ -171,6 +175,7 @@ const PublicProposalPage: React.FC = () => {
     const message = `Olá! Gostei da proposta e quero seguir com o projeto ${proposal.title}. Você pode visualizá-la aqui: ${link}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+    setShowWhatsAppModal(false); // Fecha o modal após abrir o WhatsApp
   };
 
   if (isLoading) {
@@ -396,32 +401,24 @@ const PublicProposalPage: React.FC = () => {
       </Dialog>
       
       {/* Modal de WhatsApp (Abre ao aceitar, para garantir o contato) */}
-      {proposal && proposal.status === 'accepted' && (
-        <Dialog open={proposal.status === 'accepted'} onOpenChange={(open) => {
-          // Se o usuário fechar o modal, não faz nada, mas garante que o status foi atualizado
-          if (!open) {
-            // Força o redirecionamento para o WhatsApp
-            handleWhatsApp();
-          }
-        }}>
-          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-            <DialogHeader>
-              <DialogTitle className="text-foreground flex items-center gap-2">
-                <CheckCircle2 className="h-6 w-6 text-green-500" /> Proposta Aceita!
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Parabéns! Para formalizar o início do projeto, clique no botão abaixo para nos enviar uma mensagem no WhatsApp.
-              </DialogDescription>
-            </DialogHeader>
-            <Button 
-              onClick={handleWhatsApp}
-              className="w-full bg-green-600 hover:bg-green-700 text-white text-base font-semibold h-12"
-            >
-              <MessageSquare className="mr-2 h-5 w-5" /> Enviar Mensagem de Confirmação (WhatsApp)
-            </Button>
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-500" /> Proposta Aceita!
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Parabéns! Para formalizar o início do projeto, clique no botão abaixo para nos enviar uma mensagem no WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+          <Button 
+            onClick={handleWhatsApp}
+            className="w-full bg-green-600 hover:bg-green-700 text-white text-base font-semibold h-12"
+          >
+            <MessageSquare className="mr-2 h-5 w-5" /> Enviar Mensagem de Confirmação (WhatsApp)
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
