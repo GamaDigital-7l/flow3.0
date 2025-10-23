@@ -18,7 +18,7 @@ const Recurrence = lazy(() => import("./pages/Recurrence"));
 const Finance = lazy(() => import("./pages/Finance"));
 const FinancialManagement = lazy(() => import("./pages/FinancialManagement"));
 const Goals = lazy(() => import("./pages/Goals"));
-const Study = lazy(() => import("./pages/Study"));
+// const Study = lazy(() => import("./pages/Study")); // REMOVIDO
 const Health = lazy(() => import("./pages/Health"));
 const Notes = lazy(() => import("./pages/Notes"));
 const Results = lazy(() => import("./pages/Results"));
@@ -139,7 +139,7 @@ function AppContent() {
               <Route path="/finance" element={<Finance />} />
               <Route path="/financial-management" element={<FinancialManagement />} />
               <Route path="/goals" element={<Goals />} />
-              <Route path="/study" element={<Study />} />
+              {/* <Route path="/study" element={<Study />} /> */}
               <Route path="/health" element={<Health />} />
               <Route path="/notes" element={<Notes />} />
               <Route path="/results" element={<Results />} />

@@ -23,7 +23,7 @@ const navItems = [
   { name: "Financeiro", href: "/finance", icon: DollarSign },
   { name: "Metas", href: "/goals", icon: Target },
   { name: "Saúde", href: "/health", icon: Dumbbell },
-  { name: "Estudos", href: "/study", icon: GraduationCap },
+  // { name: "Estudos", href: "/study", icon: GraduationCap }, // REMOVIDO
   { name: "Livros", href: "/books", icon: BookOpen },
   { name: "Notas", href: "/notes", icon: Notebook },
   { name: "Resultados", href: "/results", icon: BarChart3 },
