@@ -186,26 +186,26 @@ serve(async (req) => {
         // --- C. Lógica de Alerta (Aviso de 2 dias seguidos) ---
         
         // 1. Verificar se a instância de HOJE (que acabamos de criar ou que já existia) está pendente
-          const { data: todayInstance, error: fetchTodayAlertError } = await supabase
-            .from('recurring_tasks')
-            .select('id, completed_today')
-            .eq('recurrence_id', recurrenceId)
-            .eq('date_local', todayLocalString)
-            .single();
+        const { data: todayInstance, error: fetchTodayAlertError } = await supabase
+          .from('recurring_tasks')
+          .select('id, completed_today')
+          .eq('recurrence_id', recurrenceId)
+          .eq('date_local', todayLocalString)
+          .single();
 
-          if (todayInstance && !todayInstance.completed_today) {
-            // 2. Verificar se ONTEM falhou (streak = 0 no template)
-            if (template.streak === 0) {
-              // Se o streak é 0, significa que o hábito foi quebrado ontem.
-              // Se HOJE ainda não foi concluído, ativamos o alerta na instância de HOJE.
-              const { error: updateAlertError } = await supabase
-                .from('recurring_tasks')
-                .update({ alert: true, updated_at: nowUtc.toISOString() })
-                .eq('id', todayInstance.id);
-              
-              if (updateAlertError) console.error(`[User ${userId}] Erro ao setar alerta para ${template.title}:`, updateAlertError);
-            }
+        if (todayInstance && !todayInstance.completed_today) {
+          // 2. Verificar se ONTEM falhou (streak = 0 no template)
+          if (template.streak === 0) {
+            // Se o streak é 0, significa que o hábito foi quebrado ontem.
+            // Se HOJE ainda não foi concluído, ativamos o alerta na instância de HOJE.
+            const { error: updateAlertError } = await supabase
+              .from('recurring_tasks')
+              .update({ alert: true, updated_at: nowUtc.toISOString() })
+              .eq('id', todayInstance.id);
+            
+            if (updateAlertError) console.error(`[User ${userId}] Erro ao setar alerta para ${template.title}:`, updateAlertError);
           }
+        }
       }
       
       results.push({ userId, message: `Templates processados: ${templates?.length || 0}. Instâncias criadas/atualizadas: ${createdCount + updatedCount}.` });
