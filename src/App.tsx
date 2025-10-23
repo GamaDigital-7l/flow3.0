@@ -18,7 +18,6 @@ const Recurrence = lazy(() => import("./pages/Recurrence"));
 const Finance = lazy(() => import("./pages/Finance"));
 const FinancialManagement = lazy(() => import("./pages/FinancialManagement"));
 const Goals = lazy(() => import("./pages/Goals"));
-// const Study = lazy(() => import("./pages/Study")); // REMOVIDO
 const Health = lazy(() => import("./pages/Health"));
 const Notes = lazy(() => import("./pages/Notes"));
 const Results = lazy(() => import("./pages/Results"));
@@ -26,6 +25,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Books = lazy(() => import("./pages/Books"));
 const BookDetails = lazy(() => import("./pages/BookDetails"));
 const BookReaderFullScreen = lazy(() => import("./pages/BookReaderFullScreen"));
+const Proposals = lazy(() => import("./pages/Proposals")); // NOVO: Proposals
 
 
 // Main App component wrapper for context providers
@@ -127,6 +127,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/approval/:uniqueId" element={<NotFound />} />
           <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
+          <Route path="/proposal/:uniqueId" element={<NotFound />} /> {/* Placeholder para a página pública */}
 
           {/* Rotas Protegidas */}
           <Route element={<ProtectedRoute session={session} />}>
@@ -139,13 +140,13 @@ function AppContent() {
               <Route path="/finance" element={<Finance />} />
               <Route path="/financial-management" element={<FinancialManagement />} />
               <Route path="/goals" element={<Goals />} />
-              {/* <Route path="/study" element={<Study />} /> */}
               <Route path="/health" element={<Health />} />
               <Route path="/notes" element={<Notes />} />
               <Route path="/results" element={<Results />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/books" element={<Books />} />
               <Route path="/books/:id" element={<BookDetails />} />
+              <Route path="/proposals" element={<Proposals />} /> {/* NOVO: Proposals */}
             </Route>
           </Route>
           
