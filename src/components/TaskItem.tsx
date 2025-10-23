@@ -16,6 +16,13 @@ interface TaskItemProps {
   isDailyRecurringView?: boolean;
 }
 
+const getTaskDueDateDisplay = (task: Task): string => {
+  if (task.due_date) {
+    return formatDateTime(task.due_date, false);
+  }
+  return "Sem data de vencimento";
+};
+
 const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurringView = false }) => {
 
   return (
