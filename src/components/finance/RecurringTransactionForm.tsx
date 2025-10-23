@@ -37,7 +37,7 @@ const recurringTransactionSchema = z.object({
   frequency: z.enum(RECURRENCE_OPTIONS, { required_error: "A frequência é obrigatória." }),
   next_due_date: z.date({ required_error: "A próxima data de vencimento é obrigatória." }),
   category_id: z.string().nullable().optional(),
-  account_id: z.string().min(1, "A conta é obrigatória."),
+  //account_id: z.string().min(1, "A conta é obrigatória."), // Removed
   is_active: z.boolean().optional().default(true),
 });
 
@@ -52,7 +52,7 @@ interface RecurringTransactionFormProps {
 const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ initialData, onTransactionSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const { categories, accounts, isLoading: isDataLoading } = useFinancialData();
+  const { categories, isLoading: isDataLoading } = useFinancialData();
   const queryClient = useQueryClient();
 
   const form = useForm<RecurringTransactionFormValues>({
@@ -64,7 +64,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
       frequency: initialData?.frequency as RecurrenceType || 'monthly',
       next_due_date: initialData?.next_due_date ? parseISO(initialData.next_due_date) : new Date(),
       category_id: initialData?.category_id || '',
-      account_id: initialData?.account_id || '',
+      //account_id: initialData?.account_id || '', // Removed
       is_active: initialData?.is_active ?? true,
     },
   });
@@ -81,6 +81,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
         user_id: userId,
         next_due_date: format(convertToUtc(data.next_due_date)!, 'yyyy-MM-dd'),
         category_id: data.category_id || null,
+        //account_id: data.account_id, // Removed
       };
 
       if (initialData?.id) {
@@ -242,63 +243,35 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {/* Conta */}
-          <FormField
-            control={form.control}
-            name="account_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Conta</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a conta" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Categoria */}
-          <FormField
-            control={form.control}
-            name="category_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Categoria (Opcional)</FormLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
-                  value={field.value || '__none__'}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {filteredCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        {/* Categoria */}
+        <FormField
+          control={form.control}
+          name="category_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Categoria (Opcional)</FormLabel>
+              <Select
+                onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
+                value={field.value || '__none__'}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhuma</SelectItem>
+                  {filteredCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="flex items-center space-x-2">
           <FormField
