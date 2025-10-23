@@ -1,13 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { format, startOfDay, subDays } from "https://esm.sh/date-fns@3.6.0";
+import { format, subDays, isToday, parseISO, isBefore, startOfDay } from "https://esm.sh/date-fns@3.6.0";
 import { utcToZonedTime } from "https://esm.sh/date-fns-tz@3.0.1";
 
 const allowedOrigins = ['http://localhost:32100', 'https://nexusflow.vercel.app'];
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const isAllowedOrigin = allowedOrigins.includes(origin!);
+
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': isAllowedOrigin ? origin! : '*',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Credentials': 'true',
@@ -32,18 +35,14 @@ serve(async (req) => {
     for (const user of users || []) {
       const userId = user.id;
       const userTimezone = user.timezone || 'America/Sao_Paulo';
+
       const nowUtc = new Date();
-      
-      // 1. Calcular o início do dia de HOJE no fuso horário do usuário
-      // Usamos subDays(nowInUserTimezone, 0) para obter a data de hoje, formatada como yyyy-MM-dd.
-      // Qualquer due_date anterior a esta string deve ser considerada atrasada.
-      const startOfTodayInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
-      const todayInUserTimezoneString = format(startOfTodayInUserTimezone, "yyyy-MM-dd");
+      const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
+      const yesterdayInUserTimezone = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd", { timeZone: userTimezone });
 
-      console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString}.`);
+      console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${format(nowInUserTimezone, "yyyy-MM-dd")} no fuso horário ${userTimezone}.`);
 
-      // --- 1. Processar Tarefas Atrasadas (Overdue) ---
-      // Buscar tarefas não concluídas, com due_date anterior a HOJE (yyyy-MM-dd)
+      // 1. Processar Tarefas Atrasadas (Overdue)
       const { data: pendingTasks, error: pendingTasksError } = await supabase
         .from('tasks')
         .select('id, due_date, current_board, is_completed, recurrence_type')

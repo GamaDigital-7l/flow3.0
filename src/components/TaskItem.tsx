@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CalendarDays, Clock, MapPin, Link as LinkIcon, AlertCircle, Users } from "lucide-react";
+import { Edit, Trash2, CalendarDays, Clock, MapPin, Link as LinkIcon, AlertCircle, Users, PlusCircle } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskCurrentBoard } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
