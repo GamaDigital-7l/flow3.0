@@ -126,7 +126,8 @@ const RecurringTasks: React.FC = () => {
           {templates && templates.length > 0 ? (
             templates.map(task => (
               <div key={task.id} onClick={() => handleEditTask(task)} className="cursor-pointer">
-                <TaskItem key={task.id} task={task} refetchTasks={refetch} />
+                {/* Passando isTemplateView para desabilitar o checkbox de conclusão */}
+                <TaskItem key={task.id} task={task} refetchTasks={refetch} isTemplateView={true} />
               </div>
             ))
           ) : (

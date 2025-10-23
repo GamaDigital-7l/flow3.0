@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CalendarDays, Clock, MapPin, Link as LinkIcon, AlertCircle, Users, PlusCircle } from "lucide-react";
+import { Edit, Trash2, CalendarDays, Clock, MapPin, Link as LinkIcon, AlertCircle, Users, PlusCircle, Repeat } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskCurrentBoard } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +19,14 @@ import { isToday, isTomorrow, isBefore, startOfDay, subDays } from "date-fns"; /
 interface TaskItemProps {
   task: Task;
   refetchTasks: () => void;
-  isDailyRecurringView?: boolean;
+  isTemplateView?: boolean; // Nova prop para templates
 }
 
-const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
+const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task, isTemplateView: boolean) => {
+  if (isTemplateView) {
+    return <Badge className="bg-status-recurring text-white h-5 px-1.5 text-xs flex items-center gap-1"><Repeat className="h-3 w-3" /> Template</Badge>;
+  }
+
   const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !task.is_completed;
 
   if (task.is_completed) {
@@ -64,14 +68,15 @@ const getTaskDueDateDisplay = (task: Task): string => {
   return "Sem Vencimento";
 };
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurringView = false }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isTemplateView = false }) => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | undefined>(undefined);
-  const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false); // ADD THIS LINE
+  const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false);
 
   const isClientTaskMirrored = task.current_board === "client_tasks";
   const isRecurrentTemplate = task.recurrence_type !== 'none';
+  const isRecurrentInstance = !!task.parent_task_id;
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
@@ -107,14 +112,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
 
       if (updateError) throw updateError;
 
-      // Se for uma instância recorrente, atualiza o streak no template pai
-      if (taskToUpdate.parent_task_id) {
-        // O streak é atualizado pela Edge Function update-recurrence-streak,
-        // mas para feedback imediato, podemos invalidar a query do template.
-        // No entanto, a Edge Function é a fonte da verdade para o streak.
-        // Apenas garantimos que a Edge Function de streak rode após a instanciação.
-      }
-
+      // Atualização de pontos (mantida)
       const { data: profileData, error: fetchProfileError } = await supabase
         .from("profiles")
         .select("points")
@@ -209,8 +207,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
   // 1. É uma instância recorrente (tem parent_task_id)
   // 2. Não está concluída
   // 3. O streak do template pai é 0 (indicando que falhou ontem)
-  const isRecurrentInstance = !!task.parent_task_id;
-  const streakIsBroken = task.recurrence_streak === 0;
+  const streakIsBroken = isRecurrentInstance && task.recurrence_streak === 0;
   const shouldShowHabitWarning = isRecurrentInstance && !isCompleted && streakIsBroken;
 
   // Nova lógica de atraso: data de vencimento existe E é anterior ao início do dia de hoje E não está concluída
@@ -219,29 +216,32 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
   return (
     <Card className={cn(
       "p-2 border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
-      isCompleted ? "opacity-70" : "card-hover-effect",
+      isCompleted && !isTemplateView ? "opacity-70" : "card-hover-effect",
       isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50" // Usar isTrulyOverdue
     )}>
       <div className="flex items-start gap-2">
-        <Checkbox
-          id={`task-${task.id}`}
-          checked={isCompleted}
-          onCheckedChange={(checked) => {
-            if (checked) {
-              completeTaskMutation.mutate(task.id);
-            } else {
-              uncompleteTaskMutation.mutate(task.id);
-            }
-          }}
-          className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0 mt-1 h-4 w-4"
-          disabled={completeTaskMutation.isPending || uncompleteTaskMutation.isPending || isClientTaskMirrored}
-        />
+        {/* Checkbox só aparece se NÃO for a visualização do template */}
+        {!isTemplateView && (
+          <Checkbox
+            id={`task-${task.id}`}
+            checked={isCompleted}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                completeTaskMutation.mutate(task.id);
+              } else {
+                uncompleteTaskMutation.mutate(task.id);
+              }
+            }}
+            className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0 mt-1 h-4 w-4"
+            disabled={completeTaskMutation.isPending || uncompleteTaskMutation.isPending || isClientTaskMirrored}
+          />
+        )}
         <div className="grid gap-0.5 flex-grow min-w-0">
           <label
             htmlFor={`task-${task.id}`}
             className={cn(
               "font-medium leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70 break-words text-sm",
-              isCompleted && "line-through text-muted-foreground"
+              isCompleted && !isTemplateView && "line-through text-muted-foreground"
             )}
           >
             {task.title}
@@ -250,7 +250,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
             <p className="text-xs text-muted-foreground break-words line-clamp-1">{task.description}</p>
           )}
           <div className="flex flex-wrap gap-1 mt-0.5">
-            {getTaskStatusBadge(task.current_board, task)}
+            {getTaskStatusBadge(task.current_board, task, isTemplateView || isRecurrentTemplate)}
             {task.tags && task.tags.length > 0 && task.tags.map((tag) => (
               <Badge key={tag.id} style={{ backgroundColor: tag.color, color: '#FFFFFF' }} className="text-xs flex-shrink-0 h-5 px-1.5">
                 {tag.name}
