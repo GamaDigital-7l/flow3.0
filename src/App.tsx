@@ -122,6 +122,7 @@ function AppContent() {
       <Routes>
         {/* Rotas Públicas */}
         <Route path="/login" element={<Login />} />
+        <Route path="/approval/:uniqueId" element={<NotFound />} />
         <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
 
         {/* Rotas Protegidas */}

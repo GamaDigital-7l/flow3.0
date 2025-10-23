@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, DollarSign, Edit, Trash2, Loader2, CalendarDays } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from "@/integrations/supabase/auth";
+import { useSession } from '@/integrations/supabase/auth';
 import { FinancialBudget } from '@/types/finance';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
@@ -119,7 +119,7 @@ const CompanyBudgets: React.FC = () => {
                 <p className="font-semibold text-foreground truncate">{budget.name}</p>
                 <p className="text-sm text-muted-foreground">Valor: {formatCurrency(budget.amount)} | Tipo: {budget.type === 'income' ? 'Receita' : 'Despesa'}</p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> Período: {format(new Date(budget.start_date), "dd/MM/yyyy")} - {format(new Date(budget.end_date), "dd/MM/yyyy")}
+                  <CalendarDays className="h-3 w-3" /> Período: {format(new Date(budget.start_date), "dd/MM/yyyy")} - {format(new Date(budget.end_date), "dd/MM/yyyy")} {/* FIX TS2554 (x2) */}
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">

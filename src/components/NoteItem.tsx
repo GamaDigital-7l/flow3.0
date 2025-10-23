@@ -31,7 +31,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, refetchNotes, onViewNote }) =
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingNote, setEditingNote] = React.useState<Note | undefined>(undefined);
 
   const updateNoteMutation = useMutation({
@@ -203,11 +203,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, refetchNotes, onViewNote }) =
             </DialogHeader>
             <NoteForm
               initialData={editingNote}
-              onNoteSaved={() => {
-                refetchNotes();
-                setIsFormOpen(false);
-                setEditingNote(undefined);
-              }}
+              onNoteSaved={refetchNotes}
               onClose={() => setIsFormOpen(false)}
               userId={session?.user?.id}
             />

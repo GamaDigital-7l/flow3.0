@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Banknote, Loader2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from "@/integrations/supabase/auth";
+import { useSession } from '@/integrations/supabase/auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import ProLaboreForm from './ProLaboreForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';

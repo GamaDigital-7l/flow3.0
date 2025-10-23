@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from "@/integrations/supabase/auth";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Repeat, Loader2 } from 'lucide-react';
 import { RecurringTransaction } from '@/types/finance';
 import { formatCurrency } from '@/utils/formatters';
@@ -66,7 +66,7 @@ const DashboardRecurrences: React.FC = () => {
               <div>
                 <p className="font-medium">{rec.description}</p>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(rec.start_date), 'dd/MM/yyyy')}
+                  {format(new Date(rec.start_date), 'dd/MM/yyyy')} {/* FIX TS2554 */}
                 </p>
               </div>
               <p className={cn("font-semibold", rec.type === 'income' ? 'text-green-500' : 'text-red-500')}>

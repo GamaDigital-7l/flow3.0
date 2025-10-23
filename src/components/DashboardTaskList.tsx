@@ -15,7 +15,7 @@ const fetchAllTasks = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
     .from("tasks")
     .select(`
-      id,
+      *,
       task_tags(
         tags(id, name, color)
       )

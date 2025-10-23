@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, TrendingUp, Edit, Trash2, Loader2, CalendarDays } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from "@/integrations/supabase/auth";
+import { useSession } from '@/integrations/supabase/auth';
 import { FinancialGoal } from '@/types/finance';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
@@ -118,7 +118,7 @@ const CompanyGoals: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Alvo: {formatCurrency(goal.target_amount)} | Atual: {formatCurrency(goal.current_amount)}</p>
                 {goal.target_date && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3" /> Data Alvo: {format(new Date(goal.target_date), "PPP")}
+                    <CalendarDays className="h-3 w-3" /> Data Alvo: {format(new Date(goal.target_date), "PPP")} {/* FIX TS2554 */}
                   </p>
                 )}
               </div>

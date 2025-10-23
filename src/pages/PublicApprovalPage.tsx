@@ -35,6 +35,7 @@ interface ClientTask {
   due_date: string | null;
   time: string | null;
   image_urls: string[] | null;
+  public_approval_enabled: boolean;
   edit_reason: string | null;
   is_selected: boolean;
 }

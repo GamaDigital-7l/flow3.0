@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2, Loader2, CalendarDays } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from "@/integrations/supabase/auth";
+import { useSession } from '@/integrations/supabase/auth';
 import { FinancialTransaction } from '@/types/finance';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -99,7 +99,7 @@ const CompanyTransactionsList: React.FC<CompanyTransactionsListProps> = ({ curre
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-foreground">Transações de Empresa</CardTitle>
         <CardDescription className="text-muted-foreground">
-          Transações para {format(currentPeriod, "MMMM yyyy")}.
+          Transações para {format(currentPeriod, "MMMM yyyy")}. {/* FIX TS2554 */}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
