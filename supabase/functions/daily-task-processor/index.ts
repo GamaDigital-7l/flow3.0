@@ -21,7 +21,6 @@ serve(async (req) => {
   }
 
   try {
-    // Usar a chave de serviço para acesso irrestrito (necessário para processar todos os usuários)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,

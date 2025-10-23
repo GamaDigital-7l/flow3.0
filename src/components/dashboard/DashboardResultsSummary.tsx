@@ -20,7 +20,7 @@ interface TaskMetric {
   is_completed: boolean;
   completed_at: string | null;
   recurrence_type: string;
-  recurrence_streak: number; // Assumindo que este campo existe no DB para o streak
+  recurrence_streak: number; // Assumindo que este campo existe na tabela tasks
 }
 
 const fetchMetrics = async (userId: string): Promise<{ profile: Profile | null, tasks: TaskMetric[] }> => {
