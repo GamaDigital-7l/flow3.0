@@ -23,7 +23,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Habit, HabitFrequency, WEEKDAY_LABELS } from "@/types/habit";
 import { format } from "date-fns";
-import { utcToZonedTime } from "date-fns-tz"; // Importação direta
+import { getLocalTimezone } from "@/lib/utils"; // Importando getLocalTimezone
 
 const habitSchema = z.object({
   title: z.string().min(1, "O título é obrigatório."),
@@ -71,15 +71,10 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
     mutationFn: async (values: HabitFormValues) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
-      // Fetch user timezone to determine today's local date
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('timezone')
-        .eq('id', userId)
-        .single();
-      const userTimezone = profile?.timezone || 'America/Sao_Paulo';
-      const nowInUserTimezone = utcToZonedTime(new Date(), userTimezone);
-      const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
+      // Usando o fuso horário local do navegador para determinar o 'hoje'
+      const userTimezone = getLocalTimezone();
+      const now = new Date();
+      const todayLocal = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: userTimezone }).format(now);
 
       const dataToSave = {
         title: values.title,
@@ -92,7 +87,6 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
 
       if (initialData?.recurrence_id) {
         // Update: Update all instances sharing the recurrence_id
-        // Note: We only update the definition fields (title, description, frequency, weekdays, paused)
         const { error } = await supabase
           .from("habits")
           .update(dataToSave)

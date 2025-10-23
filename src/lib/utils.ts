@@ -1,7 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, parseISO as dateFnsParseISO } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz'; // Importação direta
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -19,8 +18,6 @@ export function formatISO(date: Date): string {
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
-
-const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 
 /**
  * Converte uma data local (ou string) para uma data UTC pura (sem informação de tempo/fuso)
@@ -67,4 +64,14 @@ export function getInitials(name: string): string {
 
 export function sanitizeFilename(filename: string): string {
   return filename.replace(/[^a-z0-9_.]/gi, '_').toLowerCase();
+}
+
+/**
+ * Obtém o fuso horário local do navegador.
+ */
+export function getLocalTimezone(): string {
+  if (typeof window !== 'undefined') {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+  return 'America/Sao_Paulo'; // Fallback
 }

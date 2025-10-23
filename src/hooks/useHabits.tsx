@@ -5,10 +5,10 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, subDays, isSameDay, getDay, parseISO, differenceInDays } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz'; // Importação direta
-import { parseISO as parseISOFromUtils } from '@/lib/utils'; // Usando parseISO do utils
+// Removido: import { utcToZonedTime } from 'date-fns-tz';
+import { parseISO as parseISOFromUtils, getLocalTimezone } from '@/lib/utils'; // Usando parseISO e getLocalTimezone do utils
 
-// Fetch the user's timezone from profile
+// Fetch the user's timezone from profile (mantido para consistência com o DB, mas usaremos o local para o cálculo de 'hoje')
 const fetchUserTimezone = async (userId: string): Promise<string> => {
   const { data, error } = await supabase
     .from('profiles')
@@ -16,7 +16,7 @@ const fetchUserTimezone = async (userId: string): Promise<string> => {
     .eq('id', userId)
     .single();
   if (error && error.code !== 'PGRST116') throw error;
-  return data?.timezone || 'America/Sao_Paulo';
+  return data?.timezone || getLocalTimezone(); // Fallback para o fuso horário do navegador
 };
 
 // Helper function to check if a day is eligible based on frequency/weekdays
@@ -33,9 +33,25 @@ function isDayEligible(date: Date, frequency: string, weekdays: number[] | null)
 
 // Fetch today's active habit instances
 const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
-  const timezone = await fetchUserTimezone(userId);
-  const nowInUserTimezone = utcToZonedTime(new Date(), timezone);
-  const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
+  // Usamos o fuso horário do navegador para determinar o 'hoje' local
+  const timezone = getLocalTimezone();
+  
+  // Calcula o 'hoje' local usando o fuso horário do navegador
+  // Nota: O format do date-fns não suporta timeZone diretamente, mas o DB armazena date_local (YYYY-MM-DD).
+  // Para obter o YYYY-MM-DD correto, precisamos de uma data que reflita o fuso horário.
+  // Como o DB armazena o fuso horário do usuário, vamos buscar o fuso horário do perfil
+  // e usar a lógica de conversão de fuso horário (que agora está no servidor/Edge Functions).
+  // No frontend, vamos confiar que o DB/Edge Function criou a instância correta para o dia.
+  
+  // Para o frontend, vamos usar a data local do navegador para a chave de cache, mas o fetch
+  // deve ser baseado na data local do usuário (que é o que o DB usa).
+  
+  // Vamos simplificar: se o usuário não tem timezone definido, usamos o local.
+  const userTimezone = await fetchUserTimezone(userId);
+  
+  // Usando Intl.DateTimeFormat para obter a data local correta no formato YYYY-MM-DD
+  const now = new Date();
+  const todayLocal = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: userTimezone }).format(now); // Formato YYYY-MM-DD
 
   const { data, error } = await supabase
     .from('habits')
@@ -105,9 +121,15 @@ export const useToggleHabitCompletion = () => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
       const timezone = await fetchUserTimezone(userId);
-      const nowInUserTimezone = utcToZonedTime(new Date(), timezone);
-      const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
-      const tomorrowLocal = format(subDays(nowInUserTimezone, -1), "yyyy-MM-dd");
+      
+      // Usando Intl.DateTimeFormat para obter a data local correta no formato YYYY-MM-DD
+      const now = new Date();
+      const todayLocal = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timezone }).format(now);
+      
+      // Para calcular o amanhã, precisamos de uma data que reflita o fuso horário.
+      // Vamos usar a data de hoje e adicionar um dia, formatando no fuso horário.
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const tomorrowLocal = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timezone }).format(tomorrow);
       
       // 1. Update the current instance (habit.id)
       const { data: updatedInstance, error: updateError } = await supabase
@@ -139,7 +161,7 @@ export const useToggleHabitCompletion = () => {
       if (historyError) console.error("Error updating habit history:", historyError);
       
       // 3. Create/Ensure Tomorrow's Instance exists (only if completing today)
-      if (completed && isSameDay(parseISOFromUtils(habit.date_local), parseISOFromUtils(todayLocal))) {
+      if (completed && habit.date_local === todayLocal) {
         // Check if tomorrow's instance already exists
         const { data: existingTomorrow, error: checkError } = await supabase
           .from('habits')

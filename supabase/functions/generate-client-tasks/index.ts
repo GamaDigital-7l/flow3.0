@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { format, getWeek, getDay, addDays, startOfMonth, endOfMonth, isSameDay, parseISO, addDays as dateFnsAddDays } from "https://esm.sh/date-fns@3.6.0";
-import { utcToZonedTime } from "https://esm.sh/date-fns-tz@2.0.1";
+import { utcToZonedTime } from "https://esm.sh/date-fns-tz@2.0.1"; // Importação corrigida
 
 const allowedOrigins = ['http://localhost:32100', 'https://nexusflow.vercel.app'];
 
