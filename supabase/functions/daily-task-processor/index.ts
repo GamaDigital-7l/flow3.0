@@ -27,7 +27,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Obter todos os usuários para processar por fuso horário
     const { data: users, error: fetchUsersError } = await supabase
       .from('profiles')
       .select('id, timezone');
@@ -36,7 +35,7 @@ serve(async (req) => {
 
     for (const user of users || []) {
       const userId = user.id;
-      const userTimezone = user.timezone || 'America/Sao_Paulo'; // Fallback para São Paulo
+      const userTimezone = user.timezone || 'America/Sao_Paulo';
 
       const nowUtc = new Date();
       const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
@@ -47,40 +46,17 @@ serve(async (req) => {
       // 1. Processar Recorrentes Diárias Inegociáveis
       const { data: dailyRecurringTasks, error: recurringError } = await supabase
         .from('tasks')
-        .select('id, user_id, is_completed, recurrence_streak, last_completion_date, recurrence_failure_history')
+        .select('id, user_id, is_completed')
         .eq('user_id', userId)
         .eq('is_daily_recurring', true);
 
       if (recurringError) throw recurringError;
 
       const updates = dailyRecurringTasks.map(task => {
-        const lastCompletionDateStr = task.last_completion_date;
-        const wasCompletedYesterday = lastCompletionDateStr === yesterdayInUserTimezone;
-
-        let newStreak = task.recurrence_streak;
-        let newFailureHistory = task.recurrence_failure_history || [];
-
-        if (task.is_completed && wasCompletedYesterday) {
-          // Se a tarefa foi concluída ontem, o streak já foi atualizado no frontend.
-          // Não fazemos nada com o streak aqui, apenas garantimos o reset do status.
-        } else if (!task.is_completed && !wasCompletedYesterday) {
-          // FALHA: Não foi concluída ontem (e não está marcada como concluída hoje)
-          if (task.recurrence_streak > 0) {
-            console.log(`[User ${userId}] Recorrente ${task.id} falhou. Streak resetado.`);
-          }
-          newStreak = 0;
-          // Adicionar falha se ainda não estiver no histórico de falhas de ontem
-          if (!newFailureHistory.includes(yesterdayInUserTimezone)) {
-            newFailureHistory = [...newFailureHistory, yesterdayInUserTimezone];
-          }
-        }
-
         // Resetar o status de conclusão para que apareça hoje (o novo dia)
         return {
           id: task.id,
           is_completed: false,
-          recurrence_streak: newStreak,
-          recurrence_failure_history: newFailureHistory,
         };
       });
 

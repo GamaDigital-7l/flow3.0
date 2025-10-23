@@ -11,6 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatTime, parseISO } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import TaskForm from "@/components/TaskForm";
+import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 
 interface TaskItemProps {
   task: Task;
@@ -56,6 +59,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | undefined>(undefined);
+  const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false); // ADD THIS LINE
 
   const isClientTaskMirrored = task.current_board === "client_tasks";
   const isRecurrentTemplate = task.recurrence_type !== 'none';
