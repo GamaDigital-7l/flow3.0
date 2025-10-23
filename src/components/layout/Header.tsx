@@ -47,10 +47,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
       <div className="flex items-center gap-2">
         <ThemeToggle />
         {/* Botão de instalação PWA removido */}
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8">
-          <Bell className="h-4 w-4" />
-          <span className="sr-only">Notificações</span>
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
