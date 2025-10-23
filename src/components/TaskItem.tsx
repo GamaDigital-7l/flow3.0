@@ -19,6 +19,7 @@ import { isToday, isTomorrow, isBefore, startOfDay, subDays } from "date-fns";
 interface TaskItemProps {
   task: Task;
   refetchTasks: () => void;
+  compactMode?: boolean;
 }
 
 const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
@@ -28,10 +29,7 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
     return <Badge className="bg-status-completed text-foreground/80 h-5 px-1.5 text-xs">Concluída</Badge>;
   }
   
-  if (isTrulyOverdue) {
-    // Se estiver atrasada, retorna apenas a badge de Atrasada
-    return <Badge variant="destructive" className="bg-status-overdue text-white h-5 px-1.5 text-xs">Atrasada</Badge>;
-  }
+  // REMOVIDO: Lógica da badge de Atrasada, confiando na borda vermelha e no texto de alerta.
 
   // Se não estiver atrasada, verifica outras condições
   if (task.due_date) {
@@ -63,7 +61,7 @@ const getTaskDueDateDisplay = (task: Task): string => {
   return "Sem Vencimento";
 };
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, compactMode = false }) => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | undefined>(undefined);
@@ -188,9 +186,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
 
   return (
     <Card className={cn(
-      "p-2 border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
+      "border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
       isCompleted ? "opacity-70" : "card-hover-effect",
-      isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50"
+      isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50",
+      compactMode ? "p-1.5" : "p-2" // Ajuste de padding
     )}>
       <div className="flex items-start gap-2">
         {/* Checkbox */}
@@ -204,21 +203,22 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
               uncompleteTaskMutation.mutate(task.id);
             }
           }}
-          className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0 mt-1 h-4 w-4"
+          className={cn("border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0 mt-1", compactMode ? "h-3.5 w-3.5" : "h-4 w-4")}
           disabled={completeTaskMutation.isPending || uncompleteTaskMutation.isPending || isClientTaskMirrored}
         />
         <div className="grid gap-0.5 flex-grow min-w-0">
           <label
             htmlFor={`task-${task.id}`}
             className={cn(
-              "font-medium leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70 break-words text-sm",
-              isCompleted && "line-through text-muted-foreground"
+              "font-medium leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70 break-words",
+              isCompleted && "line-through text-muted-foreground",
+              compactMode ? "text-xs" : "text-sm" // Ajuste de fonte
             )}
           >
             {task.title}
           </label>
           {task.description && (
-            <p className="text-xs text-muted-foreground break-words line-clamp-1">{task.description}</p>
+            <p className={cn("text-muted-foreground break-words line-clamp-1", compactMode ? "text-[0.65rem]" : "text-xs")}>{task.description}</p>
           )}
           <div className="flex flex-wrap gap-1 mt-0.5">
             {getTaskStatusBadge(task.current_board, task)}
@@ -233,17 +233,17 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-            <CalendarDays className="h-3 w-3 flex-shrink-0" /> {getTaskDueDateDisplay(task)}
+          <p className={cn("text-muted-foreground mt-0.5 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
+            <CalendarDays className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> {getTaskDueDateDisplay(task)}
           </p>
           {shouldShowHabitWarning && (
-            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3 flex-shrink-0" /> Não quebre o hábito!
+            <p className={cn("text-red-500 mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
+              <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> Não quebre o hábito!
             </p>
           )}
           {isTrulyOverdue && (
-            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3 flex-shrink-0" /> Atenção: Tarefa Atrasada!
+            <p className={cn("text-red-500 mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
+              <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> Atenção: Tarefa Atrasada!
             </p>
           )}
         </div>
@@ -265,9 +265,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
 
       {task.subtasks && task.subtasks.length > 0 && (
         <div className="ml-5 mt-2 space-y-1 border-l pl-2">
-          <p className="text-xs font-semibold text-muted-foreground">Subtarefas ({task.subtasks.length})</p>
+          <p className={cn("font-semibold text-muted-foreground", compactMode ? "text-xs" : "text-sm")}>Subtarefas ({task.subtasks.length})</p>
           {task.subtasks.map(subtask => (
-            <TaskItem key={subtask.id} task={subtask} refetchTasks={refetchTasks} />
+            <TaskItem key={subtask.id} task={subtask} refetchTasks={refetchTasks} compactMode={compactMode} />
           ))}
         </div>
       )}
@@ -288,7 +288,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
               </DialogDescription>
             </DialogHeader>
             <TaskForm
-              initialData={{ ...editingTask, due_date: editingTask?.due_date ? parseISO(editingTask.due_date) : undefined } as any}
+              initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } as any}
               onTaskSaved={refetchTasks}
               onClose={() => setIsFormOpen(false)}
             />

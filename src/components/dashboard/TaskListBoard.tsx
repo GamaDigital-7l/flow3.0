@@ -69,6 +69,15 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
 
   const overdueCount = tasks.filter(task => task.overdue).length;
 
+  // --- Dynamic Layout Logic ---
+  const maxVisibleTasks = 6;
+  const compactMode = tasks.length > maxVisibleTasks;
+  
+  // Determine padding for CardContent based on compactMode
+  const contentPaddingClass = compactMode ? "p-2 pt-1" : "p-3 pt-1";
+  const itemSpacingClass = compactMode ? "space-y-1" : "space-y-2";
+  // --- End Dynamic Layout Logic ---
+
   if (isLoading) {
     return (
       <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
@@ -96,8 +105,8 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
   }
 
   return (
-    <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1">
+    <Card className="w-full bg-card border border-border rounded-xl shadow-sm frosted-glass card-hover-effect flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1 flex-shrink-0">
         <div className="flex items-center gap-1 min-w-0">
           <CardTitle className="text-base font-semibold text-foreground break-words">{title}</CardTitle>
           {overdueCount > 0 && (
@@ -108,23 +117,27 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({
         </div>
         {quickAddTaskInput && <div className="w-full">{quickAddTaskInput}</div>}
       </CardHeader>
-      <CardContent className="p-2 pt-1">
-        {/* Renderiza children se fornecido (usado para RecurringTaskItem) */}
-        {children}
-        
-        {/* Renderiza tarefas normais se não houver children e houver tarefas */}
-        {!children && taskTree.length === 0 ? (
-          <p className="text-muted-foreground text-xs">Nenhuma tarefa encontrada para este quadro.</p>
-        ) : (
-          !children && (
-            <div className="space-y-1">
-              {taskTree.map((task) => (
-                <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} />
-              ))}
-            </div>
-          )
-        )}
-      </CardContent>
+      
+      {/* Aplicando altura máxima e scroll interno */}
+      <div className="max-h-[85vh] overflow-y-auto custom-scrollbar flex-1">
+        <CardContent className={contentPaddingClass}>
+          {/* Renderiza children se fornecido (usado para RecurringTaskItem) */}
+          {children}
+          
+          {/* Renderiza tarefas normais se não houver children e houver tarefas */}
+          {!children && taskTree.length === 0 ? (
+            <p className="text-muted-foreground text-xs">Nenhuma tarefa encontrada para este quadro.</p>
+          ) : (
+            !children && (
+              <div className={itemSpacingClass}>
+                {taskTree.map((task) => (
+                  <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} compactMode={compactMode} />
+                ))}
+              </div>
+            )
+          )}
+        </CardContent>
+      </div>
     </Card>
   );
 };
