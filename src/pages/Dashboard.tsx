@@ -92,9 +92,9 @@ const Dashboard: React.FC = () => {
   const tasksForToday = dashboardTasks.filter(t => !t.is_completed && t.due_date && isToday(new Date(t.due_date)));
 
   // Adicionando o quadro de Atrasadas
-  const boardsWithOverdue = [
+  const boardsToDisplay = [
     ...BOARD_DEFINITIONS,
-    { id: "overdue" as TaskCurrentBoard, title: "Atrasadas", icon: <AlertCircle className="h-5 w-5" />, color: "text-red-600" },
+    // Removido o quadro 'overdue' daqui
   ];
 
   if (isLoadingTasks) {
@@ -139,19 +139,19 @@ const Dashboard: React.FC = () => {
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
       <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {boardsWithOverdue.map((board) => (
+        {boardsToDisplay.map((board) => (
           <TaskListBoard
             key={board.id}
             title={board.title}
             tasks={dashboardTasks.filter(t => 
-              (board.id === 'overdue' ? t.overdue : t.current_board === board.id) && 
+              t.current_board === board.id && 
               !t.is_completed
             )}
             isLoading={isLoadingTasks}
             error={errorTasks}
             refetchTasks={handleTaskUpdated}
             quickAddTaskInput={
-              board.id !== "overdue" && board.id !== "recurring" && (
+              board.id !== "recurring" && (
                 <QuickAddTaskInput
                   originBoard={board.id}
                   onTaskAdded={handleTaskUpdated}

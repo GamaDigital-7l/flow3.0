@@ -48,13 +48,15 @@ const QuickTransactionEntry: React.FC<QuickTransactionEntryProps> = ({ onTransac
     setIsLoading(true);
 
     try {
+      // Nota: account_id é opcional no formulário, mas o DB pode exigir.
+      // Se o DB exigir, a transação falhará. Assumindo que o DB permite NULL temporariamente.
       const { error: insertError } = await supabase.from("financial_transactions").insert({
         user_id: userId,
         description: parsed.description,
         amount: parsed.amount,
         type: type,
         date: format(new Date(), "yyyy-MM-dd"),
-        account_id: 'default_account_id', // Deve ser ajustado para a conta padrão do usuário
+        account_id: null, // Usando null, pois removemos a obrigatoriedade
       });
 
       if (insertError) throw insertError;

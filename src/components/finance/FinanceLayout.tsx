@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageTitle from '@/components/layout/PageTitle';
-import { DollarSign, Briefcase, User } from 'lucide-react';
+import { DollarSign, Briefcase, User, Settings } from 'lucide-react';
 import PeriodSelector from './PeriodSelector';
 import CompanyFinance from './CompanyFinance';
 import PersonalFinance from './PersonalFinance';
 import QuickTransactionEntry from './QuickTransactionEntry';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const FinanceLayout: React.FC = () => {
   const [currentPeriod, setCurrentPeriod] = useState(new Date());
@@ -22,7 +24,13 @@ const FinanceLayout: React.FC = () => {
     <div className="page-content-wrapper overflow-x-hidden">
       {/* Empilhando o título e a entrada rápida no mobile */}
       <div className="space-y-4 mb-6">
-        <PageTitle title="Finanças" description="Gerencie as finanças pessoais e da empresa." />
+        <PageTitle title="Finanças" description="Gerencie as finanças pessoais e da empresa.">
+          <Link to="/financial-management">
+            <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
+              <Settings className="mr-2 h-4 w-4" /> Gerenciar
+            </Button>
+          </Link>
+        </PageTitle>
         <QuickTransactionEntry onTransactionAdded={handleTransactionAdded} />
       </div>
 

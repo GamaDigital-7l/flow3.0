@@ -37,7 +37,7 @@ const recurringTransactionSchema = z.object({
   frequency: z.enum(RECURRENCE_OPTIONS, { required_error: "A frequência é obrigatória." }),
   next_due_date: z.date({ required_error: "A próxima data de vencimento é obrigatória." }),
   category_id: z.string().nullable().optional(),
-  account_id: z.string().min(1, "A conta é obrigatória."),
+  account_id: z.string().nullable().optional(), // Tornando opcional
   is_active: z.boolean().optional().default(true),
 });
 
@@ -81,6 +81,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
         user_id: userId,
         next_due_date: format(convertToUtc(data.next_due_date)!, 'yyyy-MM-dd'),
         category_id: data.category_id || null,
+        account_id: data.account_id || null, // Garantir que null seja enviado se vazio
       };
 
       if (initialData?.id) {
@@ -249,14 +250,18 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
             name="account_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Conta</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormLabel>Conta (Opcional)</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === '__none__' ? null : value)} 
+                  value={field.value || '__none__'}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a conta" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
                     {accounts.map((account) => (
                       <SelectItem key={account.id} value={account.id}>
                         {account.name}

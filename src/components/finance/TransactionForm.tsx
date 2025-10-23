@@ -34,7 +34,7 @@ const transactionSchema = z.object({
   ),
   type: z.enum(['income', 'expense']),
   category_id: z.string().nullable().optional(),
-  account_id: z.string().min(1, "A conta é obrigatória."),
+  account_id: z.string().nullable().optional(), // Tornando opcional
   payment_method: z.string().nullable().optional(),
   client_id: z.string().nullable().optional(),
   is_recurrent_instance: z.boolean().optional().default(false),
@@ -83,6 +83,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
         category_id: data.category_id || null,
         client_id: data.client_id || null,
         payment_method: data.payment_method || null,
+        account_id: data.account_id || null, // Garantir que null seja enviado se vazio
       };
 
       if (initialData?.id) {
@@ -224,14 +225,18 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
             name="account_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Conta</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormLabel>Conta (Opcional)</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === '__none__' ? null : value)} 
+                  value={field.value || '__none__'}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a conta" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
                     {accounts.map((account) => (
                       <SelectItem key={account.id} value={account.id}>
                         {account.name}
@@ -293,6 +298,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
