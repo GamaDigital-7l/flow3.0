@@ -30,7 +30,7 @@ const formSchema = z.object({
   target_amount: z.number().min(0.01, "O valor alvo deve ser positivo."),
   current_amount: z.number().min(0, "O valor atual não pode ser negativo."),
   target_date: z.date().nullable().optional(),
-  linked_account_id: z.string().nullable().optional(),
+  linked_account_id: z.string().min(1, "A conta vinculada é obrigatória."), // Required
 });
 
 type FinancialGoalFormValues = z.infer<typeof formSchema>;
@@ -78,8 +78,7 @@ const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGo
       ...values,
       user_id: userId,
       target_date: values.target_date ? format(values.target_date, 'yyyy-MM-dd') : null,
-      // Ensure null value for optional field
-      linked_account_id: values.linked_account_id === '__none__' ? null : values.linked_account_id,
+      linked_account_id: values.linked_account_id,
     };
 
     try {
@@ -206,6 +205,7 @@ const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGo
                       selected={field.value}
                       onSelect={field.onChange}
                       initialFocus
+                      locale={ptBR}
                     />
                   </PopoverContent>
                 </Popover>
@@ -219,10 +219,10 @@ const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGo
             name="linked_account_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Conta Vinculada (Opcional)</FormLabel>
+                <FormLabel>Conta Vinculada</FormLabel>
                 <Select
-                  onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
-                  value={field.value || '__none__'}
+                  onValueChange={field.onChange}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -230,8 +230,6 @@ const FinancialGoalForm: React.FC<FinancialGoalFormProps> = ({ initialData, onGo
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {/* FIX: Use a non-empty string for the optional/null value */}
-                    <SelectItem value="__none__">Nenhuma</SelectItem>
                     {accounts.map((account) => (
                       <SelectItem key={account.id} value={account.id}>
                         {account.name}

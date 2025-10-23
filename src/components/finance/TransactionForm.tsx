@@ -293,7 +293,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onTransa
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}

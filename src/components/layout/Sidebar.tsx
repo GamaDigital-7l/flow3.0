@@ -27,6 +27,7 @@ const navItems = [
   { name: "Livros", href: "/books", icon: BookOpen },
   { name: "Notas", href: "/notes", icon: Notebook },
   { name: "Resultados", href: "/results", icon: BarChart3 },
+  { name: "Contas", href: "/financial-accounts", icon: DollarSign }, // Adicionado link para contas
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
