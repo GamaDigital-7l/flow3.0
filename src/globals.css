@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* Light Theme (Default) - Gama Flow - Ajustado para cinza suave */
+    /* Light Theme (Default) - Gama Flow - AUMENTANDO CONTRASTE */
     --background: 210 20% 96%; /* #F3F5F7 - Fundo principal cinza muito claro */
     --foreground: 222.2 84% 4.9%; /* #12141A - Texto principal escuro */
 
@@ -22,21 +22,21 @@
     --primary-foreground: 0 0% 100%; /* Branco */
     --primary-light: 340 80% 60%;
 
-    --secondary: 214.3 31.8% 91.4%; /* #E3E6EB - Botão secundário cinza claro */
-    --secondary-hover: 214.3 20% 85%; /* #D1D4DB - Hover secundário */
+    --secondary: 210 40% 90%; /* #E8EBEF - Cinza mais visível para secundário */
+    --secondary-hover: 210 40% 85%; /* Hover secundário */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 94%; /* Cinza mais suave para muted */
+    --muted: 210 40% 90%; /* Cinza mais visível para muted */
     --muted-foreground: 215.4 16.3% 46.9%; /* #61656F - Cinza médio */
 
-    --accent: 210 40% 94%; /* Cinza mais suave para accent */
+    --accent: 210 40% 90%; /* Cinza mais visível para accent */
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%; /* #E3E6EB - Borda sutil */
-    --border-rgb: 227, 230, 235;
+    --border: 214.3 31.8% 85%; /* #D1D4DB - Borda mais escura */
+    --border-rgb: 209, 212, 219;
     --input: 0 0% 100%; /* Input branco */
     --ring: 340 80% 51%; /* Gama Pink */
 
@@ -51,6 +51,16 @@
     --status-today: #4CAF50;
     --status-completed: rgba(200, 200, 200, 0.5);
     --status-recurring: #9370DB;
+
+    /* Sidebar Colors (Light Mode) - Fundo ligeiramente diferente do background principal */
+    --sidebar-background: 210 20% 98%; /* #F8FAFC */
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 340 80% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 90%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 85%;
+    --sidebar-ring: 340 80% 51%;
 
     /* Variáveis para safe areas */
     --sab: env(safe-area-inset-bottom);
@@ -296,11 +306,11 @@
 
 /* Ajustes para o Quill Editor */
 .ql-toolbar.ql-snow {
-  @apply border-border rounded-t-md bg-input;
+  @apply border-border rounded-t-lg bg-input;
 }
 
 .ql-container.ql-snow {
-  @apply border-border rounded-b-md bg-input;
+  @apply border-border rounded-b-lg bg-input;
   min-height: 100px;
 }
 
