@@ -74,7 +74,7 @@ const PublicProposalPage: React.FC = () => {
   const navigate = useNavigate();
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false); // Estado para controlar o modal
 
   const { data: proposal, isLoading, error, refetch } = useQuery<ProposalData | null, Error>({
     queryKey: ["publicProposal", uniqueId],
@@ -142,7 +142,7 @@ const PublicProposalPage: React.FC = () => {
       refetch(); // Atualiza o status na tela
       setIsRejectionModalOpen(false);
       if (newStatus === 'accepted') {
-        setShowWhatsAppModal(true);
+        setShowWhatsAppModal(true); // Abre o modal de WhatsApp
       }
     },
     onError: (err: any) => {
@@ -400,7 +400,7 @@ const PublicProposalPage: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Modal de WhatsApp (Abre ao aceitar, para garantir o contato) */}
+      {/* Modal de WhatsApp (Abre ao aceitar) */}
       <Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
         <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
           <DialogHeader>
