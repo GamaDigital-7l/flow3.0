@@ -19,14 +19,9 @@ import { isToday, isTomorrow, isBefore, startOfDay, subDays } from "date-fns"; /
 interface TaskItemProps {
   task: Task;
   refetchTasks: () => void;
-  isTemplateView?: boolean; // Nova prop para templates
 }
 
-const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task, isTemplateView: boolean) => {
-  if (isTemplateView) {
-    return <Badge className="bg-status-recurring text-white h-5 px-1.5 text-xs flex items-center gap-1"><Repeat className="h-3 w-3" /> Template</Badge>;
-  }
-
+const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
   const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !task.is_completed;
 
   if (task.is_completed) {
@@ -36,6 +31,11 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task, isTemplateView
   if (isTrulyOverdue) {
     // Se estiver atrasada, retorna apenas a badge de Atrasada
     return <Badge variant="destructive" className="bg-status-overdue text-white h-5 px-1.5 text-xs">Atrasada</Badge>;
+  }
+
+  // Se for um template recorrente, mostra a badge de template
+  if (task.recurrence_type !== 'none' && !task.parent_task_id) {
+    return <Badge className="bg-status-recurring text-white h-5 px-1.5 text-xs flex items-center gap-1"><Repeat className="h-3 w-3" /> Template</Badge>;
   }
 
   // Se não estiver atrasada, verifica outras condições
@@ -68,14 +68,14 @@ const getTaskDueDateDisplay = (task: Task): string => {
   return "Sem Vencimento";
 };
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isTemplateView = false }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks }) => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | undefined>(undefined);
   const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false);
 
   const isClientTaskMirrored = task.current_board === "client_tasks";
-  const isRecurrentTemplate = task.recurrence_type !== 'none';
+  const isRecurrentTemplate = task.recurrence_type !== 'none' && !task.parent_task_id;
   const isRecurrentInstance = !!task.parent_task_id;
 
   const completeTaskMutation = useMutation({
@@ -216,12 +216,12 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isTemplateView 
   return (
     <Card className={cn(
       "p-2 border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
-      isCompleted && !isTemplateView ? "opacity-70" : "card-hover-effect",
+      isCompleted && !isRecurrentTemplate ? "opacity-70" : "card-hover-effect",
       isTrulyOverdue && "border-red-500 ring-1 ring-red-500/50" // Usar isTrulyOverdue
     )}>
       <div className="flex items-start gap-2">
-        {/* Checkbox só aparece se NÃO for a visualização do template */}
-        {!isTemplateView && (
+        {/* Checkbox só aparece se NÃO for um template */}
+        {!isRecurrentTemplate && (
           <Checkbox
             id={`task-${task.id}`}
             checked={isCompleted}
@@ -241,7 +241,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isTemplateView 
             htmlFor={`task-${task.id}`}
             className={cn(
               "font-medium leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70 break-words text-sm",
-              isCompleted && !isTemplateView && "line-through text-muted-foreground"
+              isCompleted && !isRecurrentTemplate && "line-through text-muted-foreground"
             )}
           >
             {task.title}
@@ -250,7 +250,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isTemplateView 
             <p className="text-xs text-muted-foreground break-words line-clamp-1">{task.description}</p>
           )}
           <div className="flex flex-wrap gap-1 mt-0.5">
-            {getTaskStatusBadge(task.current_board, task, isTemplateView || isRecurrentTemplate)}
+            {getTaskStatusBadge(task.current_board, task)}
             {task.tags && task.tags.length > 0 && task.tags.map((tag) => (
               <Badge key={tag.id} style={{ backgroundColor: tag.color, color: '#FFFFFF' }} className="text-xs flex-shrink-0 h-5 px-1.5">
                 {tag.name}

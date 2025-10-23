@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Repeat, Loader2, PlusCircle, CalendarDays } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { parseISO } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
+import RecurringTemplateItem from "@/components/recurring/RecurringTemplateItem"; // Importando o novo componente
 
 const fetchRecurringTemplates = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
@@ -124,12 +125,15 @@ const RecurringTasks: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           {templates && templates.length > 0 ? (
-            templates.map(task => (
-              <div key={task.id} onClick={() => handleEditTask(task)} className="cursor-pointer">
-                {/* Passando isTemplateView para desabilitar o checkbox de conclusão */}
-                <TaskItem key={task.id} task={task} refetchTasks={refetch} isTemplateView={true} />
-              </div>
-            ))
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {templates.map(task => (
+                <RecurringTemplateItem 
+                  key={task.id} 
+                  templateTask={task} 
+                  refetchTemplates={refetch} 
+                />
+              ))}
+            </div>
           ) : (
             <p className="text-muted-foreground">Nenhum template recorrente configurado.</p>
           )}
