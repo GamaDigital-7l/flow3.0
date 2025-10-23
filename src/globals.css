@@ -6,11 +6,11 @@
 
 @layer base {
   :root {
-    /* Light Theme (Default) - Gama Flow */
-    --background: 210 20% 98%; /* #F9FAFB - Fundo principal claro */
+    /* Light Theme (Default) - Gama Flow - Ajustado para cinza suave */
+    --background: 210 20% 96%; /* #F3F5F7 - Fundo principal cinza muito claro */
     --foreground: 222.2 84% 4.9%; /* #12141A - Texto principal escuro */
 
-    --card: 0 0% 100%; /* #FFFFFF - Fundo branco puro */
+    --card: 0 0% 100%; /* #FFFFFF - Fundo dos cards */
     --card-foreground: 222.2 84% 4.9%;
     --card-rgb: 255, 255, 255;
 
@@ -26,10 +26,10 @@
     --secondary-hover: 214.3 20% 85%; /* #D1D4DB - Hover secundário */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 94%; /* Cinza mais suave para muted */
     --muted-foreground: 215.4 16.3% 46.9%; /* #61656F - Cinza médio */
 
-    --accent: 210 40% 96.1%;
+    --accent: 210 40% 94%; /* Cinza mais suave para accent */
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -37,12 +37,15 @@
 
     --border: 214.3 31.8% 91.4%; /* #E3E6EB - Borda sutil */
     --border-rgb: 227, 230, 235;
-    --input: 214.3 31.8% 91.4%;
+    --input: 0 0% 100%; /* Input branco */
     --ring: 340 80% 51%; /* Gama Pink */
 
+    /* Arredondamento: Aumentando o raio padrão para 0.75rem (12px) */
+    --radius: 0.75rem; 
+
     /* Cores de status (Light) */
-    --status-success: 140 70% 48%; /* #2ECC71 */
-    --status-alert: 45 90% 50%; /* #F1C40F */
+    --status-success: 140 70% 48%;
+    --status-alert: 45 90% 50%;
     --status-overdue: #4C2EFF;
     --status-urgent: #5F77FF;
     --status-today: #4CAF50;
@@ -56,12 +59,12 @@
     --sar: env(safe-area-inset-right);
   }
 
-  /* Tema Escuro (Dark Mode) - Definido como padrão no HTML */
+  /* Tema Escuro (Dark Mode) - Ajustado para ser mais suave e confortável */
   .dark {
-    --background: 220 15% 6%; /* #12141A - Fundo principal */
+    --background: 220 15% 8%; /* #15181F - Fundo principal mais escuro e suave */
     --foreground: 210 20% 98%; /* #FFFFFF - Texto primário */
     
-    --card: 220 15% 12%; /* #1D2028 - Fundo dos cards */
+    --card: 220 15% 12%; /* #1D2028 - Fundo dos cards (suave) */
     --card-foreground: 210 20% 98%;
     --card-rgb: 29, 32, 40;
 
@@ -92,8 +95,8 @@
     --ring: 340 80% 51%; /* Gama Pink */
 
     /* Cores de status (Dark) */
-    --status-success: 140 70% 48%; /* #2ECC71 */
-    --status-alert: 45 90% 50%; /* #F1C40F */
+    --status-success: 140 70% 48%;
+    --status-alert: 45 90% 50%;
     --status-overdue: #4C2EFF;
     --status-urgent: #5F77FF;
     --status-today: #4CAF50;
@@ -101,7 +104,7 @@
     --status-recurring: #9370DB;
 
     /* Cores específicas para a Sidebar (ajustadas para a nova paleta) */
-    --sidebar-background: 220 15% 6%;
+    --sidebar-background: 220 15% 8%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 340 80% 51%;
     --sidebar-primary-foreground: 0 0% 100%;

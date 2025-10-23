@@ -47,10 +47,10 @@ const ClientCard: React.FC<{ client: Client; onEdit: (client: Client) => void; o
       )}
     </CardContent>
     <CardFooter className="flex justify-end gap-2 pt-4">
-      <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); onEdit(client); }} className="h-8 w-8 text-blue-500 hover:bg-blue-500/10">
+      <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); onEdit(client); }} className="h-8 w-8 text-muted-foreground hover:bg-accent hover:text-foreground">
         <Edit className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); onDelete(client.id); }} className="h-8 w-8 text-red-500 hover:bg-red-500/10">
+      <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); onDelete(client.id); }} className="h-8 w-8 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
         <Trash2 className="h-4 w-4" />
       </Button>
     </CardFooter>
@@ -71,7 +71,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onEdit, onDelete }) =>
 
   if (clients.length === 0) {
     return (
-      <div className="text-center text-muted-foreground p-12 border border-dashed rounded-lg bg-card">
+      <div className="text-center text-muted-foreground p-12 border border-dashed rounded-xl bg-card">
         <Users className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
         <p className="text-lg font-semibold">Nenhum cliente encontrado.</p>
         <p>Comece adicionando seu primeiro cliente para organizar seus projetos.</p>

@@ -30,6 +30,7 @@ export default {
           DEFAULT: "hsl(var(--primary))", // Gama Pink: #ED1857
           foreground: "hsl(var(--primary-foreground))", // Texto para o rosa
           hover: "hsl(var(--primary-hover))", // Versão mais viva: #FF2E6E
+          light: "hsl(var(--primary-light))", // Rosa mais claro para uso em backgrounds sutis
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))", // Cinza escuro para cards/botões secundários
@@ -67,19 +68,19 @@ export default {
           recurring: "var(--status-recurring)", // Lilás (mantido)
         },
         // Cores específicas para a Sidebar
-        'sidebar-background': 'hsl(220 15% 10%)',
-        'sidebar-foreground': 'hsl(210 20% 90%)',
-        'sidebar-primary': 'hsl(var(--primary))',
-        'sidebar-primary-foreground': 'hsl(var(--primary-foreground))',
-        'sidebar-accent': 'hsl(var(--secondary))',
-        'sidebar-accent-foreground': 'hsl(var(--foreground))',
-        'sidebar-border': 'hsl(var(--border))',
-        'sidebar-ring': 'hsl(var(--primary))',
+        'sidebar-background': 'hsl(var(--sidebar-background))',
+        'sidebar-foreground': 'hsl(var(--sidebar-foreground))',
+        'sidebar-primary': 'hsl(var(--sidebar-primary))',
+        'sidebar-primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+        'sidebar-accent': 'hsl(var(--sidebar-accent))',
+        'sidebar-accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+        'sidebar-border': 'hsl(var(--sidebar-border))',
+        'sidebar-ring': 'hsl(var(--sidebar-ring))',
       },
       borderRadius: {
-        lg: "var(--radius)", // Padrão para componentes maiores
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius)", // Padrão: 0.75rem (12px)
+        md: "calc(var(--radius) - 2px)", // 10px
+        sm: "calc(var(--radius) - 4px)", // 8px
         // Adicionando um radius maior para cards e botões, conforme solicitado (16px a 24px)
         "xl": "1rem", // 16px
         "2xl": "1.5rem", // 24px
