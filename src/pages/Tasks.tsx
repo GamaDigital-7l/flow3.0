@@ -5,7 +5,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskCurrentBoard, TaskOriginBoard, TaskRecurrenceType, DAYS_OF_WEEK_LABELS } from "@/types/task";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Filter, CalendarDays, Repeat, Edit, Trash2, ListTodo, AlertCircle, Users } from "lucide-react";
+import { PlusCircle, Loader2, Filter, CalendarDays, Repeat, Edit, Trash2, ListTodo, AlertCircle, Users, CheckCircle2 } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import TaskItem from "@/components/TaskItem";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
