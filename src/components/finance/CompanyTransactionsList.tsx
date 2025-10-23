@@ -40,8 +40,17 @@ const fetchCompanyTransactions = async (userId: string, period: Date): Promise<F
     .order("date", { ascending: false });
 
   if (error) throw error;
-  // O mapeamento de tipos deve ser suficiente agora que todos os campos estão selecionados
-  return data as FinancialTransaction[] || [];
+  
+  // FIX TS2352: Mapear os resultados para garantir que as relações one-to-one sejam objetos únicos, não arrays.
+  // O Supabase JS v2/v3 pode retornar relações one-to-one como arrays de 1 elemento se a tipagem for genérica.
+  const mappedData = data?.map((t: any) => ({
+    ...t,
+    category: Array.isArray(t.category) ? t.category[0] : t.category,
+    account: Array.isArray(t.account) ? t.account[0] : t.account,
+    client: Array.isArray(t.client) ? t.client[0] : t.client,
+  })) || [];
+
+  return mappedData as FinancialTransaction[] || [];
 };
 
 const formatCurrency = (value: number) => {
