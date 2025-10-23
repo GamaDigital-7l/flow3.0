@@ -40,7 +40,7 @@ const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
     const todayLocal = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: userTimezone }).format(now); // Formato YYYY-MM-DD
 
     const { data, error } = await supabase
-      .from('habits')
+      .from('user_habits') // MUDANÇA: Nova tabela
       .select('*')
       .eq('user_id', userId)
       .eq('date_local', todayLocal)
@@ -50,7 +50,7 @@ const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
     if (error) {
       // Se o erro for relacionado à tabela não encontrada, logamos e retornamos vazio.
       if (error.message.includes('Could not find the table')) {
-        console.warn("Aviso: Tabela 'habits' não encontrada no cache do esquema. Retornando array vazio.");
+        console.warn("Aviso: Tabela 'user_habits' não encontrada no cache do esquema. Retornando array vazio.");
         return [];
       }
       throw error;
@@ -70,12 +70,12 @@ const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
 const fetchAllHabitDefinitions = async (userId: string): Promise<Habit[]> => {
   try {
     // Use RPC to get the latest instance for each recurrence_id
-    const { data: latestHabits, error } = await supabase.rpc('get_latest_habit_instances', { user_id_input: userId });
+    const { data: latestHabits, error } = await supabase.rpc('get_latest_user_habit_instances', { user_id_input: userId }); // MUDANÇA: Nova função RPC
     
     if (error) {
       // Se o erro for relacionado à função não encontrada, logamos e retornamos vazio.
-      if (error.message.includes('function get_latest_habit_instances(uuid) does not exist')) {
-        console.warn("Aviso: Função RPC 'get_latest_habit_instances' não encontrada. Retornando array vazio.");
+      if (error.message.includes('function get_latest_user_habit_instances(uuid) does not exist')) {
+        console.warn("Aviso: Função RPC 'get_latest_user_habit_instances' não encontrada. Retornando array vazio.");
         return [];
       }
       throw error;
@@ -133,7 +133,7 @@ export const useToggleHabitCompletion = () => {
       
       // 1. Update the current instance (habit.id)
       const { data: updatedInstance, error: updateError } = await supabase
-        .from('habits')
+        .from('user_habits') // MUDANÇA: Nova tabela
         .update({ 
           completed_today: completed, 
           alert: false, // Clear alert on action
@@ -155,7 +155,7 @@ export const useToggleHabitCompletion = () => {
       };
       
       const { error: historyError } = await supabase
-        .from('habit_history')
+        .from('user_habit_history') // MUDANÇA: Nova tabela
         .upsert(historyPayload, { onConflict: 'recurrence_id, user_id, date_local' });
         
       if (historyError) console.error("Error updating habit history:", historyError);
@@ -165,7 +165,7 @@ export const useToggleHabitCompletion = () => {
         
         // Fetch the latest metrics again to ensure consistency
         const { data: latestHabitData } = await supabase
-          .from('habits')
+          .from('user_habits') // MUDANÇA: Nova tabela
           .select('*')
           .eq('recurrence_id', habit.recurrence_id)
           .eq('user_id', userId)
@@ -179,7 +179,7 @@ export const useToggleHabitCompletion = () => {
           
           // Update metrics on the latest instance (which is today's instance)
           const { error: metricUpdateError } = await supabase
-            .from('habits')
+            .from('user_habits') // MUDANÇA: Nova tabela
             .update({
               streak: newStreak,
               total_completed: newTotalCompleted,
@@ -193,7 +193,7 @@ export const useToggleHabitCompletion = () => {
 
           // Check if tomorrow's instance already exists
           const { data: existingTomorrow, error: checkError } = await supabase
-            .from('habits')
+            .from('user_habits') // MUDANÇA: Nova tabela
             .select('id')
             .eq('recurrence_id', habit.recurrence_id)
             .eq('user_id', userId)
@@ -227,7 +227,7 @@ export const useToggleHabitCompletion = () => {
               };
               
               const { error: insertTomorrowError } = await supabase
-                .from('habits')
+                .from('user_habits') // MUDANÇA: Nova tabela
                 .insert(tomorrowPayload);
                 
               if (insertTomorrowError) console.error("Error inserting tomorrow's habit:", insertTomorrowError);

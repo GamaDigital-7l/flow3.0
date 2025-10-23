@@ -45,7 +45,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, refetchHabits, compactMode
       
       // Deleta todas as instâncias e o histórico associado ao recurrence_id
       const { error: deleteHistoryError } = await supabase
-        .from("habit_history")
+        .from("user_habit_history") // MUDANÇA: Nova tabela
         .delete()
         .eq("recurrence_id", recurrenceId)
         .eq("user_id", userId);
@@ -53,7 +53,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, refetchHabits, compactMode
       if (deleteHistoryError) console.error("Error deleting habit history:", deleteHistoryError);
 
       const { error: deleteHabitsError } = await supabase
-        .from("habits")
+        .from("user_habits") // MUDANÇA: Nova tabela
         .delete()
         .eq("recurrence_id", recurrenceId)
         .eq("user_id", userId);
@@ -81,7 +81,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, refetchHabits, compactMode
       if (!userId) throw new Error("Usuário não autenticado.");
       // Atualiza todas as instâncias com o mesmo recurrence_id
       const { error } = await supabase
-        .from("habits")
+        .from("user_habits") // MUDANÇA: Nova tabela
         .update({ paused: paused, updated_at: new Date().toISOString() })
         .eq("recurrence_id", habit.recurrence_id)
         .eq("user_id", userId);

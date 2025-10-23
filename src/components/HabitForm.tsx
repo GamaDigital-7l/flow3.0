@@ -88,7 +88,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
       if (initialData?.recurrence_id) {
         // Update: Update all instances sharing the recurrence_id
         const { error } = await supabase
-          .from("habits")
+          .from("user_habits") // MUDANÇA: Nova tabela
           .update(dataToSave)
           .eq("recurrence_id", initialData.recurrence_id)
           .eq("user_id", userId);
@@ -98,7 +98,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
       } else {
         // Create: Insert the first instance for today
         const recurrenceId = crypto.randomUUID();
-        const { error } = await supabase.from("habits").insert({
+        const { error } = await supabase.from("user_habits").insert({ // MUDANÇA: Nova tabela
           ...dataToSave,
           recurrence_id: recurrenceId,
           user_id: userId,

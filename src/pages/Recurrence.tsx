@@ -39,7 +39,7 @@ const Recurrence: React.FC = () => {
       if (!userId) throw new Error("Usuário não autenticado.");
       // Atualiza todas as instâncias com o mesmo recurrence_id
       const { error } = await supabase
-        .from("habits")
+        .from("user_habits") // MUDANÇA: Nova tabela
         .update({ paused: paused, updated_at: new Date().toISOString() })
         .eq("recurrence_id", recurrenceId)
         .eq("user_id", userId);
@@ -60,17 +60,18 @@ const Recurrence: React.FC = () => {
       if (!userId) throw new Error("Usuário não autenticado.");
       if (!window.confirm("Tem certeza que deseja deletar ESTE HÁBITO e TODO O SEU HISTÓRICO?")) return;
       
-      // Deleta todas as instâncias e o histórico associado ao recurrence_id
+      // Deleta o histórico associado ao recurrence_id
       const { error: deleteHistoryError } = await supabase
-        .from("habit_history")
+        .from("user_habit_history") // MUDANÇA: Nova tabela
         .delete()
         .eq("recurrence_id", recurrenceId)
         .eq("user_id", userId);
         
       if (deleteHistoryError) console.error("Error deleting habit history:", deleteHistoryError);
 
+      // Deleta todas as instâncias do hábito
       const { error: deleteHabitsError } = await supabase
-        .from("habits")
+        .from("user_habits") // MUDANÇA: Nova tabela
         .delete()
         .eq("recurrence_id", recurrenceId)
         .eq("user_id", userId);

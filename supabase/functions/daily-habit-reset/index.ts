@@ -54,7 +54,7 @@ serve(async (req) => {
 
       // 1. Fetch all active habits that belong to yesterday
       const { data: yesterdayHabits, error: fetchHabitsError } = await supabase
-        .from('habits')
+        .from('user_habits') // MUDANÇA: Nova tabela
         .select('*')
         .eq('user_id', userId)
         .eq('paused', false)
@@ -117,7 +117,7 @@ serve(async (req) => {
       // 2. Batch Update Habits (Yesterday's metrics)
       if (updates.length > 0) {
         const { error: updateHabitsError } = await supabase
-          .from('habits')
+          .from('user_habits') // MUDANÇA: Nova tabela
           .upsert(updates, { onConflict: 'id' });
         if (updateHabitsError) console.error(`[User ${userId}] Error updating habits:`, updateHabitsError);
         else console.log(`[User ${userId}] Updated ${updates.length} habit instances (yesterday's metrics).`);
@@ -126,7 +126,7 @@ serve(async (req) => {
       // 3. Batch Insert History (Missed days)
       if (historyInserts.length > 0) {
         const { error: insertHistoryError } = await supabase
-          .from('habit_history')
+          .from('user_habit_history') // MUDANÇA: Nova tabela
           .upsert(historyInserts, { onConflict: 'recurrence_id, user_id, date_local' });
         if (insertHistoryError) console.error(`[User ${userId}] Error inserting habit history:`, insertHistoryError);
         else console.log(`[User ${userId}] Inserted ${historyInserts.length} history entries (missed days).`);
@@ -134,7 +134,7 @@ serve(async (req) => {
       
       // 4. Ensure Today's Instance Exists (if eligible)
       const { data: existingTodayInstances, error: fetchExistingError } = await supabase
-        .from('habits')
+        .from('user_habits') // MUDANÇA: Nova tabela
         .select('recurrence_id')
         .eq('user_id', userId)
         .eq('date_local', todayLocal);
@@ -148,7 +148,7 @@ serve(async (req) => {
         
         // Fetch the latest state of the base habit (the one with the highest date_local)
         const { data: baseHabits, error: fetchBaseHabitsError } = await supabase
-            .rpc('get_latest_habit_instances', { user_id_input: userId });
+            .rpc('get_latest_user_habit_instances', { user_id_input: userId }); // MUDANÇA: Nova função RPC
 
         if (fetchBaseHabitsError) {
             console.error(`[User ${userId}] Error fetching base habits via RPC:`, fetchBaseHabitsError);
@@ -184,8 +184,9 @@ serve(async (req) => {
         
         if (newInstancesToInsert.length > 0) {
             const { error: insertNewError } = await supabase
-                .from('habits')
+                .from('user_habits') // MUDANÇA: Nova tabela
                 .insert(newInstancesToInsert);
+                
             if (insertNewError) console.error(`[User ${userId}] Error inserting new today instances:`, insertNewError);
             else console.log(`[User ${userId}] Created ${newInstancesToInsert.length} new habit instances for today.`);
         }
