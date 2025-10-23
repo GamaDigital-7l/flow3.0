@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import * as dateFns from 'date-fns'; // FIX TS2305: Importando tudo para garantir acesso a parseISO e format
+import * as dateFns from 'date-fns';
 import * as dateFnsTz from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 
@@ -53,12 +53,9 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
   
-  // Se a data for uma string de data pura (yyyy-MM-dd), tratamos ela como local para exibição.
-  // Se for um objeto Date com fuso horário, formatamos diretamente.
-  
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
-  // FIX TS2554: Usando dateFns.format e passando o locale diretamente (v2 signature)
-  return dateFns.format(dateObj, formatString, ptBR); 
+  // Corrigindo a chamada de format para a sintaxe da v3
+  return dateFns.format(dateObj, formatString, { locale: ptBR }); 
 }
 
 /**

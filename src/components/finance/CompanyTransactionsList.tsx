@@ -41,10 +41,10 @@ const fetchCompanyTransactions = async (userId: string, period: Date): Promise<F
 
   if (error) throw error;
   
-  // FIX TS2352: Mapear os resultados para garantir que as relações one-to-one sejam objetos únicos, não arrays.
-  // O Supabase JS v2/v3 pode retornar relações one-to-one como arrays de 1 elemento se a tipagem for genérica.
+  // Mapeamento explícito para garantir que as relações one-to-one sejam objetos únicos
   const mappedData = data?.map((t: any) => ({
     ...t,
+    // Se for um array, pega o primeiro elemento (comportamento comum em joins Supabase)
     category: Array.isArray(t.category) ? t.category[0] : t.category,
     account: Array.isArray(t.account) ? t.account[0] : t.account,
     client: Array.isArray(t.client) ? t.client[0] : t.client,
