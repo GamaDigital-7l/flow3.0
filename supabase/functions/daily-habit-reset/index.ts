@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { format, parseISO, subDays, getDay, isSameDay } from "https://esm.sh/date-fns@3.6.0";
-import { utcToZonedTime } from "https://esm.sh/date-fns-tz@2.0.1"; // Importação corrigida
+import { utcToZonedTime } from "https://esm.sh/date-fns-tz@2.0.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +45,6 @@ serve(async (req) => {
       const nowUtc = new Date();
       const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
       
-      // Yesterday and Today in user's local date string (YYYY-MM-DD)
       const todayLocal = format(nowInUserTimezone, "yyyy-MM-dd");
       const yesterdayLocal = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd");
       const todayLocalDate = parseISO(todayLocal);
@@ -53,73 +52,61 @@ serve(async (req) => {
 
       console.log(`[User ${userId}] Running habit reset for ${todayLocal} (TZ: ${userTimezone}).`);
 
-      // 1. Fetch all active habits that belong to yesterday or today (to ensure we catch the transition)
-      const { data: activeHabits, error: fetchHabitsError } = await supabase
+      // 1. Fetch all active habits that belong to yesterday
+      const { data: yesterdayHabits, error: fetchHabitsError } = await supabase
         .from('habits')
         .select('*')
         .eq('user_id', userId)
         .eq('paused', false)
-        .or(`date_local.eq.${yesterdayLocal},date_local.eq.${todayLocal}`);
+        .eq('date_local', yesterdayLocal);
 
       if (fetchHabitsError) {
-        console.error(`[User ${userId}] Error fetching active habits:`, fetchHabitsError);
+        console.error(`[User ${userId}] Error fetching yesterday habits:`, fetchHabitsError);
         continue;
       }
 
       const updates = [];
       const historyInserts = [];
-      const recurrenceIdsToProcess = new Set<string>();
-
-      for (const habit of activeHabits || []) {
-        recurrenceIdsToProcess.add(habit.recurrence_id);
+      
+      for (const habit of yesterdayHabits || []) {
         const habitUpdates: any = { id: habit.id, updated_at: nowUtc.toISOString() };
         const habitDateLocal = parseISO(habit.date_local);
         const weekdays = habit.weekdays || [];
+        const isEligible = isDayEligible(habitDateLocal, habit.frequency, weekdays);
 
         // --- A. Handle Yesterday's Habit (Missed Day Check) ---
-        if (isSameDay(habitDateLocal, yesterdayLocalDate)) {
-          const isEligible = isDayEligible(habitDateLocal, habit.frequency, weekdays);
-
-          if (isEligible && !habit.completed_today) {
-            // 1. Missed Day: Update metrics
-            habitUpdates.streak = 0;
+        if (isEligible && !habit.completed_today) {
+          // 1. Missed Day: Update metrics (Streak reset, missed day count)
+          habitUpdates.streak = 0;
+          habitUpdates.alert = true; // Set alert for missed day
+          
+          // Update missed_days array
+          if (!habit.missed_days.includes(habit.date_local)) {
             habitUpdates.missed_days = [...habit.missed_days, habit.date_local];
-            
-            // Update fail_by_weekday
-            const dayOfWeek = getDay(habitDateLocal);
-            const currentFails = habit.fail_by_weekday[dayOfWeek] || 0;
-            habitUpdates.fail_by_weekday = {
-              ...habit.fail_by_weekday,
-              [dayOfWeek]: currentFails + 1,
-            };
-            
-            // 2. Insert history entry for missed day
-            historyInserts.push({
-              recurrence_id: habit.recurrence_id,
-              user_id: userId,
-              date_local: habit.date_local,
-              completed: false,
-            });
-            
-            // 3. Set alert if streak is broken
-            habitUpdates.alert = true; 
-            console.log(`[User ${userId}] Habit ${habit.title} missed on ${yesterdayLocal}. Streak reset.`);
-          } else if (isEligible && habit.completed_today) {
-            // If completed yesterday, ensure alert is false
-            habitUpdates.alert = false;
+          } else {
+            habitUpdates.missed_days = habit.missed_days; // Already missed, keep array
           }
           
-          // Recalculate success rate (requires fetching all history, too complex for here, relying on client/future RPC)
-        }
-
-        // --- B. Handle Today's Habit (Alert Check) ---
-        if (isSameDay(habitDateLocal, todayLocalDate)) {
-          // If today's instance exists, check if the streak was broken yesterday (streak=0)
-          if (habit.streak === 0 && !habit.completed_today) {
-             habitUpdates.alert = true;
-          } else {
-             habitUpdates.alert = false;
-          }
+          // Update fail_by_weekday
+          const dayOfWeek = getDay(habitDateLocal);
+          const currentFails = habit.fail_by_weekday[dayOfWeek] || 0;
+          habitUpdates.fail_by_weekday = {
+            ...habit.fail_by_weekday,
+            [dayOfWeek]: currentFails + 1,
+          };
+          
+          // 2. Insert history entry for missed day (if not already inserted)
+          historyInserts.push({
+            recurrence_id: habit.recurrence_id,
+            user_id: userId,
+            date_local: habit.date_local,
+            completed: false,
+          });
+          
+          console.log(`[User ${userId}] Habit ${habit.title} missed on ${yesterdayLocal}. Streak reset.`);
+        } else if (isEligible && habit.completed_today) {
+          // If completed yesterday, ensure alert is false
+          habitUpdates.alert = false;
         }
         
         if (Object.keys(habitUpdates).length > 2) { // Check if there are actual updates besides id and updated_at
@@ -127,22 +114,22 @@ serve(async (req) => {
         }
       }
 
-      // 2. Batch Update Habits (Yesterday's metrics and Today's alerts)
+      // 2. Batch Update Habits (Yesterday's metrics)
       if (updates.length > 0) {
         const { error: updateHabitsError } = await supabase
           .from('habits')
           .upsert(updates, { onConflict: 'id' });
         if (updateHabitsError) console.error(`[User ${userId}] Error updating habits:`, updateHabitsError);
-        else console.log(`[User ${userId}] Updated ${updates.length} habit instances.`);
+        else console.log(`[User ${userId}] Updated ${updates.length} habit instances (yesterday's metrics).`);
       }
       
       // 3. Batch Insert History (Missed days)
       if (historyInserts.length > 0) {
         const { error: insertHistoryError } = await supabase
           .from('habit_history')
-          .insert(historyInserts);
+          .upsert(historyInserts, { onConflict: 'recurrence_id, user_id, date_local' });
         if (insertHistoryError) console.error(`[User ${userId}] Error inserting habit history:`, insertHistoryError);
-        else console.log(`[User ${userId}] Inserted ${historyInserts.length} history entries.`);
+        else console.log(`[User ${userId}] Inserted ${historyInserts.length} history entries (missed days).`);
       }
       
       // 4. Ensure Today's Instance Exists (if eligible)
@@ -187,7 +174,7 @@ serve(async (req) => {
                             total_completed: baseHabit.total_completed,
                             missed_days: baseHabit.missed_days,
                             fail_by_weekday: baseHabit.fail_by_weekday,
-                            success_rate: baseHabit.success_rate, // Will be recalculated by client/job
+                            success_rate: baseHabit.success_rate, 
                             alert: baseHabit.streak === 0, // Set alert if streak was broken yesterday
                         });
                     }
