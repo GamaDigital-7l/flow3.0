@@ -320,7 +320,6 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({ ini
           />
         </div>
 
-        
         <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
