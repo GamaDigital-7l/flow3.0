@@ -16,7 +16,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTodayHabits } from "@/hooks/useHabits"; // Mantido para evitar erro de importação, mas não usado diretamente
 
 const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
   { id: "today_high_priority", title: "Hoje (Alta Prioridade)" },

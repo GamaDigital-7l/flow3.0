@@ -19,7 +19,6 @@ import BookDetails from "./pages/BookDetails";
 import BookReaderFullScreen from "./pages/BookReaderFullScreen";
 import Tasks from "./pages/Tasks"; // Importando Tasks
 import FinancialManagement from "./pages/FinancialManagement"; // Importando FinancialManagement
-import Recurrence from "./pages/Recurrence"; // Importando Recurrence
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
@@ -131,7 +130,7 @@ function AppContent() {
             
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/recurrence" element={<Recurrence />} /> {/* NOVA ROTA */}
+            {/* Rota de Recorrência Removida */}
             <Route path="/finance" element={<Finance />} />
             <Route path="/financial-management" element={<FinancialManagement />} />
             <Route path="/goals" element={<Goals />} />

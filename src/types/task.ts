@@ -1,4 +1,4 @@
-export type TaskRecurrenceType = "none" | "daily" | "weekly" | "custom";
+export type TaskRecurrenceType = "none"; // Simplificado para 'none'
 export type TaskOriginBoard = "general" | "today_high_priority" | "today_medium_priority" | "urgent" | "completed" | "overdue" | "week_low_priority" | "client_tasks";
 export type TaskCurrentBoard = TaskOriginBoard;
 
@@ -17,9 +17,9 @@ export interface Task {
   due_date: string | null; // ISO Date string
   time: string | null; // Time string (HH:MM:SS)
   is_completed: boolean;
-  recurrence_type: TaskRecurrenceType; 
-  recurrence_details: string | null; 
-  recurrence_time: string | null; 
+  recurrence_type: TaskRecurrenceType; // Mantido como "none" para compatibilidade de DB
+  recurrence_details: string | null; // Mantido como null para compatibilidade de DB
+  recurrence_time: string | null; // Mantido como null para compatibilidade de DB
   origin_board: TaskOriginBoard;
   current_board: TaskCurrentBoard;
   is_priority: boolean;
@@ -33,7 +33,6 @@ export interface Task {
   updated_at: string;
   
   subtasks?: Task[]; 
-  recurrence_streak?: number; // Mantido como opcional para compatibilidade de fetch
 }
 
 export const DAYS_OF_WEEK_MAP: { [key: string]: number } = {

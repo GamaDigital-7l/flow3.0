@@ -29,8 +29,6 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
     return <Badge className="bg-status-completed text-foreground/80 h-5 px-1.5 text-xs">Concluída</Badge>;
   }
   
-  // REMOVIDO: Lógica da badge de Atrasada, confiando na borda vermelha e no texto de alerta.
-
   // Se não estiver atrasada, verifica outras condições
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
