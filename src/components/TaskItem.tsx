@@ -237,7 +237,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, refetchTasks, isDailyRecurrin
             {task.title}
           </label>
           {task.description && (
-            <p className="text-xs text-muted-foreground break-words line-clamp-1">{task.description}</p> {/* Reduzido line-clamp-2 para line-clamp-1 */}
+            <p className="text-xs text-muted-foreground break-words line-clamp-1">{task.description}</p>
           )}
           <div className="flex flex-wrap gap-1 mt-0.5"> {/* Reduzido mt-1 para mt-0.5 */}
             {getTaskStatusBadge(task.current_board, task)}
