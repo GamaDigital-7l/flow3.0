@@ -14,7 +14,7 @@ import { formatDateTime, formatTime, parseISO } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { isToday, isTomorrow, isBefore, startOfDay } from "date-fns"; // Importando isBefore e startOfDay
+import { isToday, isTomorrow, isBefore, startOfDay, subDays } from "date-fns"; // Importando subDays
 
 interface TaskItemProps {
   task: Task;
@@ -23,15 +23,20 @@ interface TaskItemProps {
 }
 
 const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
+  const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !task.is_completed;
+
   if (task.is_completed) {
     return <Badge className="bg-status-completed text-foreground/80 h-5 px-1.5 text-xs">Concluída</Badge>;
   }
-  // Atrasada é definida pelo campo 'overdue' no DB, mas também podemos verificar a data aqui para consistência visual
+  
+  if (isTrulyOverdue) {
+    // Se estiver atrasada, retorna apenas a badge de Atrasada
+    return <Badge variant="destructive" className="bg-status-overdue text-white h-5 px-1.5 text-xs">Atrasada</Badge>;
+  }
+
+  // Se não estiver atrasada, verifica outras condições
   if (task.due_date) {
     const dueDate = parseISO(task.due_date);
-    if (isBefore(dueDate, startOfDay(new Date()))) {
-      return <Badge variant="destructive" className="bg-status-overdue text-white h-5 px-1.5 text-xs">Atrasada</Badge>;
-    }
     if (isToday(dueDate)) {
       return <Badge className="bg-status-today text-white h-5 px-1.5 text-xs">Hoje</Badge>;
     }
@@ -39,9 +44,11 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
       return <Badge variant="secondary" className="h-5 px-1.5 text-xs">Amanhã</Badge>;
     }
   }
+  
   if (task.is_priority) {
     return <Badge className="bg-status-urgent text-white h-5 px-1.5 text-xs">Prioridade</Badge>;
   }
+  
   return null;
 };
 
