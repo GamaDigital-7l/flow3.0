@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    /* Light Theme (Default) - Gama Flow - AUMENTANDO CONTRASTE */
-    --background: 210 20% 96%; /* #F3F5F7 - Fundo principal cinza muito claro */
+    /* Light Theme (Default) - Gama Flow - ALTO CONTRASTE E CLAREZA */
+    --background: 210 20% 98%; /* #F8FAFC - Fundo principal muito claro */
     --foreground: 222.2 84% 4.9%; /* #12141A - Texto principal escuro */
 
     --card: 0 0% 100%; /* #FFFFFF - Fundo dos cards */
@@ -22,20 +22,20 @@
     --primary-foreground: 0 0% 100%; /* Branco */
     --primary-light: 340 80% 60%;
 
-    --secondary: 210 40% 90%; /* #E8EBEF - Cinza mais visível para secundário */
-    --secondary-hover: 210 40% 85%; /* Hover secundário */
+    --secondary: 210 40% 94%; /* #F0F3F6 - Cinza claro para secundário */
+    --secondary-hover: 210 40% 90%; /* Hover secundário */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 90%; /* Cinza mais visível para muted */
+    --muted: 210 40% 94%; /* Cinza claro para muted */
     --muted-foreground: 215.4 16.3% 46.9%; /* #61656F - Cinza médio */
 
-    --accent: 210 40% 90%; /* Cinza mais visível para accent */
+    --accent: 210 40% 94%; /* Cinza claro para accent */
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 85%; /* #D1D4DB - Borda mais escura */
+    --border: 214.3 31.8% 85%; /* #D1D4DB - Borda visível */
     --border-rgb: 209, 212, 219;
     --input: 0 0% 100%; /* Input branco */
     --ring: 340 80% 51%; /* Gama Pink */
@@ -53,11 +53,11 @@
     --status-recurring: #9370DB;
 
     /* Sidebar Colors (Light Mode) - Fundo ligeiramente diferente do background principal */
-    --sidebar-background: 210 20% 98%; /* #F8FAFC */
+    --sidebar-background: 210 20% 96%; /* #F3F5F7 */
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-primary: 340 80% 51%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 90%;
+    --sidebar-accent: 210 40% 90%; /* Mais escuro para hover */
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 214.3 31.8% 85%;
     --sidebar-ring: 340 80% 51%;
@@ -69,7 +69,7 @@
     --sar: env(safe-area-inset-right);
   }
 
-  /* Tema Escuro (Dark Mode) - Ajustado para ser mais suave e confortável */
+  /* Tema Escuro (Dark Mode) - Suave e Confortável */
   .dark {
     --background: 220 15% 8%; /* #15181F - Fundo principal mais escuro e suave */
     --foreground: 210 20% 98%; /* #FFFFFF - Texto primário */
@@ -278,6 +278,7 @@
   }
 
   .nav-link-active {
+    /* Aumentando o contraste no modo claro */
     @apply bg-sidebar-accent text-sidebar-primary shadow-sm;
   }
 
