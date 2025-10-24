@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PortfolioProject, PORTFOLIO_CATEGORIES } from "@/types/portfolio";
 import { format, parseISO } from "date-fns";
 import { cn, sanitizeFilename } from "@/lib/utils";
+import { Label } from "@/components/ui/label"; // Importação adicionada
 
 // Tipos simplificados para evitar dependência de '@/types/client'
 interface Client {
