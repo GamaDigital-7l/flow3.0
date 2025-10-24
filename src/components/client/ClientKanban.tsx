@@ -15,7 +15,7 @@ import { showError, showSuccess, showInfo } from '@/utils/toast';
 import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog'; // Importação corrigida
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -378,14 +378,18 @@ const ClientKanban: React.FC = () => {
                 <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col">
                   <CardHeader className="p-3 pb-2 flex-shrink-0">
                     <CardTitle className={cn("text-lg font-semibold", column.color)}>{column.title} ({tasksByStatus.get(column.id)?.length || 0})</CardTitle>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleAddTaskInColumn(column.id)} 
-                      className="w-full border-dashed border-border text-primary hover:bg-primary/10 h-8 text-sm mt-2"
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
-                    </Button>
+                    <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleAddTaskInColumn(column.id)} 
+                          className="w-full border-dashed border-border text-primary hover:bg-primary/10 h-8 text-sm mt-2"
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
+                        </Button>
+                      </DialogTrigger>
+                    </Dialog>
                   </CardHeader>
                   
                   <ScrollArea className="flex-1 p-3 pt-0">
