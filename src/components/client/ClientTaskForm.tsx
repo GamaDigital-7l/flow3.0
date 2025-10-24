@@ -23,9 +23,9 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Importando Tabs
-import ClientTaskHistory from "./ClientTaskHistory"; // Importando Histórico
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ClientTaskHistory from "./ClientTaskHistory";
+import { Checkbox } from "@/components/ui/checkbox"; // <-- IMPORTAÇÃO ADICIONADA
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
 interface ClientTask {
