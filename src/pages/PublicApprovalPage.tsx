@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -232,7 +232,7 @@ const PublicApprovalPage: React.FC = () => {
           {tasksPendingAction.map(task => (
             <Card key={task.id} className={cn(
               "bg-card border border-border rounded-xl shadow-lg",
-              task.status === 'edit_requested' ? 'border-orange-500/50 ring-1 ring-orange-500/20' : 'border-primary/50 ring-1 ring-primary/20'
+              task.status === 'edit_requested' ? 'border-primary/50 ring-1 ring-primary/20' : '' // Usando primary para destaque
             )}>
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-lg font-bold text-foreground">{task.title}</CardTitle>
@@ -258,11 +258,11 @@ const PublicApprovalPage: React.FC = () => {
                 
                 {/* Status e Motivo de Edição */}
                 {task.status === 'edit_requested' && (
-                  <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
-                    <p className="text-sm font-semibold text-orange-500 flex items-center gap-1">
+                  <div className="p-3 bg-primary/10 border border-primary/30 rounded-md">
+                    <p className="text-sm font-semibold text-primary flex items-center gap-1">
                       <Edit className="h-4 w-4" /> Edição Solicitada
                     </p>
-                    <p className="text-xs text-orange-400 mt-1">{task.edit_reason}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{task.edit_reason}</p>
                   </div>
                 )}
 
@@ -270,15 +270,15 @@ const PublicApprovalPage: React.FC = () => {
                 <div className="flex gap-3 pt-3 border-t border-border/50">
                   <Button 
                     onClick={() => handleAction(task.id, 'approved')} 
-                    className="flex-1 bg-green-600 text-white hover:bg-green-700"
+                    className="flex-1 bg-green-600 text-white hover:bg-green-700" // Mantido verde para aprovação final
                     disabled={isSubmitting}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar
                   </Button>
                   <Button 
                     onClick={() => openActionModal(task.id, 'edit')} 
-                    variant="outline" 
-                    className="flex-1 border-primary text-primary hover:bg-primary/10"
+                    variant="secondary" // Usando secondary (cinza escuro)
+                    className="flex-1 text-foreground hover:bg-secondary-hover"
                     disabled={isSubmitting}
                   >
                     <Edit className="mr-2 h-4 w-4" /> Solicitar Edição

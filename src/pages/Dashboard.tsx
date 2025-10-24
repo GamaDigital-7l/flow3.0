@@ -6,14 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
 import { isToday } from "date-fns";
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
-import HabitListBoard from "@/components/dashboard/HabitListBoard"; // Importar HabitListBoard
-import { useTodayHabits } from "@/hooks/useHabits"; // Importar hook de hábitos
+import HabitListBoard from "@/components/dashboard/HabitListBoard";
+import { useTodayHabits } from "@/hooks/useHabits";
 import { Task, TaskCurrentBoard } from "@/types/task";
 import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
 import DashboardFinanceSummary from "@/components/dashboard/DashboardFinanceSummary";
-import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary"; // Componente de resultados de produtividade
+import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
@@ -21,10 +21,11 @@ import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { format } from "date-fns";
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
-  { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-red-500" },
+  { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-primary" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Woe Comunicação", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
+  { id: "client_tasks", title: "Clientes Fixos", icon: <Users className="h-5 w-5" />, color: "text-blue-500" }, // NOVO QUADRO
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -48,7 +49,7 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   const mappedData = data?.map((task: any) => ({
     ...task,
     tags: task.task_tags.map((tt: any) => tt.tags),
-    subtasks: [], // Subtasks serão construídas no TaskListBoard
+    template_task_id: null, // Temporariamente forçando null
   })) || [];
   return mappedData;
 };

@@ -135,10 +135,19 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
         "bg-card border border-border rounded-xl shadow-md cursor-grab active:cursor-grabbing",
         isDragging && "ring-2 ring-primary",
         // Usando cores do tema para destaque de status
-        isApproved && "border-green-500/50", // Mantido verde suave para aprovação
-        isEditRequested && "border-primary ring-1 ring-primary/50" // Usando o rosa primário para edição solicitada
+        isApproved && "border-green-500/50", // Verde suave para aprovado
+        isEditRequested && "border-primary ring-1 ring-primary/50" // Rosa primário para edição solicitada
       )}
     >
+      {/* Imagem de Capa (Proporção 4:5) - Movida para o topo */}
+      {mainImageUrl && (
+        <div className="p-3 pb-0">
+          <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden border border-border bg-secondary">
+            <img src={mainImageUrl} alt={task.title} className="h-full w-full object-cover" />
+          </AspectRatio>
+        </div>
+      )}
+      
       <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between gap-2">
         <div className="flex items-center gap-1 min-w-0">
           <div {...listeners} {...attributes} className="cursor-grab p-1 -ml-1 text-muted-foreground hover:text-foreground">
@@ -165,12 +174,6 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
       </CardHeader>
       
       <CardContent className="p-3 pt-0 space-y-2">
-        {/* Imagem de Capa (Proporção 4:5) */}
-        {mainImageUrl && (
-          <AspectRatio ratio={4 / 5} className="rounded-md overflow-hidden border border-border bg-secondary">
-            <img src={mainImageUrl} alt={task.title} className="h-full w-full object-cover" />
-          </AspectRatio>
-        )}
         
         {/* Descrição / Legenda */}
         {task.description && (
@@ -198,7 +201,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
               <Button 
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('approved')} 
-                className="flex-1 bg-primary text-white hover:bg-primary/90 h-8 text-xs" // Usando primary
+                className="flex-1 bg-green-600 text-white hover:bg-green-700 h-8 text-xs" // Mantido verde para aprovação
                 disabled={handleStatusUpdate.isPending}
               >
                 <CheckCircle2 className="mr-1 h-3 w-3" /> Aprovar
@@ -207,7 +210,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('edit_requested')} 
                 variant="outline" 
-                className="flex-1 border-muted-foreground text-muted-foreground hover:bg-accent h-8 text-xs" // Usando neutro
+                className="flex-1 border-secondary text-foreground hover:bg-secondary h-8 text-xs" // Usando secundário neutro
                 disabled={handleStatusUpdate.isPending}
               >
                 <Edit3 className="mr-1 h-3 w-3" /> Editar

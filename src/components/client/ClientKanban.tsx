@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn, getInitials } from '@/lib/utils';
@@ -20,7 +20,8 @@ import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ClientTaskTemplates from './ClientTaskTemplates'; // Importando o novo componente
+import ClientTaskTemplates from './ClientTaskTemplates';
+import copy from 'copy-to-clipboard';
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -52,11 +53,11 @@ interface Client {
 }
 
 const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] = [
-  { id: "in_progress", title: "Em Produção", color: "text-muted-foreground" }, // Neutro
-  { id: "under_review", title: "Para Aprovação", color: "text-primary" }, // Rosa Destaque
-  { id: "edit_requested", title: "Edição Solicitada", color: "text-primary" }, // Rosa Destaque
-  { id: "approved", title: "Aprovado", color: "text-green-500" }, // Verde para sucesso
-  { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" }, // Neutro
+  { id: "in_progress", title: "Em Produção", color: "text-muted-foreground" },
+  { id: "under_review", title: "Para Aprovação", color: "text-primary" },
+  { id: "edit_requested", title: "Edição Solicitada", color: "text-primary" },
+  { id: "approved", title: "Aprovado", color: "text-foreground" },
+  { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" },
 ];
 
 const fetchClientData = async (clientId: string, userId: string): Promise<{ client: Client | null, tasks: ClientTask[] }> => {
@@ -106,13 +107,15 @@ const ClientKanban: React.FC = () => {
   const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'kanban' | 'templates'>('kanban');
-  const [initialStatus, setInitialStatus] = useState<ClientTaskStatus | undefined>(undefined); // Novo estado para status inicial
+  const [initialStatus, setInitialStatus] = useState<ClientTaskStatus | undefined>(undefined);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["clientTasks", clientId, userId],
     queryFn: () => fetchClientData(clientId!, userId!),
     enabled: !!clientId && !!userId,
-    staleTime: 1000 * 60 * 1, // 1 minute cache
+    staleTime: 1000 * 60 * 1,
   });
   
   // DND Sensors
@@ -126,8 +129,12 @@ const ClientKanban: React.FC = () => {
     data?.tasks.forEach(task => {
       map.get(task.status)?.push(task);
     });
+    // Garantir que as tarefas dentro de cada coluna estejam ordenadas pelo order_index
+    map.forEach(tasks => tasks.sort((a, b) => a.order_index - b.order_index));
     return map;
   }, [data?.tasks]);
+  
+  const tasksUnderReview = tasksByStatus.get('under_review') || [];
 
   const handleTaskSaved = () => {
     refetch();
@@ -183,6 +190,7 @@ const ClientKanban: React.FC = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Não usamos showSuccess aqui para evitar spam de toast durante o DND
       queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
     },
     onError: (err: any) => {
@@ -200,21 +208,17 @@ const ClientKanban: React.FC = () => {
     const sourceStatus = draggedTask.status;
     const targetStatus = over.data.current?.sortable?.containerId as ClientTaskStatus;
     
-    // Se o destino for um card, precisamos calcular a nova ordem
-    let newOrderIndex = draggedTask.order_index;
-    
+    if (!targetStatus) return;
+
+    const targetTasks = tasksByStatus.get(targetStatus) || [];
+    let newOrderIndex = targetTasks.length; // Default: move para o final da coluna
+
     if (over.data.current?.sortable?.index !== undefined) {
         // Se soltou sobre outro item, use o índice desse item
         newOrderIndex = over.data.current.sortable.index;
-    } else if (targetStatus) {
-        // Se soltou sobre a coluna vazia, use o último índice da coluna
-        const targetTasks = tasksByStatus.get(targetStatus) || [];
-        newOrderIndex = targetTasks.length;
-    } else {
-        return; // Não soltou em um local válido
     }
-
-    // Se o status mudou, ou se a ordem mudou dentro da mesma coluna
+    
+    // Se o status mudou OU a ordem mudou dentro da mesma coluna
     if (sourceStatus !== targetStatus || draggedTask.order_index !== newOrderIndex) {
         // 1. Atualiza o status e a ordem da tarefa arrastada
         updateTaskStatusAndOrder.mutate({ 
@@ -224,10 +228,62 @@ const ClientKanban: React.FC = () => {
         });
         
         // 2. Reordena as outras tarefas na coluna de destino (e origem, se necessário)
-        // Esta lógica é complexa para fazer no cliente e sincronizar, então vamos confiar no refetch
-        // e na ordenação do DB. Por enquanto, apenas invalidamos a query.
-        queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
+        // Para simplificar, confiamos no refetch para reordenar o array completo.
+        // O DND Kit lida com a reordenação visualmente, mas o DB precisa ser corrigido.
+        // O `order_index` é atualizado na mutação, e o `refetch` garante a consistência.
     }
+  };
+  
+  const handleGenerateApprovalLink = useMutation({
+    mutationFn: async () => {
+      if (!userId || !clientId) throw new Error("Usuário não autenticado ou cliente inválido.");
+      
+      const tasksToReview = tasksUnderReview.filter(t => t.public_approval_enabled);
+      if (tasksToReview.length === 0) {
+        showInfo("Nenhuma tarefa em 'Para Aprovação' com aprovação pública habilitada.");
+        return;
+      }
+      
+      // Usamos o mês de referência da primeira tarefa, assumindo que o link é mensal
+      const monthYearRef = tasksToReview[0].month_year_reference;
+      
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {
+        body: {
+          clientId: clientId,
+          monthYearRef: monthYearRef,
+          userId: userId,
+        },
+      });
+
+      if (fnError) throw fnError;
+      
+      const uniqueId = (fnData as any).uniqueId;
+      const publicLink = `${window.location.origin}/approval/${uniqueId}`;
+      
+      // Atualiza todas as tarefas 'under_review' com o novo link_id
+      const taskIdsToUpdate = tasksToReview.map(t => t.id);
+      const { error: updateTasksError } = await supabase
+        .from("client_tasks")
+        .update({ public_approval_link_id: uniqueId })
+        .in("id", taskIdsToUpdate);
+        
+      if (updateTasksError) console.error("Erro ao atualizar tarefas com link:", updateTasksError);
+      
+      setGeneratedLink(publicLink);
+      setIsLinkModalOpen(true);
+      refetch();
+    },
+    onSuccess: () => {
+      showSuccess("Link de aprovação gerado com sucesso!");
+    },
+    onError: (err: any) => {
+      showError("Erro ao gerar link: " + err.message);
+    },
+  });
+  
+  const handleCopyLink = (link: string) => {
+    copy(link);
+    showSuccess("Link copiado!");
   };
 
   if (isLoading) {
@@ -290,6 +346,20 @@ const ClientKanban: React.FC = () => {
         </TabsList>
         
         <TabsContent value="kanban" className="mt-4">
+          {/* Botão de Link de Aprovação */}
+          {tasksUnderReview.length > 0 && (
+            <div className="mb-4">
+              <Button 
+                onClick={() => handleGenerateApprovalLink.mutate()} 
+                disabled={handleGenerateApprovalLink.isPending}
+                className="w-full bg-primary text-white hover:bg-primary/90"
+              >
+                {handleGenerateApprovalLink.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                Gerar Link de Aprovação ({tasksUnderReview.filter(t => t.public_approval_enabled).length} itens)
+              </Button>
+            </div>
+          )}
+          
           <DndContext 
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -315,7 +385,7 @@ const ClientKanban: React.FC = () => {
                       <SortableContext 
                         items={tasksByStatus.get(column.id)?.map(t => t.id) || []} 
                         strategy={verticalListSortingStrategy}
-                        id={column.id} // Usar o ID da coluna como containerId
+                        id={column.id}
                       >
                         {tasksByStatus.get(column.id)?.map(task => (
                           <ClientTaskCard 
@@ -352,7 +422,6 @@ const ClientKanban: React.FC = () => {
             setEditingTask(undefined);
             setOpenTaskId(null);
             setInitialStatus(undefined);
-            // Limpa o parâmetro da URL se estiver presente
             if (location.search.includes('openTaskId')) {
               navigate(location.pathname, { replace: true });
             }
@@ -372,6 +441,24 @@ const ClientKanban: React.FC = () => {
             onClientTaskSaved={handleTaskSaved}
             onClose={() => setIsTaskFormOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal para exibir o link de aprovação gerado */}
+      <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Link de Aprovação Gerado</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Compartilhe este link com o cliente para aprovação dos posts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input value={generatedLink || ''} readOnly className="bg-input border-border text-foreground focus-visible:ring-ring" />
+            <Button onClick={() => handleCopyLink(generatedLink || '')} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              <Copy className="mr-2 h-4 w-4" /> Copiar Link
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

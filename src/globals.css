@@ -44,8 +44,8 @@
     --radius: 0.75rem; 
 
     /* Cores de status (Minimalista Light) */
-    --status-success: 140 70% 48%; /* Mantido para feedback positivo */
-    --status-alert: 45 90% 50%; /* Mantido para avisos */
+    --status-success: 140 70% 48%; /* Verde suave */
+    --status-alert: 45 90% 50%; /* Amarelo suave */
     --status-overdue: 340 80% 51%; /* Rosa para urgência */
     --status-urgent: 340 80% 51%; /* Rosa para urgência */
     --status-today: 340 80% 51%; /* Rosa para hoje */
@@ -72,7 +72,7 @@
   /* Tema Escuro (Dark Mode) - Minimalista */
   .dark {
     --background: 220 15% 8%; /* #141416 */
-    --foreground: 210 20% 98%; /* #EDEDED */
+    --foreground: 210 20% 98%; /* #E5E5E5 */
     
     --card: 220 15% 12%; /* #1C1D21 */
     --card-foreground: 210 20% 98%;
