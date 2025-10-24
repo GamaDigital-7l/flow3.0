@@ -5,11 +5,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import PageTitle from "@/components/layout/PageTitle";
+import { useSession } from '@/integrations/supabase/auth'; // Importação adicionada
 
 // Simplified Types
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
