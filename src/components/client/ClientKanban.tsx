@@ -29,7 +29,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
-const useTouchSensor = useTouchSensor(options: any = {}) => useSensor(TouchSensor, options);
+const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, options);
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -400,42 +400,8 @@ const ClientKanban: React.FC = () => {
                 Gerar Link de Aprovação ({tasksUnderReview.filter(t => t.public_approval_enabled).length} itens)
               </Button>
             </div>
-          )}
           
-          <DndContext 
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            {/* Container principal do Kanban: flex-col no mobile, flex-row e overflow-x-auto no desktop */}
-            <div className="flex flex-col sm:flex-row sm:overflow-x-auto sm:space-x-4 pb-4 custom-scrollbar w-full flex-grow min-h-[50vh] space-y-4 sm:space-y-0">
-              {KANBAN_COLUMNS.map(column => (
-                <KanbanColumn
-                  key={column.id}
-                  column={column}
-                  tasks={tasksByStatus.get(column.id) || []}
-                  onAddTask={handleAddTaskInColumn}
-                  onEditTask={handleEditTask}
-                  refetchTasks={refetch}
-                  onImageClick={handleImageClick}
-                />
-              ))}
-            </div>
-            
-            {/* Drag Overlay para feedback visual suave */}
-            <DragOverlay>
-              {activeDragItem ? (
-                <ClientTaskCard 
-                  task={activeDragItem} 
-                  onEdit={handleEditTask} 
-                  refetchTasks={refetch}
-                  onImageClick={handleImageClick}
-                />
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        </TabsContent>
+          </TabsContent>
         
         <TabsContent value="templates" className="mt-4">
           <ClientTaskTemplates clientId={clientId!} clientName={data?.client?.name!} />
