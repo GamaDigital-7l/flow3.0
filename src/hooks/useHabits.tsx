@@ -121,28 +121,22 @@ export const useToggleHabitCompletion = () => {
         
       if (historyError) console.error("Error updating habit history:", historyError);
       
-      // 3. Recalculate metrics and update all instances of this recurrence_id
-      // NOTE: This complex calculation is now moved to the Edge Function or a simpler DB trigger.
-      // For immediate client feedback, we perform a simplified update based on the current state.
+      // 3. Update total_completed and last_completed_date_local on ALL instances of this recurrence_id
+      // This is the minimal update needed for immediate UI feedback on metrics.
       
-      let newStreak = habit.streak;
       let newTotalCompleted = habit.total_completed;
       let lastCompletedDateLocal = habit.last_completed_date_local;
       
       if (completed) {
-        // Simplistic update: assume completion increases streak/total if it wasn't already completed
         if (!habit.completed_today) {
-          // Since the daily reset handles streak breaks, we assume if the user completes it today, 
-          // the streak should continue from the last known good state.
           newTotalCompleted += 1;
           lastCompletedDateLocal = habit.date_local;
-          // We rely on the Edge Function to fix the streak/metrics accurately later.
         }
       } else {
-        // Simplistic update: assume uncompletion decreases total
         if (habit.completed_today) {
           newTotalCompleted = Math.max(0, newTotalCompleted - 1);
-          // Resetting streak is too complex here, rely on Edge Function.
+          // Resetting last_completed_date_local is complex, we rely on the daily reset to fix the streak/metrics accurately later.
+          // For now, we only update total_completed.
         }
       }
       
@@ -151,8 +145,8 @@ export const useToggleHabitCompletion = () => {
         .from('habits')
         .update({
           total_completed: newTotalCompleted,
-          last_completed_date_local: lastCompletedDateLocal,
-          // Streak, missed_days, fail_by_weekday, success_rate are now primarily managed by the daily-habit-reset Edge Function
+          // Only update last_completed_date_local if completing, otherwise leave it to the daily reset logic
+          ...(completed && !habit.completed_today && { last_completed_date_local: lastCompletedDateLocal }),
           updated_at: new Date().toISOString(),
         })
         .eq('recurrence_id', habit.recurrence_id)
