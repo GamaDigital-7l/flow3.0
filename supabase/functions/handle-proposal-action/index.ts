@@ -20,7 +20,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { proposalId, status, userId, totalAmount, clientName } = await req.json();
+    const { proposalId, status, userId, totalAmount, clientName, editReason } = await req.json();
 
     if (!proposalId || !status || !userId || !clientName) {
       return new Response(
@@ -59,6 +59,9 @@ serve(async (req) => {
     } else if (status === 'rejected') {
       statusText = "REJEITADA";
       message = `❌ PROPOSTA REJEITADA. Cliente: ${clientName}. ID: ${proposalId.substring(0, 8)}.`;
+    } else if (status === 'edit_requested') {
+      statusText = "EDIÇÃO SOLICITADA";
+      message = `✏️ EDIÇÃO SOLICITADA na proposta ${proposalId.substring(0, 8)} pelo cliente ${clientName}. Motivo: ${editReason}`;
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid status for action." }),

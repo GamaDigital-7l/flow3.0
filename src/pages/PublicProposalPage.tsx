@@ -37,6 +37,7 @@ const PublicProposalPage: React.FC = () => {
   const { uniqueId } = useParams<{ uniqueId: string }>();
   const navigate = useNavigate();
   const [editReason, setEditReason] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { data: proposal, isLoading, error } = useQuery<Proposal | null, Error>({
     queryKey: ["publicProposal", uniqueId],
@@ -44,7 +45,7 @@ const PublicProposalPage: React.FC = () => {
     enabled: !!uniqueId,
   });
 
-  const handleAction = async (newStatus: 'accepted' | 'rejected') => {
+  const handleAction = async (newStatus: 'accepted' | 'rejected' | 'edit_requested') => {
     try {
       const { error } = await supabase.functions.invoke('handle-proposal-action', {
         body: {
@@ -53,6 +54,7 @@ const PublicProposalPage: React.FC = () => {
           userId: proposal.user_id,
           totalAmount: proposal.items?.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) || 0,
           clientName: proposal.client_name,
+          editReason: newStatus === 'edit_requested' ? editReason : null,
         },
       });
 
@@ -62,7 +64,7 @@ const PublicProposalPage: React.FC = () => {
         return;
       }
 
-      showSuccess(`Proposta ${newStatus === 'accepted' ? 'aceita' : 'rejeitada'} com sucesso!`);
+      showSuccess(`Proposta ${newStatus === 'accepted' ? 'aceita' : newStatus === 'rejected' ? 'rejeitada' : 'edição solicitada'} com sucesso!`);
       navigate('/login');
     } catch (err: any) {
       showError("Erro ao atualizar status da proposta: " + err.message);
@@ -139,6 +141,9 @@ const PublicProposalPage: React.FC = () => {
         </Card>
 
         <div className="flex justify-end gap-4">
+          <Button onClick={() => setIsEditModalOpen(true)} className="bg-yellow-600 text-white hover:bg-yellow-700">
+            <Edit className="mr-2 h-4 w-4" /> Solicitar Edição
+          </Button>
           <Button onClick={() => handleAction('accepted')} className="bg-green-600 text-white hover:bg-green-700">
             <CheckCircle2 className="mr-2 h-4 w-4" /> Aceitar Proposta
           </Button>
@@ -147,6 +152,37 @@ const PublicProposalPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Modal para solicitar edição */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Solicitar Edição</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Descreva as alterações que você gostaria de solicitar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Descreva as alterações que você gostaria de solicitar..."
+              value={editReason}
+              onChange={(e) => setEditReason(e.target.value)}
+              className="bg-input border-border text-foreground focus-visible:ring-ring"
+            />
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => {
+                handleAction('edit_requested');
+                setIsEditModalOpen(false);
+              }} className="bg-yellow-600 text-white hover:bg-yellow-700" disabled={!editReason}>
+                Solicitar Edição
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
