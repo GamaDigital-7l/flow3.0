@@ -447,7 +447,7 @@ const ClientKanban: React.FC = () => {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            {/* Container principal do Kanban: flex-wrap no mobile, overflow-x-auto no desktop */}
+            {/* Container principal do Kanban: flex-col no mobile, flex-row e overflow-x-auto no desktop */}
             <div className="flex flex-col sm:flex-row sm:overflow-x-auto sm:space-x-4 pb-4 custom-scrollbar w-full flex-grow min-h-[50vh] space-y-4 sm:space-y-0">
               {KANBAN_COLUMNS.map(column => (
                 <KanbanColumn
