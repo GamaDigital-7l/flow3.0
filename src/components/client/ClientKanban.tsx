@@ -13,6 +13,7 @@ import PageTitle from "@/components/layout/PageTitle";
 import { useSession } from "@/integrations/supabase/auth";
 import { showError, showSuccess, showInfo } from "@/utils/toast";
 import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
 import KanbanColumn from './ClientKanbanColumn';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
@@ -30,7 +31,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
 const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, options);
 
-// Tipos completos
+// Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
 interface ClientTask {
   id: string;
@@ -110,7 +111,6 @@ const ClientKanban: React.FC = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'kanban' | 'templates'>('kanban');
   const [initialStatus, setInitialStatus] = useState<ClientTaskStatus | undefined>(undefined);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -135,8 +135,8 @@ const ClientKanban: React.FC = () => {
   }, [data?.tasks]);
 
   // DND Sensors
-  const mouseSensor = useMouseSensor({ activationConstraint: { distance: 10 } });
-  const touchSensor = useTouchSensor({ activationConstraint: { delay: 250, tolerance: 5 } });
+  const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
+  const touchSensor = useTouchSensor({ activationConstraint: { delay: 100, tolerance: 5 } });
   const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
 
   const tasksByStatus = useMemo(() => {
@@ -330,8 +330,8 @@ const ClientKanban: React.FC = () => {
           userId: userId,
         },
       });
-
-      if (fnError) throw fnError;
+      
+      if (error) throw fnError;
       
       const uniqueId = (fnData as any).uniqueId;
       const publicLink = `${window.location.origin}/approval/${uniqueId}`;
@@ -378,7 +378,7 @@ const ClientKanban: React.FC = () => {
         </div>
       </PageTitle>
       
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'kanban' | 'templates')} className="w-full flex-grow flex flex-col">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-grow flex flex-col">
         <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground flex-shrink-0">
           <TabsTrigger value="kanban"><CalendarDays className="mr-2 h-4 w-4" /> Kanban</TabsTrigger>
           <TabsTrigger value="templates"><Repeat className="mr-2 h-4 w-4" /> Templates</TabsTrigger>
@@ -468,7 +468,7 @@ const ClientKanban: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-foreground">{editingTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</DialogTitle>
             <DialogDescription>
-              {editingTask ? "Atualize os detalhes da tarefa do cliente." : "Crie uma nova tarefa para o cliente."}
+              {editingTask ? "Atualize os detalhes da tarefa do cliente." : "Defina uma nova tarefa para o seu dia."}
             </DialogDescription>
           </DialogHeader>
           <ClientTaskForm
