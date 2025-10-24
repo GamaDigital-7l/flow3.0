@@ -272,8 +272,8 @@ const PortfolioProjectPage: React.FC = () => {
       {/* Lightbox Dialog (Corrigido) */}
       <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
         <DialogContent 
-          // Usando classes agressivas para forçar tela cheia e centralização
-          className="fixed inset-0 w-full h-full max-w-full max-h-full p-0 bg-black/90 border-none rounded-none flex items-center justify-center z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          // Classes para forçar tela cheia e centralização, removendo classes padrão do shadcn/ui que limitam o tamanho
+          className="fixed inset-0 w-screen h-screen max-w-full max-h-full p-0 bg-black/90 border-none rounded-none flex items-center justify-center z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
         >
           <Button 
             variant="ghost" 
