@@ -12,15 +12,16 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  deferredPrompt: Event | null; // Mantido para compatibilidade com Layout, mas não usado
-  onInstallClick: () => void; // Mantido para compatibilidade com Layout, mas não usado
+  deferredPrompt: Event | null;
+  onInstallClick: () => void;
+  isDesktop?: boolean; // Novo prop para modo desktop
 }
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Tarefas", href: "/tasks", icon: ListTodo },
   { name: "Recorrência", href: "/recurrence", icon: Repeat },
-  { name: "Clientes", href: "/clients", icon: Users }, // NOVO ITEM
+  { name: "Clientes", href: "/clients", icon: Users },
   { name: "Orçamentos", href: "/proposals", icon: FileText },
   { name: "Portfólio", href: "/portfolio", icon: Image },
   { name: "Financeiro", href: "/finance", icon: DollarSign },
@@ -31,7 +32,7 @@ const navItems = [
   { name: "Resultados", href: "/results", icon: BarChart3 },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
+const SidebarContent: React.FC<Omit<SidebarProps, 'isOpen' | 'onClose'> & { onClose: () => void }> = ({ onClose }) => {
   const location = useLocation();
   const { session } = useSession();
 
@@ -46,48 +47,63 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPromp
   };
 
   return (
+    <>
+      <ScrollArea className="flex-1 overflow-y-auto p-3">
+        <nav className="grid gap-1.5 text-sm font-medium">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={onClose}
+                className={cn(
+                  "nav-link-base",
+                  isActive ? "nav-link-active" : "nav-link-inactive"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      </ScrollArea>
+      <div className="p-3 border-t border-sidebar-border space-y-1.5 flex-shrink-0">
+        <Link to="/settings" onClick={onClose}>
+          <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent h-9 px-3 text-sm">
+            <Settings className="mr-2 h-4 w-4" />
+            Configurações
+          </Button>
+        </Link>
+        <Button onClick={handleLogout} variant="destructive" className="w-full h-9 px-3 text-sm">
+          Sair
+        </Button>
+      </div>
+    </>
+  );
+};
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick, isDesktop = false }) => {
+  if (isDesktop) {
+    // Modo Desktop: Renderiza apenas o conteúdo da barra lateral
+    return (
+      <SidebarContent onClose={onClose} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
+    );
+  }
+
+  // Modo Mobile: Renderiza o Sheet
+  return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="left" 
         className="flex flex-col w-60 bg-sidebar-background border-r border-sidebar-border p-0"
       >
-        <div className="flex h-[calc(3.5rem+var(--sat))] items-center border-b border-sidebar-border px-3 pt-[var(--sat)]">
+        <div className="flex h-[calc(3.5rem+var(--sat))] items-center border-b border-sidebar-border px-3 pt-[var(--sat)] flex-shrink-0">
           <h1 className="text-lg font-bold text-sidebar-primary">Gama Flow</h1>
         </div>
-        <ScrollArea className="flex-1 overflow-y-auto p-3">
-          <nav className="grid gap-1.5 text-sm font-medium">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={onClose}
-                  className={cn(
-                    "nav-link-base",
-                    isActive ? "nav-link-active" : "nav-link-inactive"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </ScrollArea>
-        <div className="p-3 border-t border-sidebar-border space-y-1.5">
-          <Link to="/settings" onClick={onClose}>
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent h-9 px-3 text-sm">
-              <Settings className="mr-2 h-4 w-4" />
-              Configurações
-            </Button>
-          </Link>
-          {/* Botão de instalação PWA removido */}
-          <Button onClick={handleLogout} variant="destructive" className="w-full h-9 px-3 text-sm">
-            Sair
-          </Button>
-        </div>
+        <SidebarContent onClose={onClose} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
       </SheetContent>
     </Sheet>
   );

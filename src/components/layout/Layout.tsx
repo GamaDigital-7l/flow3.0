@@ -16,6 +16,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClick }) => {
+  // Usamos o estado para controlar a abertura do menu lateral (apenas para mobile)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -47,11 +48,21 @@ const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClic
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
+      {/* Sidebar para Mobile (Sheet) */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
+      
+      {/* Sidebar Persistente para Desktop (lg:flex) */}
+      <div className="hidden lg:flex lg:w-60 flex-shrink-0 flex-col border-r border-sidebar-border bg-sidebar-background">
+        <div className="flex h-[calc(3.5rem+var(--sat))] items-center border-b border-sidebar-border px-3 pt-[var(--sat)]">
+          <h1 className="text-lg font-bold text-sidebar-primary">Gama Flow</h1>
+        </div>
+        <Sidebar isOpen={true} onClose={() => {}} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} isDesktop={true} />
+      </div>
+      
       <div className="flex flex-col flex-1">
         <Header onMenuClick={() => setIsSidebarOpen(true)} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
         <OfflineIndicator isOnline={isOnline} />
-        <main className="main-content-area"> {/* A margem superior é definida em globals.css */}
+        <main className="main-content-area">
           <AnimatePresence>
             {isLoading && (
               <motion.div
@@ -64,7 +75,6 @@ const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClic
               </motion.div>
             )}
           </AnimatePresence>
-          {/* O Outlet agora renderiza o conteúdo da página, que deve ter seu próprio padding interno */}
           <Outlet />
         </main>
         <QuickAddButton />

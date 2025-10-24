@@ -36,7 +36,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 border-b border-border bg-card px-3 lg:px-4 shadow-sm pt-[var(--sat)]">
+    <header className="fixed top-0 left-0 right-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 border-b border-border bg-card px-3 lg:pl-64 lg:pr-4 shadow-sm pt-[var(--sat)]">
+      {/* Botão de Menu (Apenas Mobile) */}
       <Button
         variant="ghost"
         size="icon"
@@ -47,25 +48,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
         <span className="sr-only">Toggle navigation menu</span>
       </Button>
       
-      {/* Branding Gama Flow (Desktop) */}
-      <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          {/* Placeholder para Logo Gama (usando texto por enquanto) */}
-          <span className="text-lg font-extrabold text-primary">Gama</span>
-          <span className="text-sm font-medium text-foreground">Creative Design Studio</span>
-        </Link>
-        <span className="text-xs text-muted-foreground border-l border-border pl-4">
-          Creative Design Studio — Sete Lagoas, MG
-        </span>
-      </div>
-      
-      {/* Branding Gama Flow (Mobile) */}
+      {/* Branding Gama Flow (Mobile/Fallback) */}
       <div className="flex-1 lg:hidden">
         <Link to="/dashboard" className="text-base font-semibold text-foreground hover:text-primary transition-colors">
           Gama Flow
         </Link>
       </div>
       
+      {/* Título da Página (Desktop - Placeholder) */}
+      <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
+        <h1 className="text-lg font-semibold text-foreground">Dashboard</h1> {/* Pode ser substituído pelo título real da página */}
+      </div>
+
       {/* Links Sociais (Desktop) */}
       <div className="hidden lg:flex items-center gap-1 ml-auto">
         {SOCIAL_LINKS.map(link => {
