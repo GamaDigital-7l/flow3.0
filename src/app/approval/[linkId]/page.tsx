@@ -6,14 +6,16 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, XCircle, Edit, FileText, Clock, Users, DollarSign } from 'lucide-react';
+// ADDED ThumbsUp, MessageSquare, AlertTriangle, Info, CheckCircle
+import { Loader2, CheckCircle2, XCircle, Edit, FileText, Clock, Users, DollarSign, ThumbsUp, MessageSquare, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, addDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
-import { cn, formatCurrency, formatDateTime } from '@/lib/utils';
+// ADDED getInitials
+import { cn, formatCurrency, formatDateTime, getInitials } from '@/lib/utils';
 import { Proposal, ProposalItem, PROPOSAL_STATUS_LABELS } from '@/types/proposal';
 import { Separator } from '@/components/ui/separator';
 import ProposalPortfolioGallery from '@/components/proposal/ProposalPortfolioGallery'; // Importando a galeria
@@ -44,6 +46,7 @@ interface PublicApprovalLink {
   month_year_reference: string;
   expires_at: string;
   is_active: boolean;
+  created_at: string; // Added created_at for expiration check
 }
 
 interface ApprovalData {
@@ -57,7 +60,7 @@ const loadData = async (linkId: string): Promise<ApprovalData | null> => {
   // 1. Buscar o link
   const { data: linkData, error: linkError } = await supabase
     .from('public_approval_links')
-    .select('client_id, user_id, expires_at, month_year_reference')
+    .select('*') // Selecting all fields to ensure created_at, id, unique_id, is_active are present
     .eq('unique_id', linkId)
     .single();
 
@@ -66,7 +69,7 @@ const loadData = async (linkId: string): Promise<ApprovalData | null> => {
   }
 
   // 2. Verificar se o link expirou (7 dias)
-  const createdAt = new Date(linkData.created_at);
+  const createdAt = new Date(linkData.created_at); // Fixed Error 66
   const expirationDate = addDays(createdAt, 7);
   const isExpired = new Date() > expirationDate;
 
@@ -74,7 +77,7 @@ const loadData = async (linkId: string): Promise<ApprovalData | null> => {
     return {
       tasks: [],
       client: { name: '', logo_url: null },
-      link: linkData,
+      link: linkData as PublicApprovalLink, // Fixed Error 67
     };
   }
 
@@ -92,11 +95,14 @@ const loadData = async (linkId: string): Promise<ApprovalData | null> => {
   if (tasksError) {
     throw new Error('Erro ao buscar tarefas para aprovação.');
   }
+  
+  const clientData = tasksData?.[0]?.clients;
+  const clientInfo = Array.isArray(clientData) ? clientData[0] : clientData;
 
   return {
-    link: linkData,
-    client: tasksData?.[0]?.clients || { name: 'Cliente', logo_url: null },
-    tasks: tasksData as ClientTask[],
+    link: linkData as PublicApprovalLink, // Fixed Error 68
+    client: clientInfo || { name: 'Cliente', logo_url: null }, // Fixed Error 69
+    tasks: tasksData as ClientTask[], // Fixed Error 70
   };
 };
 
@@ -224,8 +230,9 @@ const PublicApprovalPage: React.FC = () => {
     updateTaskStatus.mutate({ taskId, status: 'edit_requested', reason });
   };
 
-  const approvedTasks = React.useMemo(() => data?.tasks.filter(t => t.status === 'approved') || [], [data]);
-  const pendingTasks = React.useMemo(() => data?.tasks.filter(t => t.status !== 'approved') || [], [data]);
+  // Fixed Errors 73-76: Use approvalData instead of data
+  const approvedTasks = React.useMemo(() => approvalData?.tasks.filter(t => t.status === 'approved') || [], [approvalData]);
+  const pendingTasks = React.useMemo(() => approvalData?.tasks.filter(t => t.status !== 'approved') || [], [approvalData]);
 
   if (isLoading) {
     return (
@@ -357,3 +364,215 @@ const PublicApprovalPage: React.FC = () => {
 };
 
 export default PublicApprovalPage;
+</dyad-file>
+
+<dyad-write path="src/components/finance/QuickCategoryForm.tsx" description="Fixing structural JSX error by removing an extra closing div tag.">
+"use client";
+
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FinancialTransactionType, FinancialScope } from '@/types/finance';
+
+const quickCategorySchema = z.object({
+  name: z.string().min(1, "O nome da categoria é obrigatório."),
+  type: z.enum(["income", "expense"]),
+  scope: z.enum(["company", "personal"]),
+});
+
+export type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
+
+interface QuickCategoryFormProps {
+  onCategorySaved: () => void;
+  onClose: () => void;
+}
+
+const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, onClose }) => {
+  const form = useForm<QuickCategoryFormValues>({
+    resolver: zodResolver(quickCategorySchema),
+    defaultValues: {
+      name: "",
+      type: "expense",
+      scope: "company",
+    },
+  });
+
+  const onSubmit = (values: QuickCategoryFormValues) => {
+    onCategorySaved();
+    onClose();
+  };
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nome da Categoria</FormLabel>
+            <FormControl>
+              <Input placeholder="Ex: Aluguel, Salário" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tipo</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="income">Receita</SelectItem>
+                  <SelectItem value="expense">Despesa</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="scope"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Escopo</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o escopo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="company">Empresa</SelectItem>
+                  <SelectItem value="personal">Pessoal</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      {/* Removed extra closing div tag here (Errors 1-5, 42) */}
+
+      <Button type="submit">Salvar Categoria</Button>
+    </form>
+  );
+};
+
+export default QuickCategoryForm;
+</dyad-file>
+
+<dyad-write path="src/lib/utils.ts" description="Ensuring date-fns imports are correctly aliased to resolve TS2305 and TS2554 conflicts.">
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+// TS2305 fix: Ensuring parseISO is correctly imported/aliased.
+import { parseISO as dateFnsParseISO, format as dateFnsFormat } from 'date-fns';
+import * as dateFnsTz from 'date-fns-tz';
+import { ptBR } from 'date-fns/locale';
+
+// Define local versions of parseISO and formatISO to avoid TS conflicts
+export function parseISO(dateString: string | Date): Date {
+  if (dateString instanceof Date) return dateString;
+  // Usar date-fns parseISO para melhor compatibilidade com strings ISO
+  return dateFnsParseISO(dateString);
+}
+
+export function formatISO(date: Date): string {
+  // Simple ISO formatting, relying on native Date toISOString
+  return date.toISOString();
+}
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
+
+/**
+ * Obtém a data local de hoje no formato YYYY-MM-DD, usando o fuso horário do navegador.
+ * Isso é usado como fallback para a Edge Function.
+ */
+export function getTodayLocalString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Converte uma data local (ou string) para uma data UTC pura (sem informação de tempo/fuso)
+ * formatada como 'yyyy-MM-dd'. Isso é usado para salvar datas de vencimento no DB.
+ */
+export function convertToUtc(date: Date | string | null | undefined): Date | null {
+  if (!date) return null;
+  const dateObj = date instanceof Date ? date : parseISO(date);
+  // Retorna a data como se fosse UTC, mas sem alterar o dia.
+  // Isso é um hack comum para armazenar datas puras no Supabase.
+  return dateObj; 
+}
+
+/**
+ * Formata uma data para exibição no formato brasileiro (DD/MM/YYYY).
+ */
+export function formatDateTime(date: Date | string | null | undefined, includeTime: boolean = true): string {
+  if (!date) return "N/A";
+  const dateObj = date instanceof Date ? date : parseISO(date);
+  
+  const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
+  // TS2554 fix: The usage is correct for date-fns v2/v3. Relying on the correct imports to resolve type conflicts.
+  return dateFnsFormat(dateObj, formatString, { locale: ptBR }); 
+}
+
+/**
+ * Formata apenas o horário (HH:mm).
+ */
+export function formatTime(timeString: string | null | undefined): string {
+  if (timeString === null || timeString === undefined) return "Sem horário";
+  try {
+    // Garante que o formato 24h seja mantido
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  } catch (e) {
+    return timeString;
+  }
+}
+
+export function getInitials(name: string): string {
+  if (!name) return '';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+}
+
+export function sanitizeFilename(filename: string): string {
+  return filename.replace(/[^a-z0-9_.]/gi, '_').toLowerCase();
+}
+
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+};

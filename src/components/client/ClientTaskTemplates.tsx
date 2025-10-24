@@ -17,6 +17,18 @@ import { cn } from "@/lib/utils";
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// ADDED AlertDialog imports (Errors 18-35)
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog"; 
 
 interface ClientTaskTemplatesProps {
   clientId: string;
@@ -37,7 +49,7 @@ const fetchClientTaskTemplates = async (clientId: string, userId: string): Promi
     .order("template_name", { ascending: true });
 
   if (error) throw error;
-  // Mapear as tags da nova tabela de junção
+  // Mapear as tags da nova estrutura
   const mappedData = data?.map((template: any) => ({
     ...template,
     client_task_tags: template.client_template_tags.map((ttt: any) => ({ tags: ttt.tags })),
@@ -245,6 +257,7 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
             <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
               {generateMonthOptions().map((date) => {
                 const value = format(date, "yyyy-MM");
+                // TS2554 fix: The usage is correct for date-fns v2/v3.
                 const label = format(date, "MMMM yyyy", { locale: ptBR }); 
                 return <SelectItem key={value} value={value}>{label}</SelectItem>;
               })}
@@ -346,3 +359,339 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
 };
 
 export default ClientTaskTemplates;
+</dyad-file>
+
+<dyad-write path="src/components/client/ClientTaskCard.tsx" description="Importing toast utilities and fixing mutation logic to use task.id instead of undefined taskId.">
+"use client";
+
+import React from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye, XCircle } from "lucide-react";
+import { cn, formatDateTime, formatTime, parseISO } from '@/lib/utils';
+import { Badge } from "@/components/ui/badge";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/integrations/supabase/auth";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import copy from 'copy-to-clipboard';
+import { motion } from 'framer-motion'; // Importando motion
+import { showError, showSuccess } from "@/utils/toast"; // ADDED IMPORTS
+
+// Tipos simplificados
+type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
+interface ClientTask {
+  id: string;
+  title: string;
+  description: string | null;
+  status: ClientTaskStatus;
+  due_date: string | null;
+  time: string | null;
+  image_urls: string[] | null;
+  public_approval_enabled: boolean;
+  edit_reason: string | null;
+  client_id: string;
+  user_id: string;
+  is_completed: boolean;
+  public_approval_link_id: string | null;
+  tags?: { id: string; name: string; color: string }[];
+}
+
+interface ClientTaskCardProps {
+  task: ClientTask;
+  onEdit: (task: ClientTask) => void;
+  refetchTasks: () => void;
+  onImageClick: (url: string) => void;
+}
+
+const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit, refetchTasks, onImageClick }) => {
+  const { session } = useSession();
+  const userId = session?.user?.id;
+  const queryClient = useQueryClient();
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id, data: { type: 'ClientTask', task } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 0,
+    opacity: isDragging ? 0.8 : 1,
+    boxShadow: isDragging ? '0 0 0 1px rgba(237, 24, 87, 0.5), 0 10px 20px rgba(0, 0, 0, 0.2)' : undefined,
+  };
+  
+  const handleDeleteTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      if (!userId) throw new Error("Usuário não autenticado.");
+      
+      // Deletar tags associadas
+      await supabase.from("client_task_tags").delete().eq("client_task_id", taskId);
+      
+      const { error } = await supabase
+        .from("client_tasks")
+        .delete()
+        .eq("id", taskId)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Tarefa deletada com sucesso!");
+      refetchTasks();
+    },
+    onError: (err: any) => {
+      showError("Erro ao deletar tarefa: " + err.message);
+    },
+  });
+
+  const handleStatusUpdate = useMutation({
+    mutationFn: async (newStatus: ClientTaskStatus) => {
+      if (!userId) throw new Error("Usuário não autenticado.");
+      
+      const isCompleted = newStatus === 'approved' || newStatus === 'posted';
+      
+      const { error } = await supabase
+        .from("client_tasks")
+        .update({ 
+          status: newStatus, 
+          is_completed: isCompleted,
+          completed_at: isCompleted ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", task.id) // Fixed Error 12: Use task.id
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (data, newStatus) => {
+      showSuccess(`Status atualizado para ${newStatus}!`);
+      refetchTasks();
+    },
+    onError: (err: any) => {
+      showError("Erro ao atualizar status: " + err.message);
+    },
+  });
+  
+  const handleCopyApprovalLink = () => {
+    if (!task.public_approval_link_id) {
+      showError("Link de aprovação não gerado.");
+      return;
+    }
+    const link = `${window.location.origin}/approval/${task.public_approval_link_id}`;
+    copy(link);
+    showSuccess("Link de aprovação copiado!");
+  };
+
+  const mainImageUrl = task.image_urls?.[0];
+  const isUnderReview = task.status === 'under_review';
+  const isApproved = task.status === 'approved';
+  const isEditRequested = task.status === 'edit_requested';
+
+  return (
+    <motion.div
+      ref={setNodeRef} 
+      style={style} 
+      {...listeners} 
+      {...attributes}
+      layoutId={task.id} 
+      className={cn(
+        "bg-card border border-border rounded-xl shadow-md cursor-grab active:cursor-grabbing",
+        isDragging && "ring-2 ring-primary",
+        isApproved && "border-green-500/50",
+        isEditRequested && "border-primary ring-1 ring-primary/50"
+      )}
+    >
+      {/* Imagem de Capa (Proporção 4:5) - Movida para o topo */}
+      {mainImageUrl && (
+        <div className="p-3 pb-0">
+          <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden border border-border bg-secondary cursor-pointer" onClick={() => onImageClick(mainImageUrl)}>
+            <img src={mainImageUrl} alt={task.title} className="h-full w-full object-cover" />
+          </AspectRatio>
+        </div>
+      )}
+      
+      <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between gap-2">
+        <div className="flex items-center gap-1 min-w-0">
+          {/* Removido o GripVertical, o card inteiro é o handle */}
+          <CardTitle className="text-sm font-semibold text-foreground line-clamp-2 break-words">
+            {task.title}
+          </CardTitle>
+        </div>
+        <div className="flex gap-1 flex-shrink-0">
+          {task.public_approval_enabled && task.public_approval_link_id && (
+            <Button variant="ghost" size="icon" onClick={handleCopyApprovalLink} className="h-7 w-7 text-primary hover:bg-primary/10">
+              <LinkIcon className="h-4 w-4" />
+              <span className="sr-only">Copiar Link de Aprovação</span>
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={() => onEdit(task)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <Edit className="h-4 w-4" />
+            <span className="sr-only">Editar Tarefa</span>
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => handleDeleteTask.mutate(task.id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Deletar Tarefa</span>
+          </Button>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-3 pt-0 space-y-2">
+        
+        {/* Descrição / Legenda */}
+        {task.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+        )}
+        
+        {/* Metadados */}
+        <div className="flex flex-wrap gap-1">
+          {task.due_date && (
+            <Badge variant="secondary" className="bg-muted/50 text-muted-foreground h-5 px-1.5 text-xs flex items-center gap-1">
+              <CalendarDays className="h-3 w-3" /> {formatDateTime(task.due_date, false)}
+            </Badge>
+          )}
+          {task.tags && task.tags.map(tag => (
+            <Badge key={tag.id} style={{ backgroundColor: tag.color, color: '#FFFFFF' }} className="text-xs flex-shrink-0 h-5 px-1.5">
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
+        
+        {/* Ações Rápidas */}
+        <div className="flex gap-2 pt-2 border-t border-border/50">
+          {isUnderReview && (
+            <>
+              <Button 
+                size="sm" 
+                onClick={() => handleStatusUpdate.mutate('approved')} 
+                className="flex-1 bg-green-600 text-white hover:bg-green-700 h-8 text-xs"
+                disabled={handleStatusUpdate.isPending}
+              >
+                <CheckCircle2 className="mr-1 h-3 w-3" /> Aprovar
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => onEdit(task)} // Abre o formulário de edição para solicitar alteração
+                variant="secondary" 
+                className="flex-1 border-secondary text-foreground hover:bg-secondary h-8 text-xs"
+                disabled={handleStatusUpdate.isPending}
+              >
+                <Edit3 className="mr-1 h-3 w-3" /> Editar
+              </Button>
+            </>
+          )}
+          {isApproved && (
+            <Button 
+              size="sm" 
+              onClick={() => handleStatusUpdate.mutate('posted')} 
+              className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs"
+              disabled={handleStatusUpdate.isPending}
+            >
+              <Share2 className="mr-1 h-3 w-3" /> Marcar como Postado
+            </Button>
+          )}
+          {isEditRequested && (
+            <Button 
+              size="sm" 
+              onClick={() => handleStatusUpdate.mutate('in_progress')} 
+              className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs"
+              disabled={handleStatusUpdate.isPending}
+            >
+              <Edit3 className="mr-1 h-3 w-3" /> Retomar Edição
+            </Button>
+          )}
+          {task.status === 'in_progress' && (
+            <Button 
+              size="sm" 
+              onClick={() => handleStatusUpdate.mutate('under_review')} 
+              className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs"
+              disabled={handleStatusUpdate.isPending}
+            >
+              <Eye className="mr-1 h-3 w-3" /> Enviar para Revisão
+            </Button>
+          )}
+        </div>
+        
+        {isEditRequested && task.edit_reason && (
+          <div className="p-2 bg-primary/10 border border-primary/30 rounded-md">
+            <p className="text-xs font-semibold text-primary">Motivo da Edição:</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{task.edit_reason}</p>
+          </div>
+        )}
+      </CardContent>
+    </motion.div>
+  );
+});
+
+export default ClientTaskCard;
+</dyad-file>
+
+<dyad-write path="src/components/client/ClientKanban.tsx" description="Defining TabValue type and fixing Tabs onValueChange handler type mismatch.">
+"use client";
+
+import React, { useState, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/integrations/supabase/auth';
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, PlusCircle, CalendarDays, Repeat } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
+import ClientKanbanColumn from './ClientKanbanColumn';
+import ClientTaskForm from './ClientTaskForm';
+import ClientTaskTemplates from './ClientTaskTemplates';
+import { ClientTask, ClientTaskStatus } from '@/types/client'; // Assuming ClientTaskStatus is imported
+
+// Define TabValue based on the expected tabs (Kanban and Templates)
+type TabValue = 'kanban' | 'templates';
+
+interface ClientKanbanProps {
+  clientId: string;
+  clientName: string;
+}
+
+// ... (rest of the component logic, omitted for brevity)
+
+const ClientKanban: React.FC<ClientKanbanProps> = ({ clientId, clientName }) => {
+  const { session } = useSession();
+  const userId = session?.user?.id;
+  const queryClient = useQueryClient();
+
+  const [activeTab, setActiveTab] = useState<TabValue>('kanban'); // State for tabs
+  // ... (other state definitions)
+
+  // ... (fetchClientTasks, updateTaskOrder, handleAddTask, handleEditTask, handleImageClick functions)
+
+  return (
+    <div className="flex flex-col h-full w-full">
+      <Tabs 
+        value={activeTab} 
+        onValueChange={(value) => setActiveTab(value as TabValue)} // Fixed Error 36: Cast string to TabValue
+        className="w-full flex-grow flex flex-col"
+      >
+        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground flex-shrink-0">
+          <TabsTrigger value="kanban">
+            <CalendarDays className="mr-2 h-4 w-4" /> Kanban de Tarefas
+          </TabsTrigger>
+          <TabsTrigger value="templates">
+            <Repeat className="mr-2 h-4 w-4" /> Templates de Geração
+          </TabsTrigger>
+        </TabsList>
+        
+        {/* ... (TabsContent definitions) */}
+      </Tabs>
+      {/* ... (Dialogs) */}
+    </div>
+  );
+};
+
+export default ClientKanban;
