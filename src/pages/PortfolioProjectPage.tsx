@@ -16,7 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import copy from "copy-to-clipboard";
-import { motion } from "framer-motion"; // Adicionando framer-motion para transições suaves
+import { motion } from "framer-motion"; 
 
 const fetchProjectBySlug = async (slug: string): Promise<PortfolioProject | null> => {
   const { data, error } = await supabase
@@ -187,10 +187,9 @@ const PortfolioProjectPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Galeria de Conteúdo (Movida para cima) */}
+        {/* Galeria de Conteúdo */}
         {project.gallery_urls && project.gallery_urls.length > 0 && (
           <div className="space-y-6">
-            {/* Título da Galeria Removido */}
             <div className="grid grid-cols-1 gap-6">
               {project.gallery_urls.map((url, index) => (
                 <GalleryItem key={index} url={url} index={index} />
@@ -199,7 +198,7 @@ const PortfolioProjectPage: React.FC = () => {
           </div>
         )}
         
-        {/* Descrição e Resultado (Movida para baixo) */}
+        {/* Descrição e Resultado */}
         <Card className="bg-card border border-border rounded-xl shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-foreground">O Projeto</CardTitle>
@@ -270,7 +269,7 @@ const PortfolioProjectPage: React.FC = () => {
         )}
       </div>
       
-      {/* Lightbox Dialog */}
+      {/* Lightbox Dialog (Corrigido) */}
       <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
         <DialogContent className="fixed inset-0 w-full h-full max-w-full max-h-full p-0 bg-black/90 border-none rounded-none flex items-center justify-center z-[9999]">
           <Button 
@@ -290,6 +289,7 @@ const PortfolioProjectPage: React.FC = () => {
               transition={{ duration: 0.3 }}
               src={lightboxUrl}
               alt="Visualização em Tela Cheia"
+              // Classes de ajuste para centralizar e conter a imagem
               className="max-w-[95%] max-h-[95%] object-contain"
             />
           )}
