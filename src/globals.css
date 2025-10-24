@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* Light Theme - Minimalista */
+    /* Light Theme - Minimalista (Fundo Cinza Suave) */
     --background: 210 20% 96%; /* #F4F5F7 */
     --foreground: 222.2 84% 4.9%; /* #1A1A1A */
     
@@ -204,141 +204,89 @@
     @apply max-w-full h-auto;
   }
 
-  /* REMOVIDO: Efeito de Frosted Glass (vidro fosco) */
-  .frosted-glass {
-    /* REMOVIDO */
-  }
-}
-
-/* REMOVIDO: Utilitário para gradientes sutis */
-.bg-gradient-primary {
-  background: hsl(var(--primary));
-}
-
-/* REMOVIDO: Estilo para ícones monocromáticos e glow */
-.icon-mono {
-  @apply text-foreground;
-}
-
-.icon-glow {
-  @apply text-primary; /* Usar primary para destaque */
-  filter: none;
-}
-
-/* REMOVIDO: Estilo para botões com glow */
-.btn-glow {
-  @apply relative overflow-hidden;
-}
-
-.btn-glow::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: none;
-  opacity: 0;
-  transition: none;
-  z-index: 0;
-}
-
-.btn-glow:hover::before {
-  opacity: 0;
-}
-
-.btn-glow:hover {
-  box-shadow: none;
-  transform: translateY(-1px);
-}
-
-.btn-glow > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Estilo para o efeito de elevação no hover de cards (Minimalista) */
-.card-hover-effect {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra inicial mínima */
-}
-
-.dark .card-hover-effect {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.card-hover-effect:hover {
-  transform: translateY(-2px);
-  /* Sombra sutil de elevação */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.dark .card-hover-effect:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-/* Estilos para links de navegação da Sidebar */
-@layer components {
-  .nav-link-base {
-    @apply flex items-center gap-2 rounded-md px-3 py-2 transition-all text-sm;
+  /* Estilo para o efeito de elevação no hover de cards (Minimalista) */
+  .card-hover-effect {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra inicial mínima */
   }
 
-  .nav-link-active {
-    /* Usando primary/10 para fundo suave e primary para texto */
-    @apply bg-primary/10 text-primary shadow-sm;
+  .dark .card-hover-effect {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
-  .nav-link-inactive {
-    @apply text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
+  .card-hover-effect:hover {
+    transform: translateY(-2px);
+    /* Sombra sutil de elevação */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
-}
 
-/* Custom Scrollbar Utility Class */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: hsl(var(--background));
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--muted));
-  border-radius: 4px;
-  border: 2px solid hsl(var(--background));
-}
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted)) hsl(var(--background));
-}
+  .dark .card-hover-effect:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
 
-/* Ajustes para o Quill Editor */
-.ql-toolbar.ql-snow {
-  @apply border-border rounded-t-lg bg-input;
-}
+  /* Estilos para links de navegação da Sidebar */
+  @layer components {
+    .nav-link-base {
+      @apply flex items-center gap-2 rounded-md px-3 py-2 transition-all text-sm;
+    }
 
-.ql-container.ql-snow {
-  @apply border-border rounded-b-lg bg-input;
-  min-height: 100px;
-}
+    .nav-link-active {
+      /* Usando primary/10 para fundo suave e primary para texto */
+      @apply bg-primary/10 text-primary shadow-sm;
+    }
 
-.ql-editor {
-  @apply text-foreground text-sm;
-  min-height: 100px;
-}
+    .nav-link-inactive {
+      @apply text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
+    }
+  }
 
-/* Ajustes para modais e popovers no mobile */
-.dialog-content-mobile-full {
-  @apply fixed inset-0 w-full h-full max-w-full max-h-full rounded-none;
-}
+  /* Custom Scrollbar Utility Class */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 4px;
+    border: 2px solid hsl(var(--background));
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+  }
 
-/* Ajustes para o layout principal */
-.main-content-area {
-  @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-0;
-}
+  /* Ajustes para o Quill Editor */
+  .ql-toolbar.ql-snow {
+    @apply border-border rounded-t-lg bg-input;
+  }
 
-/* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
-.page-content-wrapper {
-  @apply p-3 md:p-4 lg:p-6;
-  width: 100%;
-  box-sizing: border-box;
+  .ql-container.ql-snow {
+    @apply border-border rounded-b-lg bg-input;
+    min-height: 100px;
+  }
+
+  .ql-editor {
+    @apply text-foreground text-sm;
+    min-height: 100px;
+  }
+
+  /* Ajustes para modais e popovers no mobile */
+  .dialog-content-mobile-full {
+    @apply fixed inset-0 w-full h-full max-w-full max-h-full rounded-none;
+  }
+
+  /* Ajustes para o layout principal */
+  .main-content-area {
+    @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-0;
+  }
+
+  /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
+  .page-content-wrapper {
+    @apply p-3 md:p-4 lg:p-6;
+    width: 100%;
+    box-sizing: border-box;
+  }
 }

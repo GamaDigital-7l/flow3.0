@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Bell, Plus, Download } from "lucide-react";
+import { Menu, Bell, Plus, Download, Instagram, MessageSquare, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -8,12 +8,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError, showInfo } from "@/utils/toast";
 import React from "react";
 import { ThemeToggle } from "../ThemeToggle"; // Importar ThemeToggle
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onMenuClick: () => void;
   deferredPrompt: Event | null; // Mantido para compatibilidade com Layout, mas não usado
   onInstallClick: () => void; // Mantido para compatibilidade com Layout, mas não usado
 }
+
+const SOCIAL_LINKS = [
+  { icon: Instagram, href: "https://instagram.com/gama.creative", label: "Instagram" },
+  { icon: Globe, href: "https://gamacreative.com.br", label: "Site" },
+  { icon: MessageSquare, href: "https://wa.me/5531999999999", label: "WhatsApp" }, // Placeholder
+];
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onInstallClick }) => {
   const { session } = useSession();
@@ -33,20 +40,49 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 h-8 w-8"
+        className="shrink-0 h-8 w-8 lg:hidden"
         onClick={onMenuClick}
       >
         <Menu className="h-4 w-4" />
         <span className="sr-only">Toggle navigation menu</span>
       </Button>
-      <div className="flex-1">
+      
+      {/* Branding Gama Flow (Desktop) */}
+      <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
+        <Link to="/dashboard" className="flex items-center gap-2">
+          {/* Placeholder para Logo Gama (usando texto por enquanto) */}
+          <span className="text-lg font-extrabold text-primary">Gama</span>
+          <span className="text-sm font-medium text-foreground">Creative Design Studio</span>
+        </Link>
+        <span className="text-xs text-muted-foreground border-l border-border pl-4">
+          Creative Design Studio — Sete Lagoas, MG
+        </span>
+      </div>
+      
+      {/* Branding Gama Flow (Mobile) */}
+      <div className="flex-1 lg:hidden">
         <Link to="/dashboard" className="text-base font-semibold text-foreground hover:text-primary transition-colors">
           Gama Flow
         </Link>
       </div>
-      <div className="flex items-center gap-2">
+      
+      {/* Links Sociais (Desktop) */}
+      <div className="hidden lg:flex items-center gap-1 ml-auto">
+        {SOCIAL_LINKS.map(link => {
+          const Icon = link.icon;
+          return (
+            <Button key={link.label} variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:bg-accent hover:text-primary">
+              <a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label}>
+                <Icon className="h-4 w-4" />
+              </a>
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* Ações do Usuário */}
+      <div className="flex items-center gap-2 ml-auto lg:ml-4">
         <ThemeToggle />
-        {/* Botão de instalação PWA removido */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">

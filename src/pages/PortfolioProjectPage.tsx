@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PortfolioProject } from "@/types/portfolio";
-import { Loader2, ArrowLeft, Users, CalendarDays, Link as LinkIcon, Share2, MessageSquare, ExternalLink } from "lucide-react";
+import { Loader2, ArrowLeft, Users, CalendarDays, Link as LinkIcon, Share2, MessageSquare, ExternalLink, Zap } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import copy from "copy-to-clipboard";
+import { motion } from "framer-motion"; // Adicionando framer-motion para transições suaves
 
 const fetchProjectBySlug = async (slug: string): Promise<PortfolioProject | null> => {
   const { data, error } = await supabase
@@ -34,6 +35,23 @@ const fetchProjectBySlug = async (slug: string): Promise<PortfolioProject | null
   return data as PortfolioProject | null;
 };
 
+// Fetch 3 random projects excluding the current one
+const fetchSuggestedProjects = async (userId: string, currentProjectId: string): Promise<PortfolioProject[]> => {
+  const { data, error } = await supabase
+    .from("portfolio_projects")
+    .select(`id, title, slug, category, main_cover_url, end_date`)
+    .eq("user_id", userId)
+    .eq("is_public", true)
+    .neq("id", currentProjectId)
+    .limit(3); // Limitar a 3 sugestões
+
+  if (error) {
+    console.error("Error fetching suggested projects:", error);
+    return [];
+  }
+  return data as PortfolioProject[] || [];
+};
+
 const PortfolioProjectPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -43,6 +61,12 @@ const PortfolioProjectPage: React.FC = () => {
     queryKey: ["portfolioProjectPublic", slug],
     queryFn: () => fetchProjectBySlug(slug!),
     enabled: !!slug,
+  });
+  
+  const { data: suggestedProjects } = useQuery<PortfolioProject[], Error>({
+    queryKey: ["suggestedProjects", project?.user_id, project?.id],
+    queryFn: () => fetchSuggestedProjects(project!.user_id, project!.id),
+    enabled: !!project?.user_id && !!project?.id,
   });
 
   if (isLoading) {
@@ -59,8 +83,8 @@ const PortfolioProjectPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-foreground">Projeto Não Encontrado</h1>
           <p className="text-lg text-muted-foreground">O projeto que você está procurando não existe ou não é público.</p>
-          <Button onClick={() => navigate('/dashboard')} className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+          <Button onClick={() => navigate('/portfolio')} className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para o Portfólio
           </Button>
         </div>
       </div>
@@ -78,6 +102,40 @@ const PortfolioProjectPage: React.FC = () => {
     const message = `Confira este projeto incrível da Gama Flow: ${project.title}. Link: ${projectUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
+  
+  const handleCTAClick = () => {
+    const whatsappMessage = `Olá Gama Flow! Gostei muito do projeto "${project.title}" e gostaria de solicitar um orçamento.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+  };
+
+  // Componente para renderizar itens da galeria com animação
+  const GalleryItem: React.FC<{ url: string; index: number }> = ({ url, index }) => {
+    const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 0.5, delay: index * 0.1 }}
+        className="w-full rounded-lg overflow-hidden shadow-xl border border-border/50"
+      >
+        {isVideo ? (
+          <video controls className="w-full h-auto">
+            <source src={url} />
+            Seu navegador não suporta o elemento de vídeo.
+          </video>
+        ) : (
+          <img 
+            src={url} 
+            alt={`Galeria ${index + 1}`} 
+            className="w-full h-auto object-cover transition-transform duration-500 hover:scale-[1.01] cursor-pointer" 
+            // Implementação de Lightbox seria aqui
+          />
+        )}
+      </motion.div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -93,7 +151,7 @@ const PortfolioProjectPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8">
+      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-10">
         
         {/* Metadados e Ações */}
         <Card className="bg-card border border-border rounded-xl shadow-lg">
@@ -139,9 +197,12 @@ const PortfolioProjectPage: React.FC = () => {
               <p className="text-lg text-foreground">{project.short_description}</p>
             )}
             {project.result_differentiator && (
-              <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                <h3 className="font-semibold text-primary">Resultado/Diferencial:</h3>
-                <p className="text-sm text-foreground">{project.result_differentiator}</p>
+              <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg flex items-start gap-3">
+                <Zap className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                    <h3 className="font-semibold text-primary text-lg">Resultado/Diferencial:</h3>
+                    <p className="text-sm text-foreground">{project.result_differentiator}</p>
+                </div>
               </div>
             )}
           </CardContent>
@@ -149,20 +210,11 @@ const PortfolioProjectPage: React.FC = () => {
 
         {/* Galeria de Conteúdo */}
         {project.gallery_urls && project.gallery_urls.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Galeria</h2>
-            <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-foreground">Galeria de Imagens</h2>
+            <div className="grid grid-cols-1 gap-6">
               {project.gallery_urls.map((url, index) => (
-                <div key={index} className="w-full rounded-lg overflow-hidden shadow-md">
-                  {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                    <video controls className="w-full h-auto">
-                      <source src={url} />
-                      Seu navegador não suporta o elemento de vídeo.
-                    </video>
-                  ) : (
-                    <img src={url} alt={`Galeria ${index + 1}`} className="w-full h-auto object-cover" />
-                  )}
-                </div>
+                <GalleryItem key={index} url={url} index={index} />
               ))}
             </div>
           </div>
@@ -184,22 +236,38 @@ const PortfolioProjectPage: React.FC = () => {
 
         <Separator />
 
-        {/* CTA Final */}
-        <Card className="bg-primary text-white rounded-xl shadow-lg text-center p-6">
-          <CardTitle className="text-2xl font-bold mb-2">Quer um projeto assim?</CardTitle>
+        {/* CTA Final (WhatsApp) */}
+        <Card className="bg-primary text-white rounded-xl shadow-lg text-center p-8">
+          <CardTitle className="text-2xl font-bold mb-2">Gostou deste projeto?</CardTitle>
           <CardDescription className="text-primary-foreground/90 mb-4">
-            Entre em contato para solicitar um orçamento personalizado.
+            Entre em contato agora mesmo para solicitar um orçamento personalizado.
           </CardDescription>
-          <Button variant="secondary" className="bg-white text-primary hover:bg-gray-100">
-            Solicitar Orçamento
+          <Button onClick={handleCTAClick} variant="secondary" className="bg-white text-primary hover:bg-gray-100 font-bold text-base">
+            <MessageSquare className="mr-2 h-5 w-5" /> Falar com a Gama no WhatsApp
           </Button>
         </Card>
         
-        {/* Bloco "Outros projetos" (Placeholder) */}
-        <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Outros Projetos</h2>
-            <p className="text-muted-foreground">Em breve: recomendações automáticas de projetos relacionados.</p>
-        </div>
+        {/* Bloco "Outros projetos" (Sugestões) */}
+        {suggestedProjects && suggestedProjects.length > 0 && (
+            <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-foreground">Outros Projetos</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {suggestedProjects.map(sug => (
+                        <Link key={sug.id} to={`/portfolio/${sug.slug}`} className="block group">
+                            <Card className="bg-card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md">
+                                <div className="w-full h-24 overflow-hidden">
+                                    <img src={sug.main_cover_url || "/placeholder.svg"} alt={sug.title} className="w-full h-full object-cover" />
+                                </div>
+                                <CardContent className="p-3">
+                                    <p className="text-sm font-semibold text-foreground line-clamp-1">{sug.title}</p>
+                                    <p className="text-xs text-muted-foreground">{sug.category}</p>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );

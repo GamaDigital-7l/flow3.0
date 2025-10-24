@@ -5,7 +5,7 @@ import { useSession } from "@/integrations/supabase/auth";
 import { PortfolioProject, PORTFOLIO_CATEGORIES } from "@/types/portfolio";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, FileText, Filter, Search } from "lucide-react";
+import { PlusCircle, Loader2, FileText, Filter, Search, Image } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
@@ -103,7 +103,7 @@ const Portfolio: React.FC = () => {
     <div className="page-content-wrapper space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-          <FileText className="h-7 w-7 text-primary" /> Portfólio
+          <Image className="h-7 w-7 text-primary" /> Portfólio
         </h1>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
@@ -156,9 +156,9 @@ const Portfolio: React.FC = () => {
         </Select>
       </div>
 
-      {/* Grid de Projetos */}
+      {/* Grid de Projetos (Behance Style Grid) */}
       {filteredProjects.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map(project => (
             <PortfolioCard
               key={project.id}
