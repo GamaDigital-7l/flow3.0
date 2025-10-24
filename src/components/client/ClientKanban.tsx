@@ -192,12 +192,39 @@ const ClientKanban: React.FC = () => {
     mutationFn: async (updates: { taskId: string, newStatus: ClientTaskStatus, newOrderIndex: number }[]) => {
       if (!userId || !clientId) throw new Error("Usuário não autenticado ou cliente inválido.");
       
+      // 1. Buscar os dados completos das tarefas que serão atualizadas
+      const taskIds = updates.map(u => u.taskId);
+      const { data: existingTasks, error: fetchError } = await supabase
+        .from("client_tasks")
+        .select("id, title, month_year_reference, due_date, time, description, image_urls, public_approval_enabled, edit_reason, responsible_id")
+        .in("id", taskIds);
+
+      if (fetchError) throw fetchError;
+      
+      const taskMap = new Map(existingTasks.map(t => [t.id, t]));
+
+      // 2. Montar o payload de upsert com todos os campos obrigatórios
       const dbUpdates = updates.map(({ taskId, newStatus, newOrderIndex }) => {
+        const existing = taskMap.get(taskId);
+        if (!existing) throw new Error(`Task ${taskId} not found for update.`);
+
         const isCompleted = newStatus === 'approved' || newStatus === 'posted';
+        
         return {
           id: taskId,
           user_id: userId,
-          client_id: clientId, // Adicionado client_id
+          client_id: clientId,
+          title: existing.title, // Incluído
+          month_year_reference: existing.month_year_reference, // Incluído
+          description: existing.description,
+          due_date: existing.due_date,
+          time: existing.time,
+          image_urls: existing.image_urls,
+          public_approval_enabled: existing.public_approval_enabled,
+          edit_reason: existing.edit_reason,
+          responsible_id: existing.responsible_id,
+          
+          // Campos que mudam
           status: newStatus,
           order_index: newOrderIndex,
           is_completed: isCompleted,
