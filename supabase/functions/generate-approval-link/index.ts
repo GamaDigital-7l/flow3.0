@@ -27,27 +27,36 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Unauthorized: Missing Authorization header." }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: userAuth, error: authError } = await supabaseServiceRole.auth.getUser(token);
+    // Usar o client normal para verificar o usuário (não o service role, para simular o RLS)
+    const supabaseAnon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+    
+    const { data: userAuth, error: authError } = await supabaseAnon.auth.getUser();
 
     if (authError || !userAuth?.user) {
       console.error("Authentication error:", authError);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid or expired token." }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const userId = userAuth.user.id;
     const { clientId, monthYearRef } = await req.json();
 
     if (!clientId || !monthYearRef) {
-      return new Response(JSON.stringify({ error: "Missing data" }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Missing clientId or monthYearRef." }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const expiresAt = addDays(new Date(), 7).toISOString();
     const uniqueId = crypto.randomUUID();
 
+    // Usar Service Role para inserir o link, pois a tabela public_approval_links tem RLS desabilitado
+    // ou políticas que permitem inserção por qualquer um (true), mas a Edge Function deve garantir a integridade.
     const { data, error } = await supabaseServiceRole
       .from('public_approval_links')
       .insert({ client_id: clientId, user_id: userId, month_year_reference: monthYearRef, unique_id: uniqueId, expires_at: expiresAt })
@@ -56,13 +65,19 @@ serve(async (req) => {
 
     if (error) {
       console.error("Error inserting link:", error);
-      return new Response(JSON.stringify({ error: "Failed to generate link" }), { status: 500, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Failed to generate link: " + error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    return new Response(JSON.stringify({ uniqueId: data.unique_id, message: "Link generated" }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ uniqueId: data.unique_id, message: "Link generated" }), { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
 
   } catch (error) {
     console.error("Function error:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: error.message }), { 
+      status: 500, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
   }
 });

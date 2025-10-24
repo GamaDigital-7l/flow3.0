@@ -25,7 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientTaskHistory from "./ClientTaskHistory";
-import { Checkbox } from "@/components/ui/checkbox"; // <-- IMPORTAÇÃO ADICIONADA
+import { Checkbox } from "@/components/ui/checkbox"; 
+import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
+
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
 interface ClientTask {
@@ -68,6 +70,7 @@ interface ClientTaskFormProps {
 }
 
 const fetchUsers = async () => {
+  // Fetch users from profiles table (assuming RLS allows reading profiles)
   const { data, error } = await supabase
     .from("profiles")
     .select("id, first_name, last_name, avatar_url");
@@ -106,6 +109,31 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
     },
   });
 
+  const uploadFile = async (file: File): Promise<string> => {
+    if (!userId) throw new Error("Usuário não autenticado para upload.");
+    
+    const sanitizedFilename = sanitizeFilename(file.name);
+    // Incluindo userId no path para RLS do Storage
+    const filePath = `client_tasks/${userId}/${clientId}/${Date.now()}-${sanitizedFilename}`;
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from("client-assets")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error("Erro ao fazer upload da imagem: " + uploadError.message);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("client-assets")
+      .getPublicUrl(filePath);
+
+    return publicUrlData.publicUrl;
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!userId) {
       showError("Usuário não autenticado.");
@@ -115,28 +143,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    const uploadPromises = Array.from(files).map(async (file) => {
-      const sanitizedFilename = sanitizeFilename(file.name);
-      // Usando pasta 'client_tasks' para assets
-      const filePath = `client_tasks/${clientId}/${Date.now()}-${sanitizedFilename}`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("client-assets")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw new Error("Erro ao fazer upload da imagem: " + uploadError.message);
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("client-assets")
-        .getPublicUrl(filePath);
-
-      return publicUrlData.publicUrl;
-    });
+    const uploadPromises = Array.from(files).map(file => uploadFile(file));
 
     try {
       const newUrls = await Promise.all(uploadPromises);
@@ -244,40 +251,50 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
       // Generate public approval link if enabled
       if (values.public_approval_enabled) {
         const monthYearRef = format(values.due_date || new Date(), "yyyy-MM");
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {
-          body: {
-            clientId: clientId,
-            monthYearRef: monthYearRef,
-            userId: userId,
-          },
-        });
+        
+        // Se já existe um link de aprovação para esta tarefa, não precisamos gerar um novo link de aprovação MENSAL
+        // A Edge Function 'generate-approval-link' gera um link MENSAL, não por tarefa.
+        // Se a tarefa for nova ou o link for nulo, tentamos gerar o link MENSAL.
+        if (!initialData?.public_approval_link_id) {
+            const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {
+              body: {
+                clientId: clientId,
+                monthYearRef: monthYearRef,
+                userId: userId,
+              },
+            });
 
-        if (fnError) {
-          console.error("Erro ao gerar link de aprovação:", fnError);
-          showError("Erro ao gerar link de aprovação: " + fnError.message);
+            if (fnError) {
+              console.error("Erro ao gerar link de aprovação:", fnError);
+              showError("Erro ao gerar link de aprovação: " + fnError.message);
+            } else {
+              const uniqueId = (fnData as any).uniqueId;
+              const publicLink = `${window.location.origin}/approval/${uniqueId}`;
+              setPublicApprovalLink(publicLink);
+
+              // Update the client_tasks table with the unique_link_id
+              const { error: updateTaskError } = await supabase
+                .from("client_tasks")
+                .update({ public_approval_link_id: uniqueId })
+                .eq("id", clientTaskId);
+
+              if (updateTaskError) {
+                console.error("Erro ao atualizar tarefa com link de aprovação:", updateTaskError);
+                showError("Erro ao atualizar tarefa com link de aprovação: " + updateTaskError.message);
+              } else {
+                showSuccess("Link de aprovação gerado e associado à tarefa!");
+              }
+            }
         } else {
-          const uniqueId = (fnData as any).uniqueId;
-          const publicLink = `${window.location.origin}/approval/${uniqueId}`;
-          setPublicApprovalLink(publicLink);
-
-          // Update the client_tasks table with the unique_link_id
-          const { error: updateTaskError } = await supabase
-            .from("client_tasks")
-            .update({ public_approval_link_id: uniqueId })
-            .eq("id", clientTaskId);
-
-          if (updateTaskError) {
-            console.error("Erro ao atualizar tarefa com link de aprovação:", updateTaskError);
-            showError("Erro ao atualizar tarefa com link de aprovação: " + updateTaskError.message);
-          } else {
-            showSuccess("Link de aprovação gerado e associado à tarefa!");
-          }
+            // Se o link já existe, apenas o exibimos
+            const publicLink = `${window.location.origin}/approval/${initialData.public_approval_link_id}`;
+            setPublicApprovalLink(publicLink);
         }
       } else {
         setPublicApprovalLink(null);
       }
 
-      form.reset();
+      form.reset(values); // Resetar com os valores salvos para manter o estado
       onClientTaskSaved();
       queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
     } catch (error: any) {
