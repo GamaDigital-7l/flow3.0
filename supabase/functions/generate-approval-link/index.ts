@@ -36,7 +36,7 @@ serve(async (req) => {
       console.error("Erro de autenticação:", authError);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Invalid or missing token." }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       );
     }
     const userId = userAuth.user.id;

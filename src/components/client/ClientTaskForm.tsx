@@ -10,13 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2, XCircle, Image as ImageIcon } from "lucide-react";
+import { CalendarIcon, Loader2, XCircle, Image as ImageIcon, Link as LinkIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn, parseISO, sanitizeFilename, convertToUtc, formatDateTime } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import TagSelector from "../TagSelector";
 import { Checkbox } from "../ui/checkbox";
 import { ptBR } from "date-fns/locale/pt-BR";
@@ -40,6 +40,7 @@ interface ClientTask {
   client_id: string;
   user_id: string;
   is_completed: boolean;
+  public_approval_link_id: string | null;
   tags?: { id: string; name: string; color: string }[];
 }
 
@@ -80,6 +81,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>(initialData?.image_urls || []);
+  const [publicApprovalLink, setPublicApprovalLink] = useState<string | null>(initialData?.public_approval_link_id || null);
 
   const { data: users, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["usersList"],
@@ -182,7 +184,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
           .update(dataToSave)
           .eq("id", initialData.id)
           .eq("user_id", userId)
-          .select("id")
+          .select("id, public_approval_link_id")
           .single();
 
         if (error) throw error;
@@ -206,6 +208,42 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         }));
         const { error: tagInsertError } = await supabase.from("client_task_tags").insert(taskTagsToInsert);
         if (tagInsertError) throw tagInsertError;
+      }
+
+      // Generate public approval link if enabled
+      if (values.public_approval_enabled) {
+        const monthYearRef = format(values.due_date || new Date(), "yyyy-MM");
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {
+          body: {
+            clientId: clientId,
+            monthYearRef: monthYearRef,
+            userId: userId,
+          },
+        });
+
+        if (fnError) {
+          console.error("Erro ao gerar link de aprovação:", fnError);
+          showError("Erro ao gerar link de aprovação: " + fnError.message);
+        } else {
+          const uniqueId = (fnData as any).uniqueId;
+          const publicLink = `${window.location.origin}/approval/${uniqueId}`;
+          setPublicApprovalLink(publicLink);
+
+          // Update the client_tasks table with the unique_link_id
+          const { error: updateTaskError } = await supabase
+            .from("client_tasks")
+            .update({ public_approval_link_id: uniqueId })
+            .eq("id", clientTaskId);
+
+          if (updateTaskError) {
+            console.error("Erro ao atualizar tarefa com link de aprovação:", updateTaskError);
+            showError("Erro ao atualizar tarefa com link de aprovação: " + updateTaskError.message);
+          } else {
+            showSuccess("Link de aprovação gerado e associado à tarefa!");
+          }
+        }
+      } else {
+        setPublicApprovalLink(null);
       }
 
       form.reset();
@@ -426,6 +464,15 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
             </FormItem>
           )}
         />
+
+        {publicApprovalLink && (
+          <div className="flex items-center gap-2 p-3 bg-green-100 border border-green-200 rounded-md">
+            <LinkIcon className="h-4 w-4 text-green-600" />
+            <a href={publicApprovalLink} target="_blank" rel="noopener noreferrer" className="text-sm text-green-700 hover:underline">
+              Link de Aprovação Pública: {publicApprovalLink}
+            </a>
+          </div>
+        )}
 
         <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={form.formState.isSubmitting || isUploading}>
           {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (initialData?.id ? "Atualizar Tarefa" : "Adicionar Tarefa")}
