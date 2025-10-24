@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { UseFormReturn } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,10 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
 
-interface TaskCategorizationProps {
-  form: UseFormReturn<TaskFormValues>;
-}
-
+// Removed TaskCategorizationProps interface
 const fetchClients = async (userId: string) => {
   const { data, error } = await supabase
     .from("clients")
@@ -26,9 +23,12 @@ const fetchClients = async (userId: string) => {
   return data || [];
 };
 
-const TaskCategorization: React.FC<TaskCategorizationProps> = ({ form }) => {
+const TaskCategorization: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
+  
+  // Use useFormContext to access the form state provided by the parent <Form> component
+  const form = useFormContext<TaskFormValues>();
   const selectedTagIds = form.watch("selected_tag_ids") || [];
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({

@@ -1,21 +1,20 @@
 "use client";
 
 import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useFormContext } from "react-hook-form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TaskFormValues } from "@/components/TaskForm";
 
-interface TaskBasicInfoProps {
-  form: UseFormReturn<TaskFormValues>;
-}
+const TaskBasicInfo: React.FC = () => {
+  // Assuming TaskForm provides context via <Form {...form}>
+  const { control } = useFormContext<TaskFormValues>();
 
-const TaskBasicInfo: React.FC<TaskBasicInfoProps> = ({ form }) => {
   return (
     <>
       <FormField
-        control={form.control}
+        control={control}
         name="title"
         render={({ field }) => (
           <FormItem>
@@ -32,7 +31,7 @@ const TaskBasicInfo: React.FC<TaskBasicInfoProps> = ({ form }) => {
         )}
       />
       <FormField
-        control={form.control}
+        control={control}
         name="description"
         render={({ field }) => (
           <FormItem>
