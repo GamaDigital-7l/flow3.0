@@ -15,7 +15,7 @@ import { formatDateTime, formatCurrency } from '@/lib/utils';
 import { format, addDays, isPast } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -212,7 +212,6 @@ const Proposals: React.FC = () => {
   const totalPages = Math.ceil((proposals?.length || 0) / ITEMS_PER_PAGE);
 
   return (
-    <TooltipProvider>
     <div className="page-content-wrapper space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
@@ -379,7 +378,7 @@ const Proposals: React.FC = () => {
             <PaginationPrevious href="?previous" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} />
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <PaginationItem key={page} active={currentPage === page}>
-                <PaginationLink href={`?page=${page}`} onClick={() => setCurrentPage(page)} isCurrent={currentPage === page}>
+                <PaginationLink to={`?page=${page}`} onClick={() => setCurrentPage(page)} active={currentPage === page}>
                   {page}
                 </PaginationLink>
               </PaginationItem>
@@ -412,7 +411,6 @@ const Proposals: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-    </TooltipProvider>
   );
 };
 

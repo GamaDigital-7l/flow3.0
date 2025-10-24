@@ -10,6 +10,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
 import LoadingScreen from "./components/layout/LoadingScreen"; // Importar LoadingScreen
+import { TooltipProvider } from "@/components/ui/tooltip"; // Import TooltipProvider
 
 // Lazy Loaded Pages
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -39,7 +40,9 @@ function App() {
       >
         <Toaster position="top-right" richColors />
         <ErrorBoundary>
-          <AppContent />
+          <TooltipProvider> {/* Global Tooltip Provider */}
+            <AppContent />
+          </TooltipProvider>
         </ErrorBoundary>
       </PersistQueryClientProvider>
     </SessionContextProvider>
