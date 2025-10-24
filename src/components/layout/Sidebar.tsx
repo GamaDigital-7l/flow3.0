@@ -14,7 +14,7 @@ interface SidebarProps {
   onClose: () => void;
   deferredPrompt: Event | null;
   onInstallClick: () => void;
-  isDesktop?: boolean; // Novo prop para modo desktop
+  isDesktop?: boolean; // Mantido para compatibilidade, mas não usado na lógica de renderização
 }
 
 const navItems = [
@@ -85,15 +85,8 @@ const SidebarContent: React.FC<Omit<SidebarProps, 'isOpen' | 'onClose'> & { onCl
   );
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick, isDesktop = false }) => {
-  if (isDesktop) {
-    // Modo Desktop: Renderiza apenas o conteúdo da barra lateral
-    return (
-      <SidebarContent onClose={onClose} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
-    );
-  }
-
-  // Modo Mobile: Renderiza o Sheet
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
+  // Sempre renderiza o Sheet, independentemente do modo desktop
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 

@@ -36,32 +36,27 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 border-b border-border bg-card px-3 lg:pl-64 lg:pr-4 shadow-sm pt-[var(--sat)]">
-      {/* Botão de Menu (Apenas Mobile) */}
+    <header className="fixed top-0 left-0 right-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 border-b border-border bg-card px-3 shadow-sm pt-[var(--sat)]">
+      {/* Botão de Menu (Sempre visível) */}
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 h-8 w-8 lg:hidden"
+        className="shrink-0 h-8 w-8"
         onClick={onMenuClick}
       >
         <Menu className="h-4 w-4" />
         <span className="sr-only">Toggle navigation menu</span>
       </Button>
       
-      {/* Branding Gama Flow (Mobile/Fallback) */}
-      <div className="flex-1 lg:hidden">
+      {/* Branding Gama Flow */}
+      <div className="flex-1">
         <Link to="/dashboard" className="text-base font-semibold text-foreground hover:text-primary transition-colors">
           Gama Flow
         </Link>
       </div>
       
-      {/* Título da Página (Desktop - Placeholder) */}
-      <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
-        <h1 className="text-lg font-semibold text-foreground">Dashboard</h1> {/* Pode ser substituído pelo título real da página */}
-      </div>
-
       {/* Links Sociais (Desktop) */}
-      <div className="hidden lg:flex items-center gap-1 ml-auto">
+      <div className="hidden lg:flex items-center gap-1">
         {SOCIAL_LINKS.map(link => {
           const Icon = link.icon;
           return (
@@ -75,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onI
       </div>
 
       {/* Ações do Usuário */}
-      <div className="flex items-center gap-2 ml-auto lg:ml-4">
+      <div className="flex items-center gap-2">
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
