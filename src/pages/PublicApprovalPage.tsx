@@ -2,19 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send, Users, Clock, MessageSquare } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send, Users, Clock, MessageSquare, Info } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, isPast, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
-import { cn, formatDateTime } from '@/lib/utils';
+import { cn, formatDateTime, getInitials } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -91,7 +92,7 @@ const fetchApprovalData = async (uniqueId: string): Promise<ApprovalData | null>
     .eq('user_id', link.user_id)
     .eq('month_year_reference', link.month_year_reference)
     .eq('public_approval_enabled', true)
-    .in('status', ['under_review', 'edit_requested']) // Mostrar apenas tarefas que precisam de ação
+    .in('status', ['under_review', 'edit_requested', 'approved', 'posted']) // Incluir aprovadas/postadas para mostrar o histórico
     .order('order_index', { ascending: true });
 
   if (tasksError) {
@@ -115,6 +116,7 @@ const PublicApprovalPage: React.FC = () => {
   const [editReason, setEditReason] = useState('');
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null); // Estado para Lightbox
 
   const { data: approvalData, isLoading, error, refetch } = useQuery<ApprovalData | null, Error>({
     queryKey: ["publicApproval", uniqueId],
@@ -192,6 +194,7 @@ const PublicApprovalPage: React.FC = () => {
   
   const { client, tasks, link } = approvalData;
   const tasksPendingAction = tasks.filter(t => t.status === 'under_review' || t.status === 'edit_requested');
+  const approvedTasks = tasks.filter(t => t.status === 'approved' || t.status === 'posted');
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -200,7 +203,10 @@ const PublicApprovalPage: React.FC = () => {
         {/* Header do Cliente */}
         <Card className="bg-card border border-border rounded-xl shadow-lg">
           <CardHeader className="flex flex-row items-center gap-4">
-            <img src={client.logo_url || "/placeholder.svg"} alt={client.name} className="h-12 w-12 rounded-full object-cover border border-border" />
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={client.logo_url || undefined} alt={client.name} />
+              <AvatarFallback className="text-xl bg-primary/20 text-primary">{getInitials(client.name)}</AvatarFallback>
+            </Avatar>
             <div>
               <CardTitle className="text-2xl font-bold text-foreground">Aprovação de Conteúdo</CardTitle>
               <CardDescription className="text-muted-foreground flex items-center gap-1">
@@ -220,7 +226,7 @@ const PublicApprovalPage: React.FC = () => {
           {tasksPendingAction.length > 0 ? `Itens Pendentes de Revisão (${tasksPendingAction.length})` : "Nenhum Item Pendente de Revisão"}
         </h2>
         
-        {tasksPendingAction.length === 0 && (
+        {tasksPendingAction.length === 0 && approvedTasks.length > 0 && (
           <Card className="bg-card border-dashed border-border shadow-sm p-8 text-center">
             <CheckCircle2 className="h-10 w-10 mx-auto mb-4 text-green-500" />
             <CardTitle className="text-xl font-semibold text-foreground">Tudo Aprovado!</CardTitle>
@@ -244,7 +250,12 @@ const PublicApprovalPage: React.FC = () => {
                 {/* Imagem de Capa (Proporção 4:5) */}
                 {task.image_urls?.[0] && (
                   <AspectRatio ratio={4 / 5} className="rounded-md overflow-hidden border border-border bg-secondary">
-                    <img src={task.image_urls[0]} alt={task.title} className="h-full w-full object-cover" />
+                    <img 
+                      src={task.image_urls[0]} 
+                      alt={task.title} 
+                      className="h-full w-full object-cover cursor-pointer" 
+                      onClick={() => setLightboxUrl(task.image_urls![0])}
+                    />
                   </AspectRatio>
                 )}
                 
@@ -288,6 +299,39 @@ const PublicApprovalPage: React.FC = () => {
             </Card>
           ))}
         </div>
+
+        {approvedTasks.length > 0 && (
+          <>
+            <h2 className="text-xl font-semibold mt-12 mb-4 text-foreground">Itens Já Aprovados</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-70">
+              {approvedTasks.map(task => (
+                <Card key={task.id} className="w-full overflow-hidden shadow-md bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="text-base font-semibold text-foreground">{task.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {task.image_urls?.[0] && (
+                      <AspectRatio ratio={4 / 5} className="rounded-md overflow-hidden border border-border bg-secondary">
+                        <img 
+                          src={task.image_urls[0]} 
+                          alt={task.title} 
+                          className="h-full w-full object-cover cursor-pointer" 
+                          onClick={() => setLightboxUrl(task.image_urls![0])}
+                        />
+                      </AspectRatio>
+                    )}
+                  </CardContent>
+                  <CardFooter className="bg-green-100 p-3">
+                    <div className="flex items-center text-green-700">
+                      <CheckCircle2 className="mr-2 h-5 w-5" />
+                      <span className="font-medium text-sm">Aprovado</span>
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal para Solicitar Edição */}
@@ -319,6 +363,27 @@ const PublicApprovalPage: React.FC = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Lightbox para Imagem */}
+      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
+        <DialogContent className="lightbox-fullscreen-override">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setLightboxUrl(null)} 
+            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
+          >
+            <XCircle className="h-6 w-6" />
+          </Button>
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Visualização em Tela Cheia"
+              className="max-w-[95%] max-h-[95%] object-contain"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

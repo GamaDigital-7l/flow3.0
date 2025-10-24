@@ -213,7 +213,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
               </Button>
               <Button 
                 size="sm" 
-                onClick={() => handleStatusUpdate.mutate('edit_requested')} 
+                onClick={() => onEdit(task)} // Abre o formulário de edição para solicitar alteração
                 variant="secondary" 
                 className="flex-1 border-secondary text-foreground hover:bg-secondary h-8 text-xs"
                 disabled={handleStatusUpdate.isPending}
