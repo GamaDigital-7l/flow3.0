@@ -6,20 +6,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, ArrowLeft, Share2, Link as LinkIcon } from 'lucide-react';
-import { showError, showSuccess } from '@/utils/toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
-import ClientTaskForm from './ClientTaskForm';
-import ClientTaskCard from './ClientTaskCard';
-import PageTitle from '@/components/layout/PageTitle';
-import { DndContext, closestCorners, DragEndEvent, useSensor, useMouseSensor, useTouchSensor } from '@dnd-kit/core';
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { DndContext, closestCorners, DragEndEvent, useSensor, Sensor } from '@dnd-kit/core';
+import { MouseSensor as InnerMouseSensor, TouchSensor as InnerTouchSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -84,9 +79,6 @@ const ClientKanban: React.FC = () => {
 
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
-  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const [publicLink, setPublicLink] = useState('');
-  const [linkLoading, setLinkLoading] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["clientTasks", clientId, userId],
@@ -184,79 +176,16 @@ const ClientKanban: React.FC = () => {
     setEditingTask(task);
     setIsTaskFormOpen(true);
   };
-  
-  const handleGenerateLink = async () => {
-    if (!clientId || !userId) return;
-    setLinkLoading(true);
-    
-    try {
-      // Chamada para a Edge Function para gerar/obter o link
-      const monthYearRef = format(new Date(), "yyyy-MM"); // Link é por mês/ano
-      
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {
-        body: {
-          clientId,
-          monthYearRef,
-          userId,
-        },
-      });
-
-      if (fnError) throw fnError;
-      
-      const uniqueId = (fnData as any).uniqueId;
-      const link = `${window.location.origin}/approval/${uniqueId}`;
-      setPublicLink(link);
-      setIsLinkModalOpen(true);
-      showSuccess("Link de aprovação gerado!");
-      
-    } catch (err: any) {
-      showError("Erro ao gerar link: " + err.message);
-      console.error("Erro ao gerar link:", err);
-    } finally {
-      setLinkLoading(false);
-    }
-  };
-
-  const handleCopyLink = () => {
-    copy(publicLink);
-    showSuccess("Link copiado para a área de transferência!");
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error || !client) {
-    showError("Erro ao carregar cliente: " + (error?.message || "Cliente não encontrado."));
-    return (
-      <div className="page-content-wrapper space-y-4">
-        <Button variant="outline" onClick={() => navigate('/clients')}><ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Clientes</Button>
-        <p className="text-red-500">Erro ao carregar dados do cliente.</p>
-      </div>
-    );
-  }
 
   // Custom sensors for better mobile experience
-  const mouseSensor = useSensor(useMouseSensor, { activationConstraint: { distance: 10 } });
-  const touchSensor = useSensor(useTouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } });
-  const sensors = [mouseSensor, touchSensor];
+  const mouseSensor = useSensor(InnerMouseSensor, { activationConstraint: { distance: 10 } });
+  const touchSensor = useSensor(InnerTouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } });
+  const sensors: Sensor[] = [mouseSensor, touchSensor];
 
   return (
     <div className="page-content-wrapper space-y-6">
       <PageTitle title={`Workspace: ${client.name}`} description="Gerencie o fluxo de trabalho e aprovações do cliente.">
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/clients')} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Button>
-          <Button onClick={handleGenerateLink} disabled={linkLoading} className="bg-green-600 text-white hover:bg-green-700">
-            {linkLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-            Link de Aprovação
-          </Button>
-        </div>
+        <Button variant="outline" onClick={() => navigate('/clients')}><ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Clientes</Button>
       </PageTitle>
 
       <DndContext 
@@ -330,29 +259,9 @@ const ClientKanban: React.FC = () => {
             initialData={editingTask}
             onClientTaskSaved={handleTaskSaved}
             onClose={() => setIsTaskFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Modal de Link Público */}
-      <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
-        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Link de Aprovação Pública</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Compartilhe este link com o cliente para que ele possa aprovar ou solicitar edições nas tarefas de {client.name}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input value={publicLink} readOnly className="bg-input border-border text-foreground focus-visible:ring-ring" />
-            <Button onClick={handleCopyLink} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              <Copy className="mr-2 h-4 w-4" /> Copiar Link
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };
-
-export default ClientKanban;
