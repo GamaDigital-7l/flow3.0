@@ -98,7 +98,8 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, refetchHabits, compactMode
   });
 
   const isCompleted = habit.completed_today;
-  const isAlert = habit.alert && !isCompleted;
+  // O alerta é definido pela Edge Function se o dia anterior foi perdido
+  const isAlert = habit.alert && !isCompleted; 
   const isPaused = habit.paused;
 
   return (

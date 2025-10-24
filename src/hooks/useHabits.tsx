@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Habit, HabitHistoryEntry, HabitFrequency } from '@/types/habit';
 import { showError, showSuccess } from '@/utils/toast';
-import { format, subDays, isSameDay, getDay, differenceInDays } from 'date-fns';
+import { format, subDays, isSameDay, getDay, differenceInDays, parseISO as dateFnsParseISO } from 'date-fns';
 import { parseISO, getTodayLocalString } from '@/lib/utils'; // Usando parseISO e getTodayLocalString do utils
 // Removendo importação de date-fns-tz
 
@@ -93,6 +93,44 @@ export const useToggleHabitCompletion = () => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
       // 1. Update the current instance (habit.id)
+      const todayLocalString = getTodayLocalString();
+      const yesterdayLocalString = format(subDays(new Date(), 1), "yyyy-MM-dd");
+      
+      let newTotalCompleted = habit.total_completed;
+      let newStreak = habit.streak;
+      let newLastCompletedDateLocal = habit.last_completed_date_local;
+      
+      if (completed) {
+        if (!habit.completed_today) {
+          newTotalCompleted += 1;
+          newLastCompletedDateLocal = todayLocalString;
+          
+          // Se a última conclusão foi ontem, incrementa o streak
+          if (habit.last_completed_date_local === yesterdayLocalString) {
+            newStreak += 1;
+          } else if (!habit.last_completed_date_local) {
+            // Primeiro dia
+            newStreak = 1;
+          } else {
+            // Quebrou a sequência, mas está começando uma nova hoje
+            newStreak = 1;
+          }
+        }
+      } else {
+        if (habit.completed_today) {
+          newTotalCompleted = Math.max(0, newTotalCompleted - 1);
+          
+          // Se desmarcou a conclusão de hoje, o streak e a última data precisam ser recalculados
+          newLastCompletedDateLocal = habit.last_completed_date_local === todayLocalString 
+            ? null // Se a última data era hoje, resetamos (o daily reset cuidará do streak)
+            : habit.last_completed_date_local;
+            
+          // Simplificando o reset do streak: se desmarcou hoje, o streak é 0 (o daily reset cuidará do cálculo preciso)
+          newStreak = 0; 
+        }
+      }
+      
+      // 2. Update the current instance (habit.id) with completion status and alert status
       const { data: updatedInstance, error: updateError } = await supabase
         .from('habits')
         .update({ 
@@ -107,7 +145,21 @@ export const useToggleHabitCompletion = () => {
 
       if (updateError) throw updateError;
       
-      // 2. Insert/Update History
+      // 3. Update ALL instances of this recurrence_id with the new metrics
+      const { error: updateAllError } = await supabase
+        .from('habits')
+        .update({
+          total_completed: newTotalCompleted,
+          last_completed_date_local: newLastCompletedDateLocal,
+          streak: newStreak,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('recurrence_id', habit.recurrence_id)
+        .eq('user_id', userId);
+        
+      if (updateAllError) throw updateAllError;
+      
+      // 4. Insert/Update History
       const historyPayload = {
         recurrence_id: habit.recurrence_id,
         user_id: userId,
@@ -120,39 +172,6 @@ export const useToggleHabitCompletion = () => {
         .upsert(historyPayload, { onConflict: 'recurrence_id, user_id, date_local' });
         
       if (historyError) console.error("Error updating habit history:", historyError);
-      
-      // 3. Update total_completed and last_completed_date_local on ALL instances of this recurrence_id
-      // This is the minimal update needed for immediate UI feedback on metrics.
-      
-      let newTotalCompleted = habit.total_completed;
-      let lastCompletedDateLocal = habit.last_completed_date_local;
-      
-      if (completed) {
-        if (!habit.completed_today) {
-          newTotalCompleted += 1;
-          lastCompletedDateLocal = habit.date_local;
-        }
-      } else {
-        if (habit.completed_today) {
-          newTotalCompleted = Math.max(0, newTotalCompleted - 1);
-          // Resetting last_completed_date_local is complex, we rely on the daily reset to fix the streak/metrics accurately later.
-          // For now, we only update total_completed.
-        }
-      }
-      
-      // 4. Update ALL instances of this recurrence_id with the simplified metrics
-      const { error: updateAllError } = await supabase
-        .from('habits')
-        .update({
-          total_completed: newTotalCompleted,
-          // Only update last_completed_date_local if completing, otherwise leave it to the daily reset logic
-          ...(completed && !habit.completed_today && { last_completed_date_local: lastCompletedDateLocal }),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('recurrence_id', habit.recurrence_id)
-        .eq('user_id', userId);
-        
-      if (updateAllError) throw updateAllError;
       
       return updatedInstance;
     },

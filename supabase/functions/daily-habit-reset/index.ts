@@ -3,9 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { format, parseISO, subDays, getDay, isSameDay, isBefore, startOfDay } from "https://esm.sh/date-fns@3.6.0";
 import { utcToZonedTime } from "https://esm.sh/date-fns-tz@3.0.1";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const allowedOrigins = ['http://localhost:32100', 'https://nexusflow.vercel.app'];
+
+const DAYS_OF_WEEK_MAP: { [key: string]: number } = {
+  "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3,
+  "Thursday": 4, "Friday": 5, "Saturday": 6
 };
 
 // Helper function to check if a day is eligible based on frequency/weekdays
@@ -21,6 +23,16 @@ function isDayEligible(date: Date, frequency: string, weekdays: number[] | null)
 }
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const isAllowedOrigin = allowedOrigins.includes(origin!);
+
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': isAllowedOrigin ? origin! : '*',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders, status: 200 });
   }
@@ -125,9 +137,14 @@ serve(async (req) => {
             
             // Calculate new streak: if last completed date was yesterday, increment streak
             const lastCompletedDate = baseHabit.last_completed_date_local ? parseISO(baseHabit.last_completed_date_local) : null;
-            if (lastCompletedDate && isSameDay(lastCompletedDate, yesterdayLocalDate)) {
-                habitUpdates.streak = (baseHabit.streak || 0) + 1;
-            }
+            
+            // Se a última data de conclusão foi o dia anterior ao dia que estamos processando (ontem), incrementa.
+            // Se a última data de conclusão foi a própria data de ontem, significa que o streak já foi atualizado no momento da conclusão.
+            // A Edge Function só precisa garantir que o streak seja herdado corretamente para a nova instância.
+            
+            // Simplificando: A Edge Function não deve recalcular o streak aqui, apenas garantir que a instância de ontem
+            // tenha as métricas finais corretas (streak, missed_days, fail_by_weekday) antes de criar a de hoje.
+            // O streak é atualizado no momento da conclusão (useToggleHabitCompletion).
             
             updates.push(habitUpdates);
           }
@@ -139,7 +156,7 @@ serve(async (req) => {
         if (isEligibleToday && !existingRecurrenceIds.has(baseHabit.recurrence_id)) {
             // Create new instance for today, inheriting metrics from the latest instance
             
-            // Calculate success rate based on total attempts (total_completed + missed_days.length)
+            // Recalcular a taxa de sucesso com base nas métricas finais da última instância
             const totalAttempts = baseHabit.total_completed + (baseHabit.missed_days?.length || 0);
             const successRate = totalAttempts > 0 ? (baseHabit.total_completed / totalAttempts) * 100 : 0;
 
@@ -176,9 +193,10 @@ serve(async (req) => {
       
       // 3. Batch Insert History (Missed days)
       if (historyInserts.length > 0) {
+        // Usamos insert simples aqui, pois a Edge Function garante que só insere se for um dia perdido
         const { error: insertHistoryError } = await supabase
           .from('habit_history')
-          .upsert(historyInserts, { onConflict: 'recurrence_id, user_id, date_local' });
+          .insert(historyInserts);
         if (insertHistoryError) console.error(`[User ${userId}] Error inserting habit history:`, insertHistoryError);
       }
       
@@ -190,6 +208,54 @@ serve(async (req) => {
           if (insertNewError) console.error(`[User ${userId}] Error inserting new today instances:`, insertNewError);
       }
     }
+
+    // 5. Processar Tarefas Atrasadas (Mantido do daily-reset original)
+    const { data: usersWithTimezone, error: fetchUsersTimezoneError } = await supabase
+      .from('profiles')
+      .select('id, timezone');
+
+    if (fetchUsersTimezoneError) throw fetchUsersTimezoneError;
+
+    for (const user of usersWithTimezone || []) {
+      const userId = user.id;
+      const userTimezone = user.timezone || 'America/Sao_Paulo';
+
+      const nowUtc = new Date();
+      const nowInUserTimezone = utcToZonedTime(nowUtc, userTimezone);
+      const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd");
+
+      // Busca tarefas não concluídas cuja data de vencimento é anterior a HOJE.
+      const { data: pendingTasks, error: pendingTasksError } = await supabase
+        .from('tasks')
+        .select('id, due_date, current_board, is_completed')
+        .eq('user_id', userId)
+        .eq('is_completed', false)
+        .lt('due_date', todayInUserTimezoneString); // due_date < HOJE
+
+      if (pendingTasksError) {
+        console.error(`[User ${userId}] Erro ao buscar tarefas pendentes:`, pendingTasksError);
+        continue;
+      }
+
+      const overdueUpdates = pendingTasks
+        .filter(task => task.current_board !== 'overdue') // Apenas tarefas que ainda não estão no quadro de atrasadas
+        .map(task => ({
+          id: task.id,
+          overdue: true,
+          current_board: 'overdue',
+          last_moved_to_overdue_at: nowUtc.toISOString(),
+        }));
+
+      if (overdueUpdates.length > 0) {
+        const { error: updateOverdueError } = await supabase
+          .from('tasks')
+          .upsert(overdueUpdates, { onConflict: 'id' });
+
+        if (updateOverdueError) console.error(`[User ${userId}] Erro ao atualizar tarefas atrasadas:`, updateOverdueError);
+        else console.log(`[User ${userId}] Movidas ${overdueUpdates.length} tarefas para 'overdue'.`);
+      }
+    }
+
 
     return new Response(
       JSON.stringify({ message: "Daily habit reset and metric update complete." }),
