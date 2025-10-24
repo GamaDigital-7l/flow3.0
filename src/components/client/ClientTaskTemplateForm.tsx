@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { ClientTaskTemplate, DAYS_OF_WEEK_OPTIONS, WEEK_OPTIONS, ClientTaskGenerationPattern } from "@/types/client";
 import TagSelector from "../TagSelector";
 import { Label } from "@/components/ui/label";
@@ -63,7 +63,6 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
 
-  const [isUploading, setIsUploading] = useState(false);
   const form = useForm<ClientTaskTemplateFormValues>({
     resolver: zodResolver(templateSchema),
     defaultValues: {
@@ -156,7 +155,7 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-4 bg-card rounded-xl">
         
         {/* Informações Básicas */}
         <FormField

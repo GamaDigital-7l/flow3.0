@@ -3,9 +3,9 @@
 import React from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import ClientTaskCard from './ClientTaskCard';
 
