@@ -81,3 +81,10 @@ export function getInitials(name: string): string {
 export function sanitizeFilename(filename: string): string {
   return filename.replace(/[^a-z0-9_.]/gi, '_').toLowerCase();
 }
+
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+};

@@ -15,6 +15,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Proposal, ProposalItem, PROPOSAL_TEMPLATES } from '@/types/proposal';
 import ProposalItemForm from './ProposalItemForm';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/utils';
 
 // Tipos simplificados para evitar dependência de '@/types/client'
 interface Client {
