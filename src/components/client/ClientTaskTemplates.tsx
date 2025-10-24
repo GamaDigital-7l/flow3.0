@@ -28,7 +28,7 @@ const fetchClientTaskTemplates = async (clientId: string, userId: string): Promi
     .from("client_task_generation_templates")
     .select(`
       *,
-      client_task_tags(
+      client_template_tags(
         tags(id, name, color)
       )
     `)
@@ -37,7 +37,13 @@ const fetchClientTaskTemplates = async (clientId: string, userId: string): Promi
     .order("template_name", { ascending: true });
 
   if (error) throw error;
-  return data as ClientTaskTemplate[] || [];
+  // Mapear as tags da nova tabela de junção
+  const mappedData = data?.map((template: any) => ({
+    ...template,
+    client_task_tags: template.client_template_tags.map((ttt: any) => ({ tags: ttt.tags })),
+  })) || [];
+  
+  return mappedData as ClientTaskTemplate[] || [];
 };
 
 const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, clientName }) => {
@@ -70,8 +76,8 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
     mutationFn: async (templateId: string) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
-      // Deletar tags associadas (reutilizando a tabela client_task_tags)
-      await supabase.from("client_task_tags").delete().eq("client_task_id", templateId);
+      // Deletar tags associadas (usando a nova tabela client_template_tags)
+      await supabase.from("client_template_tags").delete().eq("template_id", templateId);
       
       const { error } = await supabase
         .from("client_task_generation_templates")

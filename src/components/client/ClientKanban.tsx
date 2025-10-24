@@ -106,6 +106,7 @@ const ClientKanban: React.FC = () => {
   const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'kanban' | 'templates'>('kanban');
+  const [initialStatus, setInitialStatus] = useState<ClientTaskStatus | undefined>(undefined); // Novo estado para status inicial
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["clientTasks", clientId, userId],
@@ -133,6 +134,7 @@ const ClientKanban: React.FC = () => {
     setIsTaskFormOpen(false);
     setEditingTask(undefined);
     setOpenTaskId(null);
+    setInitialStatus(undefined);
   };
 
   const handleEditTask = useCallback((task: ClientTask) => {
@@ -140,6 +142,12 @@ const ClientKanban: React.FC = () => {
     setIsTaskFormOpen(true);
   }, []);
   
+  const handleAddTaskInColumn = useCallback((status: ClientTaskStatus) => {
+    setEditingTask(undefined);
+    setInitialStatus(status);
+    setIsTaskFormOpen(true);
+  }, []);
+
   // Efeito para abrir o formulário de edição se um taskId for passado na URL
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -253,7 +261,7 @@ const ClientKanban: React.FC = () => {
           <Button variant="outline" onClick={() => navigate('/clients')}><ArrowLeft className="mr-2 h-4 w-4" /> Voltar</Button>
           <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setEditingTask(undefined)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button onClick={() => handleAddTaskInColumn('in_progress')} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <PlusCircle className="mr-2 h-4 w-4" /> Nova Tarefa
               </Button>
             </DialogTrigger>
@@ -266,7 +274,7 @@ const ClientKanban: React.FC = () => {
               </DialogHeader>
               <ClientTaskForm
                 clientId={clientId!}
-                initialData={editingTask}
+                initialData={editingTask ? editingTask : { status: initialStatus }}
                 onClientTaskSaved={handleTaskSaved}
                 onClose={() => setIsTaskFormOpen(false)}
               />
@@ -292,6 +300,14 @@ const ClientKanban: React.FC = () => {
                 <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col">
                   <CardHeader className="p-3 pb-2 flex-shrink-0">
                     <CardTitle className={cn("text-lg font-semibold", column.color)}>{column.title} ({tasksByStatus.get(column.id)?.length || 0})</CardTitle>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleAddTaskInColumn(column.id)} 
+                      className="w-full border-dashed border-border text-primary hover:bg-primary/10 h-8 text-sm mt-2"
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
+                    </Button>
                   </CardHeader>
                   
                   <ScrollArea className="flex-1 p-3 pt-0">
@@ -335,6 +351,7 @@ const ClientKanban: React.FC = () => {
           if (!open) {
             setEditingTask(undefined);
             setOpenTaskId(null);
+            setInitialStatus(undefined);
             // Limpa o parâmetro da URL se estiver presente
             if (location.search.includes('openTaskId')) {
               navigate(location.pathname, { replace: true });
@@ -351,7 +368,7 @@ const ClientKanban: React.FC = () => {
           </DialogHeader>
           <ClientTaskForm
             clientId={clientId!}
-            initialData={editingTask}
+            initialData={editingTask ? editingTask : { status: initialStatus }}
             onClientTaskSaved={handleTaskSaved}
             onClose={() => setIsTaskFormOpen(false)}
           />

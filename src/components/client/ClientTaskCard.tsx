@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare } from 'lucide-react';
+import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye } from 'lucide-react';
 import { cn, formatDateTime, formatTime, parseISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -134,8 +134,9 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
       className={cn(
         "bg-card border border-border rounded-xl shadow-md cursor-grab active:cursor-grabbing",
         isDragging && "ring-2 ring-primary",
+        // Usando cores de status mais discretas ou primárias
         isApproved && "border-green-500/50",
-        isEditRequested && "border-orange-500/50"
+        isEditRequested && "border-primary ring-1 ring-primary/50"
       )}
     >
       <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between gap-2">
@@ -149,7 +150,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
         </div>
         <div className="flex gap-1 flex-shrink-0">
           {task.public_approval_enabled && task.public_approval_link_id && (
-            <Button variant="ghost" size="icon" onClick={handleCopyApprovalLink} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
+            <Button variant="ghost" size="icon" onClick={handleCopyApprovalLink} className="h-7 w-7 text-primary hover:bg-primary/10">
               <LinkIcon className="h-4 w-4" />
               <span className="sr-only">Copiar Link de Aprovação</span>
             </Button>
@@ -157,7 +158,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
           <Button variant="ghost" size="icon" onClick={() => onEdit(task)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => handleDeleteTask.mutate(task.id)} className="h-7 w-7 text-red-500 hover:bg-red-500/10">
+          <Button variant="ghost" size="icon" onClick={() => handleDeleteTask.mutate(task.id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -206,7 +207,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('edit_requested')} 
                 variant="outline" 
-                className="flex-1 border-orange-500 text-orange-500 hover:bg-orange-500/10 h-8 text-xs"
+                className="flex-1 border-primary text-primary hover:bg-primary/10 h-8 text-xs"
                 disabled={handleStatusUpdate.isPending}
               >
                 <Edit3 className="mr-1 h-3 w-3" /> Editar
@@ -217,7 +218,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
             <Button 
               size="sm" 
               onClick={() => handleStatusUpdate.mutate('posted')} 
-              className="w-full bg-purple-600 text-white hover:bg-purple-700 h-8 text-xs"
+              className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs"
               disabled={handleStatusUpdate.isPending}
             >
               <Share2 className="mr-1 h-3 w-3" /> Marcar como Postado
@@ -227,7 +228,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
             <Button 
               size="sm" 
               onClick={() => handleStatusUpdate.mutate('in_progress')} 
-              className="w-full bg-blue-600 text-white hover:bg-blue-700 h-8 text-xs"
+              className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs"
               disabled={handleStatusUpdate.isPending}
             >
               <Edit3 className="mr-1 h-3 w-3" /> Retomar Edição
@@ -237,7 +238,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
             <Button 
               size="sm" 
               onClick={() => handleStatusUpdate.mutate('under_review')} 
-              className="w-full bg-yellow-600 text-white hover:bg-yellow-700 h-8 text-xs"
+              className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs"
               disabled={handleStatusUpdate.isPending}
             >
               <Eye className="mr-1 h-3 w-3" /> Enviar para Revisão
@@ -246,9 +247,9 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
         </div>
         
         {isEditRequested && task.edit_reason && (
-          <div className="p-2 bg-orange-500/10 border border-orange-500/30 rounded-md">
-            <p className="text-xs font-semibold text-orange-500">Motivo da Edição:</p>
-            <p className="text-xs text-orange-400 mt-0.5">{task.edit_reason}</p>
+          <div className="p-2 bg-primary/10 border border-primary/30 rounded-md">
+            <p className="text-xs font-semibold text-primary">Motivo da Edição:</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{task.edit_reason}</p>
           </div>
         )}
       </CardContent>

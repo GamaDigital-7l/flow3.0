@@ -73,6 +73,7 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
       is_active: initialData?.is_active ?? true,
       is_standard_task: initialData?.is_standard_task ?? false,
       generation_pattern: initialData?.generation_pattern || [{ week: 1, day_of_week: 'Monday', count: 1 }],
+      // Mapear tags da nova estrutura
       selected_tag_ids: initialData?.client_task_tags?.map(ttt => ttt.tags.id) || [],
     },
   });
@@ -127,15 +128,15 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
         showSuccess("Template criado com sucesso!");
       }
 
-      // Handle tags (using client_task_tags table for templates)
-      await supabase.from("client_task_tags").delete().eq("client_task_id", templateId); // Reutilizando a tabela, mas o client_task_id será o templateId
+      // Handle tags (using client_template_tags table)
+      await supabase.from("client_template_tags").delete().eq("template_id", templateId);
 
       if (values.selected_tag_ids && values.selected_tag_ids.length > 0) {
         const templateTagsToInsert = values.selected_tag_ids.map(tagId => ({
-          client_task_id: templateId, // Usando templateId aqui
+          template_id: templateId, // Usando templateId aqui
           tag_id: tagId,
         }));
-        const { error: tagInsertError } = await supabase.from("client_task_tags").insert(templateTagsToInsert);
+        const { error: tagInsertError } = await supabase.from("client_template_tags").insert(templateTagsToInsert);
         if (tagInsertError) throw tagInsertError;
       }
     },
@@ -201,7 +202,7 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
                     <FormItem>
                         <FormLabel>Vencimento (Dias após Geração)</FormLabel>
                         <FormControl><Input type="number" min="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} /></FormControl>
-                        <FormDescription>0 = Vence no dia da geração.</FormDescription>
+                        <FormDescription>0 = Vence no dia da geração.</FormDescrição>
                         <FormMessage />
                     </FormItem>
                 )}
