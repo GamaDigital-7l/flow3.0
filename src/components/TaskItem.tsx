@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,17 +238,14 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
               </Badge>
             )}
           </div>
-          <p className={cn("text-muted-foreground mt-0.5 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
-            <CalendarDays className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> {getTaskDueDateDisplay(task)}
-          </p>
-          {shouldShowHabitWarning && (
+          {isTrulyOverdue && (
             <p className={cn("text-red-500 mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
-              <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> Não quebre o hábito!
+              <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> ⚠️ Tarefa Atrasada!
             </p>
           )}
-          {isTrulyOverdue && (
-            <p className={cn("text-status-overdue mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
-              <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> Atenção: Tarefa Atrasada!
+          {shouldShowHabitWarning && (
+            <p className={cn("text-red-500 mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
+              <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> ⚠️ Não quebre o hábito!
             </p>
           )}
         </div>
