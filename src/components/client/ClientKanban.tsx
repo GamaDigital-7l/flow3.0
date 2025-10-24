@@ -29,7 +29,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
-const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, options);
+const useTouchSensor = useTouchSensor(options: any = {}) => useSensor(TouchSensor, options);
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -100,6 +100,8 @@ const fetchClientData = async (clientId: string, userId: string): Promise<{ clie
   };
 };
 
+type TabValue = "kanban" | "templates";
+
 const ClientKanban: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
@@ -115,6 +117,7 @@ const ClientKanban: React.FC = () => {
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null); // Estado para Lightbox
+  const [activeTab, setActiveTab] = useState<TabValue>("kanban");
   
   // DND State
   const [activeDragItem, setActiveDragItem] = useState<ClientTask | null>(null);
