@@ -88,13 +88,17 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
-    defaultValues: {
-      name: initialData?.name || "",
-      description: initialData?.description || null,
-      contact_email: initialData?.contact_email || null,
-      contact_phone: initialData?.contact_phone || null,
-      monthly_delivery_goal: initialData?.monthly_delivery_goal || 0,
-      group_id: "", // Implementação futura
+    defaultValues: initialData ? {
+      ...initialData,
+      amount: initialData.amount || 0,
+      payment_day_of_month: initialData.payment_day_of_month || undefined,
+      //target_account_id: initialData.target_account_id || "",
+    } : {
+      name: "",
+      description: null,
+      contact_email: null,
+      contact_phone: null,
+      monthly_delivery_goal: 0,
     },
   });
 
@@ -193,6 +197,82 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
     } catch (error: any) {
       showError("Erro ao salvar cliente: " + error.message);
       console.error("Erro ao salvar cliente:", error);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!userId) {
+      showError("Usuário não autenticado.");
+      return;
+    }
+
+    if (!newMemberEmail) {
+      showError("Por favor, insira o email do novo membro.");
+      return;
+    }
+
+    try {
+      // 1. Buscar o usuário pelo email
+      const { data: user, error: userError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", newMemberEmail)
+        .single();
+
+      if (userError) {
+        showError("Erro ao buscar usuário: " + userError.message);
+        return;
+      }
+
+      if (!user) {
+        showError("Usuário não encontrado com este email.");
+        return;
+      }
+
+      // 2. Inserir o membro no workspace
+      const { error: insertError } = await supabase
+        .from("client_workspace_members")
+        .insert({
+          client_id: initialData!.id,
+          user_id: user.id,
+          role: "member", // Defina o papel padrão
+        });
+
+      if (insertError) {
+        showError("Erro ao adicionar membro: " + insertError.message);
+        return;
+      }
+
+      showSuccess("Membro adicionado com sucesso!");
+      setNewMemberEmail("");
+      refetchMembers();
+    } catch (error: any) {
+      showError("Erro ao adicionar membro: " + error.message);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!userId) {
+      showError("Usuário não autenticado.");
+      return;
+    }
+
+    try {
+      const { error: deleteError } = await supabase
+        .from("client_workspace_members")
+        .delete()
+        .eq("client_id", initialData!.id)
+        .eq("user_id", memberId);
+
+      if (deleteError) {
+        showError("Erro ao remover membro: " + deleteError.message);
+        return;
+      }
+
+      showSuccess("Membro removido com sucesso!");
+      refetchMembers();
+    } catch (error: any) {
+      showError("Erro ao remover membro: " + error.message);
     }
   };
 
@@ -295,7 +375,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
                     <p className="text-xs text-muted-foreground">{member.role}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-500/10">
+                <Button variant="ghost" size="icon" onClick={() => handleRemoveMember(member.user_id)} className="h-7 w-7 text-red-500 hover:bg-red-500/10">
                   <UserMinus className="h-4 w-4" />
                 </Button>
               </div>
@@ -313,7 +393,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
             onChange={(e) => setNewMemberEmail(e.target.value)}
             className="flex-1 bg-input border-border text-foreground focus-visible:ring-ring"
           />
-          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/10">
+          <Button variant="outline" size="sm" onClick={handleAddMember} className="border-primary text-primary hover:bg-primary/10">
             <UserPlus className="mr-2 h-4 w-4" /> Adicionar
           </Button>
         </div>
