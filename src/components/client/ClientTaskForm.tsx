@@ -1,32 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2, XCircle, Image as ImageIcon, Link as LinkIcon, Clock } from "lucide-react";
+import { Loader2, Clock, Link as LinkIcon } from "lucide-react";
 import { format } from "date-fns";
-import { cn, parseISO, sanitizeFilename, convertToUtc, formatDateTime } from "@/lib/utils";
+import { convertToUtc, parseISO } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import TagSelector from "../TagSelector";
-import TimePicker from "../TimePicker";
-import { ptBR } from "date-fns/locale/pt-BR";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientTaskHistory from "./ClientTaskHistory";
-import { Checkbox } from "@/components/ui/checkbox"; 
-import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
+import ClientTaskImageManager from "./ClientTaskImageManager"; // Importação do novo componente
+import ClientTaskGeneralForm from "./ClientTaskGeneralForm"; // Importação do novo componente
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -55,8 +44,7 @@ const clientTaskSchema = z.object({
   status: z.enum(["in_progress", "under_review", "approved", "edit_requested", "posted"]).default("in_progress"),
   responsible_id: z.string().nullable().optional(),
   selected_tag_ids: z.array(z.string()).optional(),
-  image_files: z.any().optional(), // Para lidar com FileList
-  image_urls: z.array(z.string()).optional().nullable(),
+  image_urls: z.array(z.string()).optional().nullable(), // Gerenciado pelo ImageManager
   public_approval_enabled: z.boolean().default(false),
 });
 
@@ -70,7 +58,6 @@ interface ClientTaskFormProps {
 }
 
 const fetchUsers = async () => {
-  // Fetch users from profiles table (assuming RLS allows reading profiles)
   const { data, error } = await supabase
     .from("profiles")
     .select("id, first_name, last_name, avatar_url");
@@ -83,9 +70,12 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
 
-  const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>(initialData?.image_urls || []);
-  const [publicApprovalLink, setPublicApprovalLink] = useState<string | null>(initialData?.public_approval_link_id || null);
+  const [publicApprovalLink, setPublicApprovalLink] = useState<string | null>(
+    initialData?.public_approval_link_id 
+      ? `${window.location.origin}/approval/${initialData.public_approval_link_id}`
+      : null
+  );
   const [activeTab, setActiveTab] = useState('general');
 
   const { data: users, isLoading: isLoadingUsers } = useQuery({
@@ -109,63 +99,6 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
     },
   });
 
-  const uploadFile = async (file: File): Promise<string> => {
-    if (!userId) throw new Error("Usuário não autenticado para upload.");
-    
-    const sanitizedFilename = sanitizeFilename(file.name);
-    // Incluindo userId no path para RLS do Storage. O path deve ser: bucket/folder1/folder2/...
-    // Assumindo que a RLS verifica o segundo segmento como o user_id.
-    const filePath = `client_tasks/${userId}/${clientId}/${Date.now()}-${sanitizedFilename}`;
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("client-assets")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      // Mensagem de erro mais clara para RLS
-      if (uploadError.message.includes('new row violates row-level security policy')) {
-        throw new Error("Erro de permissão (RLS). Verifique se a política de segurança do bucket 'client-assets' permite uploads para o caminho: " + filePath);
-      }
-      throw new Error("Erro ao fazer upload da imagem: " + uploadError.message);
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("client-assets")
-      .getPublicUrl(filePath);
-
-    return publicUrlData.publicUrl;
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!userId) {
-      showError("Usuário não autenticado.");
-      return;
-    }
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsUploading(true);
-    const uploadPromises = Array.from(files).map(file => uploadFile(file));
-
-    try {
-      const newUrls = await Promise.all(uploadPromises);
-      setUploadedImageUrls(prev => [...prev, ...newUrls]);
-      showSuccess(`${newUrls.length} imagem(ns) adicionada(s)!`);
-    } catch (err: any) {
-      showError("Erro ao fazer upload: " + err.message);
-    } finally {
-      setIsUploading(false);
-      e.target.value = ''; // Reset input file
-    }
-  };
-
-  const handleRemoveImage = (urlToRemove: string) => {
-    setUploadedImageUrls(prev => prev.filter(url => url !== urlToRemove));
-  };
-
   const onSubmit = async (values: ClientTaskFormValues) => {
     if (!userId) {
       showError("Usuário não autenticado.");
@@ -183,18 +116,17 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         user_id: userId,
         title: values.title,
         description: values.description || null,
-        // month_year_reference é crucial para a Edge Function
         month_year_reference: values.due_date ? format(values.due_date, "yyyy-MM") : format(new Date(), "yyyy-MM"),
         status: newStatus,
         due_date: values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null,
         time: values.time || null,
         responsible_id: values.responsible_id || null,
-        image_urls: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
+        image_urls: uploadedImageUrls.length > 0 ? uploadedImageUrls : null, // Usar o estado local
         public_approval_enabled: values.public_approval_enabled,
         updated_at: new Date().toISOString(),
         is_completed: newStatus === 'approved' || newStatus === 'posted',
         completed_at: (newStatus === 'approved' || newStatus === 'posted') ? new Date().toISOString() : null,
-        edit_reason: null, // Limpar motivo de edição ao salvar
+        edit_reason: null,
       };
 
       if (isEditing) {
@@ -229,7 +161,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         if (tagInsertError) throw tagInsertError;
       }
       
-      // 5. Registrar histórico de criação/atualização/status
+      // 5. Registrar histórico
       if (!isEditing) {
         await supabase.from('client_task_history').insert({
           client_task_id: clientTaskId,
@@ -258,9 +190,6 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
       if (values.public_approval_enabled) {
         const monthYearRef = dataToSave.month_year_reference;
         
-        // Se já existe um link de aprovação para esta tarefa, não precisamos gerar um novo link de aprovação MENSAL
-        // A Edge Function 'generate-approval-link' gera um link MENSAL, não por tarefa.
-        // Se a tarefa for nova ou o link for nulo, tentamos gerar o link MENSAL.
         if (!initialData?.public_approval_link_id) {
             const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {
               body: {
@@ -278,7 +207,6 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
               const publicLink = `${window.location.origin}/approval/${uniqueId}`;
               setPublicApprovalLink(publicLink);
 
-              // Update the client_tasks table with the unique_link_id
               const { error: updateTaskError } = await supabase
                 .from("client_tasks")
                 .update({ public_approval_link_id: uniqueId })
@@ -292,7 +220,6 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
               }
             }
         } else {
-            // Se o link já existe, apenas o exibimos
             const publicLink = `${window.location.origin}/approval/${initialData.public_approval_link_id}`;
             setPublicApprovalLink(publicLink);
         }
@@ -300,7 +227,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         setPublicApprovalLink(null);
       }
 
-      form.reset(values); // Resetar com os valores salvos para manter o estado
+      form.reset(values);
       onClientTaskSaved();
       queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
     } catch (error: any) {
@@ -310,248 +237,50 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
   };
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground">
-        <TabsTrigger value="general">Geral</TabsTrigger>
-        <TabsTrigger value="history" disabled={!initialData?.id}>
-          <Clock className="mr-2 h-4 w-4" /> Histórico
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="general" className="mt-4">
-        <Form {...form}>
+    <FormProvider {...form}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground">
+          <TabsTrigger value="general">Geral</TabsTrigger>
+          <TabsTrigger value="history" disabled={!initialData?.id}>
+            <Clock className="mr-2 h-4 w-4" /> Histórico
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="general" className="mt-4">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-0 bg-card rounded-xl frosted-glass card-hover-effect">
-            {/* Título */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Post para Instagram" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            
+            <ClientTaskGeneralForm 
+              users={users} 
+              isLoadingUsers={isLoadingUsers} 
+              publicApprovalLink={publicApprovalLink}
             />
 
-            {/* Descrição */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição (Legenda)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Detalhes da entrega/legenda..." {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <ClientTaskImageManager
+              clientId={clientId}
+              userId={userId!}
+              uploadedImageUrls={uploadedImageUrls}
+              setUploadedImageUrls={setUploadedImageUrls}
             />
 
-            {/* Data e Hora */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="due_date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Data de Vencimento</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal bg-input border-border text-foreground hover:bg-accent hover:text-accent-foreground",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                            {field.value ? (
-                              formatDateTime(field.value, false)
-                            ) : (
-                              <span>Escolha uma data</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-popover border-border rounded-md shadow-lg">
-                        <Calendar
-                          mode="single"
-                          selected={field.value || undefined}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={ptBR}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Horário (Opcional)</FormLabel>
-                    <FormControl>
-                      <TimePicker
-                        value={field.value || null}
-                        onChange={(time) => field.onChange(time || null)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Responsável e Status */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="responsible_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsável (Opcional)</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
-                      value={field.value || '__none__'}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecionar responsável" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="__none__">Nenhum</SelectItem>
-                        {users?.map((user: any) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.first_name} {user.last_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecionar status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="in_progress">Em Produção</SelectItem>
-                        <SelectItem value="under_review">Para Aprovação</SelectItem>
-                        <SelectItem value="approved">Aprovado</SelectItem>
-                        <SelectItem value="posted">Postado/Concluído</SelectItem>
-                        <SelectItem value="edit_requested">Edição Solicitada</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Tags */}
-            <TagSelector
-              selectedTagIds={form.watch("selected_tag_ids") || []}
-              onTagSelectionChange={(ids) => form.setValue("selected_tag_ids", ids, { shouldDirty: true })}
-            />
-
-            {/* Imagens */}
-            <div className="space-y-2">
-              <Label>Capa/Anexos (Proporção 4:5 para Capa)</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                disabled={isUploading}
-              />
-              {isUploading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {uploadedImageUrls.map((url, index) => (
-                  <div key={index} className="relative h-20 w-20 rounded-md overflow-hidden group">
-                    <AspectRatio ratio={4 / 5}>
-                      <img src={url} alt={`Anexo ${index + 1}`} className="h-full w-full object-cover" />
-                    </AspectRatio>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-0 right-0 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleRemoveImage(url)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Aprovação Pública */}
-            <FormField
-              control={form.control}
-              name="public_approval_enabled"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Habilitar Aprovação Pública
-                    </FormLabel>
-                    <FormDescription className="text-muted-foreground">
-                      Permite que o cliente aprove ou solicite edição via link público.
-                    </FormDescription>
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            {publicApprovalLink && (
-              <div className="flex items-center gap-2 p-3 bg-green-100 border border-green-200 rounded-md">
-                <LinkIcon className="h-4 w-4 text-green-600" />
-                <a href={publicApprovalLink} target="_blank" rel="noopener noreferrer" className="text-sm text-green-700 hover:underline">
-                  Link de Aprovação Pública: {publicApprovalLink}
-                </a>
-              </div>
-            )}
-
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={form.formState.isSubmitting || isUploading}>
+            <Button 
+              type="submit" 
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90" 
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (initialData?.id ? "Atualizar Tarefa" : "Adicionar Tarefa")}
             </Button>
           </form>
-        </Form>
-      </TabsContent>
-      
-      <TabsContent value="history" className="mt-4">
-        {initialData?.id ? (
-          <ClientTaskHistory clientTaskId={initialData.id} />
-        ) : (
-          <p className="text-muted-foreground p-4">O histórico estará disponível após a criação da tarefa.</p>
-        )}
-      </TabsContent>
-    </Tabs>
+        </TabsContent>
+        
+        <TabsContent value="history" className="mt-4">
+          {initialData?.id ? (
+            <ClientTaskHistory clientTaskId={initialData.id} />
+          ) : (
+            <p className="text-muted-foreground p-4">O histórico estará disponível após a criação da tarefa.</p>
+          )}
+        </TabsContent>
+      </Tabs>
+    </FormProvider>
   );
 };
 
