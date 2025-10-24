@@ -135,13 +135,9 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
     <motion.div
       ref={setNodeRef} 
       style={style} 
-      // Aplicando listeners e attributes ao elemento raiz para arrastar o card inteiro
-      {...listeners} 
-      {...attributes}
-      // Adicionando layoutId para animações de movimento (se o componente pai usar AnimatePresence)
       layoutId={task.id} 
       className={cn(
-        "bg-card border border-border rounded-xl shadow-md cursor-grab active:cursor-grabbing",
+        "bg-card border border-border rounded-xl shadow-md transition-all duration-200",
         isDragging && "ring-2 ring-primary",
         isApproved && "border-green-500/50",
         isEditRequested && "border-primary ring-1 ring-primary/50"
@@ -158,8 +154,18 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
       
       <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between gap-2">
         <div className="flex items-center gap-1 min-w-0">
-          {/* Removido o GripVertical, o card inteiro é o handle */}
-          <CardTitle className="text-sm font-semibold text-foreground line-clamp-2 break-words">
+          {/* Handle de Arrastar */}
+          <div 
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground flex-shrink-0 h-6 w-6 flex items-center justify-center"
+            {...listeners} 
+            {...attributes}
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+          <CardTitle 
+            className="text-sm font-semibold text-foreground line-clamp-2 break-words cursor-pointer hover:text-primary transition-colors"
+            onClick={() => onEdit(task)} // Torna o título clicável para edição
+          >
             {task.title}
           </CardTitle>
         </div>
