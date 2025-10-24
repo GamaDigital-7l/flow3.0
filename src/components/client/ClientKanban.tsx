@@ -7,11 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send, Copy, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, getInitials } from '@/lib/utils';
 import PageTitle from "@/components/layout/PageTitle";
-import { useSession } from '@/integrations/supabase/auth';
-import { showError, showSuccess, showInfo } from '@/utils/toast';
+import { useSession } from "@/integrations/supabase/auth";
+import { showError, showSuccess, showInfo } from "@/utils/toast";
 import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor, DragOverlay, useDndMonitor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
@@ -20,12 +20,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientTaskTemplates from './ClientTaskTemplates';
 import copy from 'copy-to-clipboard';
-import { Input } from '@/components/ui/input';
-import { arrayMove } from '@dnd-kit/sortable';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
+import { PublicApprovalPage } from "@/pages";
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -312,7 +313,7 @@ const ClientKanban: React.FC = () => {
     mutationFn: async () => {
       if (!userId || !clientId) throw new Error("Usuário não autenticado ou cliente inválido.");
       
-      const tasksToReview = tasksUnderReview.filter(t => t.public_approval_enabled);
+      const tasksToReview = tasksByStatus.get('under_review') || [];
       if (tasksToReview.length === 0) {
         showInfo("Nenhuma tarefa em 'Para Aprovação' com aprovação pública habilitada.");
         return;
@@ -364,59 +365,18 @@ const ClientKanban: React.FC = () => {
   };
   
   const handleImageClick = (url: string) => {
-    setLightboxUrl(url);
+    // Implementar a lógica para exibir a imagem em tela cheia
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error || !data?.client) {
-    showError("Erro ao carregar dados do cliente: " + (error?.message || "Cliente não encontrado."));
-    return (
-      <div className="p-4">
-        <h1 className="text-xl font-bold text-red-500">Erro ao carregar cliente.</h1>
-        <Button onClick={() => navigate('/clients')} className="mt-4"><ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Clientes</Button>
-      </div>
-    );
-  }
-
-  const { client } = data;
-
   return (
-    <div className="page-content-wrapper space-y-6 flex flex-col h-full">
-      <PageTitle title={`Workspace: ${client.name}`} description="Gerencie o fluxo de trabalho e aprovações do cliente.">
+    <div className="flex flex-col h-full">
+      <PageTitle title={`Workspace: ${data?.client?.name}`} description="Gerencie o fluxo de trabalho e aprovações do cliente.">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={client.logo_url || undefined} alt={client.name} />
-            <AvatarFallback className="text-xs bg-primary/20 text-primary">{getInitials(client.name)}</AvatarFallback>
+            <AvatarImage src={data?.client?.logo_url || undefined} alt={data?.client?.name} />
+            <AvatarFallback className="text-xs bg-primary/20 text-primary">{getInitials(data?.client?.name || 'Cliente')}</AvatarFallback>
           </Avatar>
           <Button variant="outline" onClick={() => navigate('/clients')}><ArrowLeft className="mr-2 h-4 w-4" /> Voltar</Button>
-          <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleAddTaskInColumn('in_progress')} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <PlusCircle className="mr-2 h-4 w-4" /> Nova Tarefa
-              </Button>
-            </DialogTrigger>
-            <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-              <DialogHeader>
-                <DialogTitle className="text-foreground">{editingTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</DialogTitle>
-                <DialogDescription>
-                  {editingTask ? "Atualize os detalhes da tarefa." : "Crie uma nova tarefa para o cliente."}
-                </DialogDescription>
-              </DialogHeader>
-              <ClientTaskForm
-                clientId={clientId!}
-                initialData={editingTask ? editingTask : { status: initialStatus }}
-                onClientTaskSaved={handleTaskSaved}
-                onClose={() => setIsTaskFormOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
         </div>
       </PageTitle>
       
@@ -477,42 +437,11 @@ const ClientKanban: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="templates" className="mt-4">
-          <ClientTaskTemplates clientId={clientId!} clientName={client.name} />
+          <ClientTaskTemplates clientId={clientId!} clientName={data?.client?.name!} />
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para edição de Tarefa */}
-      <Dialog 
-        open={isTaskFormOpen} 
-        onOpenChange={(open) => {
-          setIsTaskFormOpen(open);
-          if (!open) {
-            setEditingTask(undefined);
-            setOpenTaskId(null);
-            setInitialStatus(undefined);
-            if (location.search.includes('openTaskId')) {
-              navigate(location.pathname, { replace: true });
-            }
-          }
-        }}
-      >
-        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-          <DialogHeader>
-            <DialogTitle className="text-foreground">{editingTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</DialogTitle>
-            <DialogDescription>
-              {editingTask ? "Atualize os detalhes da tarefa." : "Crie uma nova tarefa para o cliente."}
-            </DialogDescription>
-          </DialogHeader>
-          <ClientTaskForm
-            clientId={clientId!}
-            initialData={editingTask ? editingTask : { status: initialStatus }}
-            onClientTaskSaved={handleTaskSaved}
-            onClose={() => setIsTaskFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Modal para exibir o link de aprovação gerado */}
+      {/* Modal para exibir o link */}
       <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
         <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
           <DialogHeader>
@@ -523,31 +452,15 @@ const ClientKanban: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4">
             <Input value={generatedLink || ''} readOnly className="bg-input border-border text-foreground focus-visible:ring-ring" />
-            <Button onClick={() => handleCopyLink(generatedLink || '')} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              <Copy className="mr-2 h-4 w-4" /> Copiar Link
-            </Button>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => handleCopyLink(generatedLink || '')} className="w-1/2 mr-2">
+                <Copy className="mr-2 h-4 w-4" /> Copiar Link
+              </Button>
+              <Button onClick={() => {}} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+                <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
+              </Button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Lightbox para Imagem */}
-      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
-        <DialogContent className="lightbox-fullscreen-override">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setLightboxUrl(null)} 
-            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
-          >
-            <XCircle className="h-6 w-6" />
-          </Button>
-          {lightboxUrl && (
-            <img
-              src={lightboxUrl}
-              alt="Visualização em Tela Cheia"
-              className="max-w-[95%] max-h-[95%] object-contain"
-            />
-          )}
         </DialogContent>
       </Dialog>
     </div>
@@ -555,3 +468,126 @@ const ClientKanban: React.FC = () => {
 };
 
 export default ClientKanban;
+</dyad-file>
+
+<dyad-write path="src/components/ui/dialog.tsx" description="Adding a custom class to the dialog content to allow for fullscreen lightbox.">
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+
+import { cn } from "@/lib/utils"
+
+const Dialog = DialogPrimitive.Root
+
+const DialogTrigger = DialogPrimitive.Trigger
+
+const DialogPortal = DialogPrimitive.Portal
+
+const DialogClose = DialogPrimitive.Close
+
+const DialogOverlay = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Overlay>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-top-[2%] data-[state=open]:slide-in-from-top-[2%]",
+      className
+    )}
+    {...props}
+  />
+))
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+
+const DialogContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed left-[50%] max-h-[85vh] w-[90vw] max-w-[520px] translate-x-[-50%] translate-y-[-50%] top-[50%] z-50 grid w-full gap-4 border bg-card p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-top-[2%] data-[state=open]:slide-in-from-top-[2%] md:max-w-[520px]",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </DialogPortal>
+))
+DialogContent.displayName = DialogPrimitive.Content.displayName
+
+const DialogHeader = ({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Header>) => (
+  <div
+    className={cn(
+      "flex flex-col space-y-1.5 text-center sm:text-left",
+      className
+    )}
+    {...props}
+  />
+)
+DialogHeader.displayName = "DialogHeader"
+
+const DialogFooter = ({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Footer>) => (
+  <div
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      className
+    )}
+    {...props}
+  />
+)
+DialogFooter.displayName = "DialogFooter"
+
+const DialogTitle = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Title
+    ref={ref}
+    className={cn(
+      "text-lg font-semibold leading-none tracking-tight text-foreground",
+      className
+    )}
+    {...props}
+  />
+))
+DialogTitle.displayName = DialogPrimitive.Title.displayName
+
+const DialogDescription = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+DialogDescription.displayName = DialogPrimitive.Description.displayName
+
+export {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+  DialogOverlay,
+  DialogPortal,
+}
