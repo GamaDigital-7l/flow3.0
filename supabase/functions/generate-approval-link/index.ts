@@ -27,57 +27,42 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response('Unauthorized', { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
+
     const token = authHeader.replace('Bearer ', '');
     const { data: userAuth, error: authError } = await supabaseServiceRole.auth.getUser(token);
 
-    if (authError || !userAuth.user) {
-      console.error("Erro de autenticação:", authError);
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Invalid or missing token." }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      );
+    if (authError || !userAuth?.user) {
+      console.error("Authentication error:", authError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
-    const userId = userAuth.user.id;
 
+    const userId = userAuth.user.id;
     const { clientId, monthYearRef } = await req.json();
 
     if (!clientId || !monthYearRef) {
-      return new Response(
-        JSON.stringify({ error: "Missing clientId or monthYearRef." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Missing data" }), { status: 400, headers: corsHeaders });
     }
 
-    // Gerar um novo link
-    const expiresAt = addDays(new Date(), 7); // Link válido por 7 dias
+    const expiresAt = addDays(new Date(), 7).toISOString();
     const uniqueId = crypto.randomUUID();
 
-    const { data: newLink, error: insertLinkError } = await supabaseServiceRole
+    const { data, error } = await supabaseServiceRole
       .from('public_approval_links')
-      .insert({
-        client_id: clientId,
-        user_id: userId,
-        month_year_reference: monthYearRef,
-        unique_id: uniqueId,
-        expires_at: expiresAt.toISOString(),
-      })
+      .insert({ client_id: clientId, user_id: userId, month_year_reference: monthYearRef, unique_id: uniqueId, expires_at: expiresAt })
       .select('unique_id')
       .single();
 
-    if (insertLinkError) throw insertLinkError;
+    if (error) {
+      console.error("Error inserting link:", error);
+      return new Response(JSON.stringify({ error: "Failed to generate link" }), { status: 500, headers: corsHeaders });
+    }
 
-    return new Response(JSON.stringify({ uniqueId: newLink.unique_id, message: "Approval link generated successfully." }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ uniqueId: data.unique_id, message: "Link generated" }), { headers: corsHeaders });
 
   } catch (error) {
-    console.error("Erro na Edge Function generate-approval-link:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("Function error:", error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
   }
 });
