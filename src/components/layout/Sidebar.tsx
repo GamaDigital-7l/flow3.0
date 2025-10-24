@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, ListTodo, Target, BookOpen, Dumbbell, Notebook, CalendarDays, Users, BarChart3, Settings, DollarSign, Repeat, Download, GraduationCap, Wallet, FileText } from "lucide-react";
+import { Home, ListTodo, Target, BookOpen, Dumbbell, Notebook, CalendarDays, Users, BarChart3, Settings, DollarSign, Repeat, Download, GraduationCap, Wallet, FileText, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,8 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Tarefas", href: "/tasks", icon: ListTodo },
   { name: "Recorrência", href: "/recurrence", icon: Repeat },
-  { name: "Orçamentos", href: "/proposals", icon: FileText }, // NOVO ITEM
+  { name: "Orçamentos", href: "/proposals", icon: FileText },
+  { name: "Portfólio", href: "/portfolio", icon: Image }, // NOVO ITEM
   { name: "Financeiro", href: "/finance", icon: DollarSign },
   { name: "Metas", href: "/goals", icon: Target },
   { name: "Saúde", href: "/health", icon: Dumbbell },
