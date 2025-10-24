@@ -26,6 +26,8 @@ import copy from 'copy-to-clipboard';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
+import ClientMonthSelector from './ClientMonthSelector'; // Importar o seletor
+import { format } from 'date-fns';
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -65,7 +67,7 @@ const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] =
   { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" },
 ];
 
-const fetchClientData = async (clientId: string, userId: string): Promise<{ client: Client | null, tasks: ClientTask[] }> => {
+const fetchClientData = async (clientId: string, userId: string, monthYearRef: string): Promise<{ client: Client | null, tasks: ClientTask[] }> => {
   const [clientResponse, tasksResponse] = await Promise.all([
     supabase
       .from("clients")
@@ -83,6 +85,7 @@ const fetchClientData = async (clientId: string, userId: string): Promise<{ clie
       `)
       .eq("client_id", clientId)
       .eq("user_id", userId)
+      .eq("month_year_reference", monthYearRef) // Filtro por mês
       .order("order_index", { ascending: true })
   ]);
 
@@ -109,6 +112,9 @@ const ClientKanban: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
+  
+  // Estado para o mês/ano ativo (YYYY-MM)
+  const [currentMonthYear, setCurrentMonthYear] = useState(format(new Date(), 'yyyy-MM'));
 
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
@@ -124,8 +130,8 @@ const ClientKanban: React.FC = () => {
   const [localTasks, setLocalTasks] = useState<ClientTask[]>([]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["clientTasks", clientId, userId],
-    queryFn: () => fetchClientData(clientId!, userId!),
+    queryKey: ["clientTasks", clientId, userId, currentMonthYear], // Adicionado currentMonthYear
+    queryFn: () => fetchClientData(clientId!, userId!, currentMonthYear),
     enabled: !!clientId && !!userId,
     staleTime: 1000 * 60 * 1,
   });
@@ -201,7 +207,7 @@ const ClientKanban: React.FC = () => {
 
       if (fetchError) throw fetchError;
       
-      const taskMap = new Map(existingTasks.map(t => [t.id, t]));
+      const taskMap = new Map(existingTasks.map(t => [t.id, t.id]));
 
       // 2. Montar o payload de upsert com todos os campos obrigatórios
       const dbUpdates = updates.map(({ taskId, newStatus, newOrderIndex }) => {
@@ -281,7 +287,7 @@ const ClientKanban: React.FC = () => {
     } else {
         // Se o over for a coluna vazia (o droppable container), o ID é o status
         targetContainerId = over.id;
-        overId = null; // Não há item sobre o qual soltar
+        overId = null;
     }
 
     const sourceStatus = draggedTask.status;
@@ -316,7 +322,7 @@ const ClientKanban: React.FC = () => {
         
         // Encontra o índice de inserção na coluna de destino
         const overIndex = overId ? tasksInTarget.findIndex(t => t.id === overId) : -1;
-        const insertIndex = overIndex === -1 ? tasksInTarget.length : 0; // Insere no início se a coluna estiver vazia
+        const insertIndex = overIndex === -1 ? tasksInTarget.length : overIndex;
         
         const taskToMove = { ...draggedTask, status: targetStatus };
         newTasksInTarget.splice(insertIndex, 0, taskToMove);
@@ -439,9 +445,13 @@ const ClientKanban: React.FC = () => {
         </TabsList>
         
         <TabsContent value="kanban" className="mt-4 flex-grow flex flex-col min-h-0">
+          
+          {/* Seletor de Mês */}
+          <ClientMonthSelector currentMonthYear={currentMonthYear} onMonthChange={setCurrentMonthYear} />
+          
           {/* Botão de Link de Aprovação */}
           {tasksUnderReview.length > 0 && (
-            <div className="mb-4 flex-shrink-0">
+            <div className="mb-4 flex-shrink-0 mt-4">
               <Button 
                 onClick={() => handleGenerateApprovalLink.mutate()} 
                 disabled={handleGenerateApprovalLink.isPending}
@@ -472,4 +482,69 @@ const ClientKanban: React.FC = () => {
                   onImageClick={handleImageClick}
                 />
               ))}
-            </div
+            </div>
+            
+            {/* Drag Overlay para feedback visual suave */}
+            <DragOverlay>
+              {activeDragItem ? (
+                <ClientTaskCard 
+                  task={activeDragItem} 
+                  onEdit={handleEditTask} 
+                  refetchTasks={refetch}
+                  onImageClick={handleImageClick}
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </TabsContent>
+        
+        <TabsContent value="templates" className="mt-4">
+          <ClientTaskTemplates clientId={clientId!} clientName={data?.client?.name!} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Modal para exibir o link */}
+      <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Link de Aprovação Gerado</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Compartilhe este link com o cliente para aprovação dos posts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input value={generatedLink || ''} readOnly className="bg-input border-border text-foreground focus-visible:ring-ring" />
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => handleCopyLink(generatedLink || '')} className="w-1/2 mr-2">
+                <Copy className="mr-2 h-4 w-4" /> Copiar Link
+              </Button>
+              <Button onClick={() => {}} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+                <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal para Edição de Tarefa */}
+      <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle className="text-foreground">{editingTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</DialogTitle>
+            <DialogDescription>
+              {editingTask ? "Atualize os detalhes da tarefa do cliente." : "Defina uma nova tarefa para o seu dia."}
+            </DialogDescription>
+          </DialogHeader>
+          <ClientTaskForm
+            clientId={clientId!}
+            initialData={editingTask ? { ...editingTask, due_date: editingTask.due_date || undefined } as any : { status: initialStatus }}
+            onClientTaskSaved={handleTaskSaved}
+            onClose={() => setIsTaskFormOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ClientKanban;
