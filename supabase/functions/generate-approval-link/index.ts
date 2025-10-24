@@ -50,31 +50,6 @@ serve(async (req) => {
       );
     }
 
-    // Verificar se já existe um link de aprovação ativo para este cliente e mês
-    const { data: existingLink, error: fetchLinkError } = await supabaseServiceRole
-      .from('public_approval_links')
-      .select('unique_id, expires_at')
-      .eq('client_id', clientId)
-      .eq('user_id', userId)
-      .eq('month_year_reference', monthYearRef)
-      .gte('expires_at', new Date().toISOString()) // Link ainda válido
-      .single();
-
-    if (fetchLinkError) {
-      const isObject = typeof fetchLinkError === 'object';
-      const hasCode = isObject && Object.prototype.hasOwnProperty.call(fetchLinkError, 'code');
-      if (isObject && hasCode && fetchLinkError.code !== 'PGRST116') {
-        throw fetchLinkError;
-      }
-    }
-
-    if (existingLink) {
-      return new Response(
-        JSON.stringify({ uniqueId: existingLink.unique_id, message: "Existing approval link found and is still valid." }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
     // Gerar um novo link
     const expiresAt = addDays(new Date(), 7); // Link válido por 7 dias
     const uniqueId = crypto.randomUUID();
