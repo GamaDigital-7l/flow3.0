@@ -1,11 +1,9 @@
-"use client";
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
 import { PortfolioProject, PORTFOLIO_CATEGORIES } from "@/types/portfolio";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, FileText, Filter, Search } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
