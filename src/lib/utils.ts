@@ -1,7 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import dateFnsParseISO from 'date-fns/parseISO'; // FIX TS2305: Importando diretamente do submódulo
-import dateFnsFormat from 'date-fns/format';   // FIX TS2554: Importando diretamente do submódulo
+import { parseISO as dateFnsParseISO, format as dateFnsFormat } from 'date-fns';
 import * as dateFnsTz from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 

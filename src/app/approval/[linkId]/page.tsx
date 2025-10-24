@@ -1,23 +1,26 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, ThumbsUp, MessageSquare, CheckCircle, Clock, AlertTriangle, Info, XCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
+import { Loader2, CheckCircle2, XCircle, Edit, FileText, Clock, Users, DollarSign } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
-import { getInitials } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { format, addDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { format, addDays, isPast } from 'date-fns';
+import { ptBR } from 'date-fns/locale/pt-BR';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
+import { cn, formatCurrency, formatDateTime } from '@/lib/utils';
+import { Proposal, ProposalItem, PROPOSAL_STATUS_LABELS } from '@/types/proposal';
+import { Separator } from '@/components/ui/separator';
+import ProposalPortfolioGallery from '@/components/proposal/ProposalPortfolioGallery'; // Importando a galeria
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-// Tipos
+// Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
 interface ClientTask {
   id: string;
@@ -32,21 +35,30 @@ interface ClientTask {
     logo_url: string | null;
   } | null;
 }
-interface ApprovalLinkData {
+
+interface PublicApprovalLink {
+  id: string;
+  unique_id: string;
+  client_id: string;
+  user_id: string;
+  month_year_reference: string;
+  expires_at: string;
+  is_active: boolean;
+}
+
+interface ApprovalData {
+  link: PublicApprovalLink;
+  client: { name: string; logo_url: string | null };
   tasks: ClientTask[];
-  clientName: string;
-  clientLogoUrl: string | null;
-  isExpired: boolean;
-  expirationDate: string | null;
 }
 
 // Função para buscar os dados no lado do cliente
-const loadData = async (linkId: string): Promise<ApprovalLinkData> => {
+const loadData = async (linkId: string): Promise<ApprovalData | null> => {
   // 1. Buscar o link
   const { data: linkData, error: linkError } = await supabase
     .from('public_approval_links')
-    .select('client_id, created_at')
-    .eq('id', linkId)
+    .select('client_id, user_id, expires_at, month_year_reference')
+    .eq('unique_id', linkId)
     .single();
 
   if (linkError || !linkData) {
@@ -61,10 +73,8 @@ const loadData = async (linkId: string): Promise<ApprovalLinkData> => {
   if (isExpired) {
     return {
       tasks: [],
-      clientName: '',
-      clientLogoUrl: null,
-      isExpired: true,
-      expirationDate: null,
+      client: { name: '', logo_url: null },
+      link: linkData,
     };
   }
 
@@ -76,21 +86,17 @@ const loadData = async (linkId: string): Promise<ApprovalLinkData> => {
       clients (name, logo_url)
     `)
     .eq('public_approval_link_id', linkId)
-    .in('status', ['under_review', 'edit_requested'])
+    .in('status', ['under_review', 'edit_requested', 'approved', 'posted']) // Incluir aprovadas/postadas para mostrar o histórico
     .order('order_index', { ascending: true });
 
   if (tasksError) {
     throw new Error('Erro ao buscar tarefas para aprovação.');
   }
 
-  const client = tasksData?.[0]?.clients;
-
   return {
-    tasks: tasksData || [],
-    clientName: client?.name || 'Cliente',
-    clientLogoUrl: client?.logo_url || null,
-    isExpired: false,
-    expirationDate: format(expirationDate, "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR }),
+    link: linkData,
+    client: tasksData?.[0]?.clients || { name: 'Cliente', logo_url: null },
+    tasks: tasksData as ClientTask[],
   };
 };
 
@@ -116,7 +122,7 @@ const ApprovalTaskCard = ({ task, onApprove, onEditRequest, isProcessing, onImag
   return (
     <Card className="w-full overflow-hidden shadow-lg bg-card border-border transition-all duration-300">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-foreground">{task.title}</CardHeader>
+        <CardTitle className="text-lg font-semibold text-foreground">{task.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {task.image_urls && task.image_urls.length > 0 && (
@@ -153,7 +159,7 @@ const ApprovalTaskCard = ({ task, onApprove, onEditRequest, isProcessing, onImag
               placeholder="Descreva as alterações necessárias..."
               value={editReason}
               onChange={(e) => setEditReason(e.target.value)}
-              className="bg-background"
+              className="bg-input border-border text-foreground focus-visible:ring-ring"
             />
             <div className="flex w-full gap-2">
               <Button onClick={handleEditRequest} disabled={isProcessing} className="w-full bg-primary text-primary-foreground">
@@ -177,16 +183,16 @@ const ApprovalTaskCard = ({ task, onApprove, onEditRequest, isProcessing, onImag
 };
 
 // Componente principal da página
-const ApprovalPageContent = () => {
-  const params = useParams();
-  const linkId = params.linkId as string;
+const PublicApprovalPage: React.FC = () => {
+  const { uniqueId } = useParams<{ uniqueId: string }>();
+  const navigate = useNavigate();
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['approvalLink', linkId],
-    queryFn: () => loadData(linkId),
-    enabled: !!linkId,
-    staleTime: Infinity, // Os dados são estáticos para este link, a menos que recarregados
+  const { data: approvalData, isLoading, error, refetch } = useQuery({
+    queryKey: ['approvalLink', uniqueId],
+    queryFn: () => loadData(uniqueId!),
+    enabled: !!uniqueId,
+    staleTime: Infinity,
     retry: false,
   });
 
@@ -201,8 +207,8 @@ const ApprovalPageContent = () => {
         .eq('id', taskId);
       if (error) throw error;
     },
-    onSuccess: (_, variables) => {
-      showSuccess(variables.status === 'approved' ? 'Tarefa aprovada com sucesso!' : 'Solicitação de edição enviada!');
+    onSuccess: () => {
+      showSuccess('Status da tarefa atualizado com sucesso!');
       refetch();
     },
     onError: (err: any) => {
@@ -218,8 +224,8 @@ const ApprovalPageContent = () => {
     updateTaskStatus.mutate({ taskId, status: 'edit_requested', reason });
   };
 
-  const approvedTasks = useMemo(() => data?.tasks.filter(t => t.status === 'approved') || [], [data]);
-  const pendingTasks = useMemo(() => data?.tasks.filter(t => t.status !== 'approved') || [], [data]);
+  const approvedTasks = React.useMemo(() => data?.tasks.filter(t => t.status === 'approved') || [], [data]);
+  const pendingTasks = React.useMemo(() => data?.tasks.filter(t => t.status !== 'approved') || [], [data]);
 
   if (isLoading) {
     return (
@@ -229,7 +235,7 @@ const ApprovalPageContent = () => {
     );
   }
 
-  if (error || !data) {
+  if (error || !approvalData) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4 text-center">
         <Card className="max-w-md">
@@ -246,24 +252,8 @@ const ApprovalPageContent = () => {
       </div>
     );
   }
-  
-  if (data.isExpired) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4 text-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center text-destructive">
-              <Clock className="mr-2 h-6 w-6" /> Link Expirado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Este link de aprovação era válido por 7 dias e já expirou.</p>
-            <p className="mt-2 text-sm text-muted-foreground">Por favor, solicite um novo link ao responsável.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
+  const { client, tasks, link } = approvalData;
 
   return (
     <div className="min-h-screen w-full bg-muted/40">
@@ -271,17 +261,15 @@ const ApprovalPageContent = () => {
       <main className="w-full py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center text-center mb-8">
           <Avatar className="h-16 w-16 mb-4">
-            <AvatarImage src={data.clientLogoUrl || undefined} alt={data.clientName} />
-            <AvatarFallback className="text-xl bg-primary/20 text-primary">{getInitials(data.clientName)}</AvatarFallback>
+            <AvatarImage src={client.logo_url || undefined} alt={client.name} />
+            <AvatarFallback className="text-xl bg-primary/20 text-primary">{getInitials(client.name)}</AvatarFallback>
           </Avatar>
           <h1 className="text-3xl font-bold text-foreground">Aprovação de Conteúdo</h1>
-          <p className="text-lg text-muted-foreground">Cliente: {data.clientName}</p>
-          {data.expirationDate && (
-            <div className="mt-4 text-sm text-muted-foreground bg-background border border-border rounded-full px-4 py-1.5 flex items-center gap-2">
-              <Info className="h-4 w-4" />
-              <span>Este link de aprovação expira em {data.expirationDate}</span>
-            </div>
-          )}
+          <p className="text-lg text-muted-foreground">Cliente: {client.name}</p>
+          <div className="mt-4 text-sm text-muted-foreground bg-background border border-border rounded-full px-4 py-1.5 flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            <span>Este link de aprovação expira em {formatDateTime(link.expires_at, false)}</span>
+          </div>
         </div>
 
         {pendingTasks.length === 0 && approvedTasks.length > 0 && (
@@ -320,12 +308,15 @@ const ApprovalPageContent = () => {
                     <CardTitle className="text-base font-semibold text-foreground">{task.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {task.image_urls && task.image_urls.length > 0 && (
-                      <img
-                        src={task.image_urls[0]}
-                        alt={`Imagem de ${task.title}`}
-                        className="rounded-md object-cover w-full h-auto"
-                      />
+                    {task.image_urls?.[0] && (
+                      <AspectRatio ratio={4 / 5} className="rounded-md overflow-hidden border border-border bg-secondary">
+                        <img 
+                          src={task.image_urls[0]} 
+                          alt={task.title} 
+                          className="h-full w-full object-cover cursor-pointer" 
+                          onClick={() => setLightboxUrl(task.image_urls![0])}
+                        />
+                      </AspectRatio>
                     )}
                   </CardContent>
                   <CardFooter className="bg-green-100 p-3">
@@ -365,4 +356,123 @@ const ApprovalPageContent = () => {
   );
 };
 
-export default ApprovalPageContent;
+export default PublicApprovalPage;
+</dyad-file>
+
+<dyad-write path="src/components/finance/QuickCategoryForm.tsx" description="Fixing TypeScript and JSX errors in the QuickCategoryForm component.">
+"use client";
+
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FinancialTransactionType, FinancialScope } from '@/types/finance';
+
+const quickCategorySchema = z.object({
+  name: z.string().min(1, "O nome da categoria é obrigatório."),
+  type: z.enum(["income", "expense"]),
+  scope: z.enum(["company", "personal"]),
+});
+
+export type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
+
+interface QuickCategoryFormProps {
+  onCategorySaved: () => void;
+  onClose: () => void;
+}
+
+const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, onClose }) => {
+  const form = useForm<QuickCategoryFormValues>({
+    resolver: zodResolver(quickCategorySchema),
+    defaultValues: {
+      name: "",
+      type: "expense",
+      scope: "company",
+    },
+  });
+
+  const onSubmit = (values: QuickCategoryFormValues) => {
+    onCategorySaved();
+    onClose();
+  };
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nome da Categoria</FormLabel>
+            <FormControl>
+              <Input placeholder="Ex: Aluguel, Salário" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tipo</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="income">Receita</SelectItem>
+                  <SelectItem value="expense">Despesa</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="scope"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Escopo</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o escopo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="company">Empresa</SelectItem>
+                  <SelectItem value="personal">Pessoal</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      </div>
+
+      <Button type="submit">Salvar Categoria</Button>
+    </form>
+  );
+};
+
+export default QuickCategoryForm;
