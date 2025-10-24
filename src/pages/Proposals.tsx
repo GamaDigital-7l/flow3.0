@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Proposal, ProposalStatus, PROPOSAL_STATUS_LABELS, ProposalItem } from '@/types/proposal';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2, Loader2, FileText, Send, Eye, CheckCircle2, XCircle, Clock, Copy, Link as LinkIcon, Search, SortAsc, SortDesc, Download, CalendarDays, Users } from 'lucide-react';
 import { showError, showSuccess, showInfo } from '@/utils/toast';
