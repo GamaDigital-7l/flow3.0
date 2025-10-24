@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@/tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Proposal, ProposalStatus, PROPOSAL_STATUS_LABELS, ProposalItem } from '@/types/proposal';
@@ -321,6 +321,11 @@ const Proposals: React.FC = () => {
                               <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Eye className="h-3 w-3" /> Visto em: {formatDateTime(proposal.viewed_at, false)}
                               </p>
+                            )}
+                            {proposal.status === 'edit_requested' && (
+                              <Badge variant="outline" className="text-yellow-500 bg-yellow-500/10 border-yellow-500">
+                                Edição Solicitada
+                              </Badge>
                             )}
                           </div>
                         </div>
