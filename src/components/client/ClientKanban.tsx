@@ -196,6 +196,7 @@ const ClientKanban: React.FC = () => {
         const isCompleted = newStatus === 'approved' || newStatus === 'posted';
         return {
           id: taskId,
+          user_id: userId, // Adicionado user_id para RLS
           status: newStatus,
           order_index: newOrderIndex,
           is_completed: isCompleted,
