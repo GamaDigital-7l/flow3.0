@@ -108,6 +108,7 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
           fail_by_weekday: { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 },
           success_rate: 0,
           alert: false,
+          last_completed_date_local: null, // Garantir que a primeira instância tenha métricas limpas
         });
 
         if (error) throw error;
@@ -132,6 +133,8 @@ const HabitForm: React.FC<HabitFormProps> = ({ initialData, onHabitSaved, onClos
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl card-hover-effect">
+        
+        {/* ... (restante do formulário) */}
         <FormField
           control={form.control}
           name="title"

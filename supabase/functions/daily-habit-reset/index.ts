@@ -61,7 +61,7 @@ serve(async (req) => {
       const yesterdayLocalString = format(subDays(nowInUserTimezone, 1), "yyyy-MM-dd");
       const yesterdayLocalDate = parseISO(yesterdayLocalString);
 
-      // 1. Fetch the latest instance for all habits (to get the most recent metrics)
+      // 1. Fetch the latest instance for all habits (to process yesterday's metrics)
       const { data: baseHabits, error: fetchBaseHabitsError } = await supabase
           .rpc('get_latest_habit_instances', { user_id_input: userId });
 
@@ -72,21 +72,6 @@ serve(async (req) => {
       
       const updates = [];
       const historyInserts = [];
-      const newInstancesToInsert = [];
-      
-      // Fetch existing habit instances for today to prevent duplicates
-      const { data: existingTodayHabits, error: fetchExistingError } = await supabase
-        .from('habits')
-        .select('recurrence_id')
-        .eq('user_id', userId)
-        .eq('date_local', todayLocalString);
-        
-      if (fetchExistingError) {
-          console.error(`[User ${userId}] Error fetching existing today habits:`, fetchExistingError);
-          continue;
-      }
-      const existingRecurrenceIds = new Set(existingTodayHabits?.map(h => h.recurrence_id));
-
 
       for (const baseHabit of baseHabits) {
         const habitDateLocal = parseISO(baseHabit.date_local);
@@ -132,55 +117,17 @@ serve(async (req) => {
               completed: false,
             });
           } else if (isEligibleYesterday && baseHabit.completed_today) {
-            // If completed yesterday, ensure alert is false and update streak if necessary
+            // If completed yesterday, ensure alert is false
             const habitUpdates: any = { id: baseHabit.id, updated_at: nowUtc.toISOString(), alert: false };
-            
-            // Calculate new streak: if last completed date was yesterday, increment streak
-            const lastCompletedDate = baseHabit.last_completed_date_local ? parseISO(baseHabit.last_completed_date_local) : null;
-            
-            // Se a última data de conclusão foi o dia anterior ao dia que estamos processando (ontem), incrementa.
-            // Se a última data de conclusão foi a própria data de ontem, significa que o streak já foi atualizado no momento da conclusão.
-            // A Edge Function só precisa garantir que o streak seja herdado corretamente para a nova instância.
-            
-            // Simplificando: A Edge Function não deve recalcular o streak aqui, apenas garantir que a instância de ontem
-            // tenha as métricas finais corretas (streak, missed_days, fail_by_weekday) antes de criar a de hoje.
-            // O streak é atualizado no momento da conclusão (useToggleHabitCompletion).
-            
             updates.push(habitUpdates);
           }
         }
         
-        // --- B. Ensure Today's Instance Exists (if eligible) ---
-        const isEligibleToday = isDayEligible(nowInUserTimezone, baseHabit.frequency, weekdays);
-        
-        if (isEligibleToday && !existingRecurrenceIds.has(baseHabit.recurrence_id)) {
-            // Create new instance for today, inheriting metrics from the latest instance
-            
-            // Recalcular a taxa de sucesso com base nas métricas finais da última instância
-            const totalAttempts = baseHabit.total_completed + (baseHabit.missed_days?.length || 0);
-            const successRate = totalAttempts > 0 ? (baseHabit.total_completed / totalAttempts) * 100 : 0;
-
-            newInstancesToInsert.push({
-                recurrence_id: baseHabit.recurrence_id,
-                user_id: userId,
-                title: baseHabit.title,
-                description: baseHabit.description,
-                frequency: baseHabit.frequency,
-                weekdays: baseHabit.weekdays,
-                paused: baseHabit.paused,
-                completed_today: false,
-                date_local: todayLocalString,
-                
-                // Inherit metrics from the latest instance
-                last_completed_date_local: baseHabit.last_completed_date_local,
-                streak: baseHabit.streak,
-                total_completed: baseHabit.total_completed,
-                missed_days: baseHabit.missed_days,
-                fail_by_weekday: baseHabit.fail_by_weekday,
-                success_rate: successRate, // Recalculado
-                alert: false, // Novo dia, sem alerta inicial
-            });
-        }
+        // --- B. Check for missed days older than yesterday ---
+        // If the latest instance is older than yesterday, and it was eligible, it's a missed day.
+        // This logic is complex and usually handled by a separate cleanup process. 
+        // For now, we rely on the frontend to create the instance for today, and the Edge Function 
+        // to only process the immediate previous day (yesterday).
       }
 
       // 2. Batch Update Habits (Yesterday's metrics and Today's alerts)
@@ -193,23 +140,14 @@ serve(async (req) => {
       
       // 3. Batch Insert History (Missed days)
       if (historyInserts.length > 0) {
-        // Usamos insert simples aqui, pois a Edge Function garante que só insere se for um dia perdido
         const { error: insertHistoryError } = await supabase
           .from('habit_history')
           .insert(historyInserts);
         if (insertHistoryError) console.error(`[User ${userId}] Error inserting habit history:`, insertHistoryError);
       }
-      
-      // 4. Batch Insert Today's New Instances
-      if (newInstancesToInsert.length > 0) {
-          const { error: insertNewError } = await supabase
-              .from('habits')
-              .insert(newInstancesToInsert);
-          if (insertNewError) console.error(`[User ${userId}] Error inserting new today instances:`, insertNewError);
-      }
     }
 
-    // 5. Processar Tarefas Atrasadas (Mantido do daily-reset original)
+    // 4. Processar Tarefas Atrasadas (Mantido do daily-reset original)
     const { data: usersWithTimezone, error: fetchUsersTimezoneError } = await supabase
       .from('profiles')
       .select('id, timezone');

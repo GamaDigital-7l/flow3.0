@@ -20,27 +20,6 @@ function isDayEligible(date: Date, frequency: string, weekdays: number[] | null)
   return false;
 }
 
-// Fetch today's active habit instances
-const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
-  // Usamos a data local do navegador como proxy para a data local do usuário
-  const todayLocal = getTodayLocalString();
-
-  const { data, error } = await supabase
-    .from('habits')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('date_local', todayLocal)
-    .eq('paused', false)
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-  
-  // Filter only eligible habits for today
-  return (data as Habit[] || []).filter(h => 
-    isDayEligible(parseISO(h.date_local), h.frequency, h.weekdays)
-  );
-};
-
 // Fetch all unique habit definitions (latest instance for metrics)
 const fetchAllHabitDefinitions = async (userId: string): Promise<Habit[]> => {
   // Use RPC to get the latest instance for each recurrence_id
@@ -52,6 +31,91 @@ const fetchAllHabitDefinitions = async (userId: string): Promise<Habit[]> => {
   }
   
   return latestHabits as Habit[] || [];
+};
+
+// NOVO: Função para criar a instância de hoje se ela não existir
+const createTodayInstance = async (userId: string, latestHabit: Habit): Promise<Habit> => {
+    const todayLocalString = getTodayLocalString();
+    
+    // Recalcular a taxa de sucesso com base nas métricas finais da última instância
+    const totalAttempts = latestHabit.total_completed + (latestHabit.missed_days?.length || 0);
+    const successRate = totalAttempts > 0 ? (latestHabit.total_completed / totalAttempts) * 100 : 0;
+
+    const newInstance = {
+        recurrence_id: latestHabit.recurrence_id,
+        user_id: userId,
+        title: latestHabit.title,
+        description: latestHabit.description,
+        frequency: latestHabit.frequency,
+        weekdays: latestHabit.weekdays,
+        paused: latestHabit.paused,
+        completed_today: false,
+        date_local: todayLocalString,
+        
+        // Inherit metrics from the latest instance
+        last_completed_date_local: latestHabit.last_completed_date_local,
+        streak: latestHabit.streak,
+        total_completed: latestHabit.total_completed,
+        missed_days: latestHabit.missed_days,
+        fail_by_weekday: latestHabit.fail_by_weekday,
+        success_rate: successRate, // Recalculado
+        alert: false, // Novo dia, sem alerta inicial
+    };
+
+    const { data, error } = await supabase
+        .from('habits')
+        .insert(newInstance)
+        .select('*')
+        .single();
+
+    if (error) throw error;
+    return data as Habit;
+};
+
+// Fetch today's active habit instances
+const fetchTodayHabits = async (userId: string): Promise<Habit[]> => {
+  const todayLocal = getTodayLocalString();
+
+  // 1. Tenta buscar as instâncias de hoje
+  const { data: existingToday, error: fetchError } = await supabase
+    .from('habits')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date_local', todayLocal)
+    .eq('paused', false)
+    .order('created_at', { ascending: true });
+
+  if (fetchError) throw fetchError;
+  
+  let todayHabits = existingToday as Habit[] || [];
+  
+  // 2. Se não houver instâncias de hoje, precisamos criá-las
+  if (todayHabits.length === 0) {
+      const latestHabits = await fetchAllHabitDefinitions(userId);
+      const creationPromises = [];
+      
+      for (const latestHabit of latestHabits) {
+          const isEligibleToday = isDayEligible(parseISO(todayLocal), latestHabit.frequency, latestHabit.weekdays);
+          
+          if (isEligibleToday && !latestHabit.paused) {
+              // Se a última instância não é de hoje, e é elegível, criamos a de hoje
+              if (latestHabit.date_local !== todayLocal) {
+                  creationPromises.push(createTodayInstance(userId, latestHabit));
+              } else {
+                  // Se a última instância JÁ É de hoje (mas não foi pega na query inicial por algum motivo), a adicionamos.
+                  todayHabits.push(latestHabit);
+              }
+          }
+      }
+      
+      const newHabits = await Promise.all(creationPromises);
+      todayHabits = [...todayHabits, ...newHabits];
+  }
+  
+  // 3. Filtrar por elegibilidade (apenas para garantir, embora a lógica de criação já faça isso)
+  return todayHabits.filter(h => 
+    isDayEligible(parseISO(h.date_local), h.frequency, h.weekdays)
+  );
 };
 
 export const useTodayHabits = () => {
@@ -92,10 +156,10 @@ export const useToggleHabitCompletion = () => {
     mutationFn: async ({ habit, completed }: { habit: Habit, completed: boolean }) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
-      // 1. Update the current instance (habit.id)
       const todayLocalString = getTodayLocalString();
       const yesterdayLocalString = format(subDays(new Date(), 1), "yyyy-MM-dd");
       
+      // 1. Recalcular métricas baseadas no estado atual (que é a última instância)
       let newTotalCompleted = habit.total_completed;
       let newStreak = habit.streak;
       let newLastCompletedDateLocal = habit.last_completed_date_local;
@@ -121,12 +185,10 @@ export const useToggleHabitCompletion = () => {
           newTotalCompleted = Math.max(0, newTotalCompleted - 1);
           
           // Se desmarcou a conclusão de hoje, o streak e a última data precisam ser recalculados
-          newLastCompletedDateLocal = habit.last_completed_date_local === todayLocalString 
-            ? null // Se a última data era hoje, resetamos (o daily reset cuidará do streak)
-            : habit.last_completed_date_local;
-            
-          // Simplificando o reset do streak: se desmarcou hoje, o streak é 0 (o daily reset cuidará do cálculo preciso)
+          // Para simplificar, se desmarcou hoje, o streak é 0 e a última data é nula.
+          // O daily reset cuidará de recalcular o streak se houver uma conclusão anterior.
           newStreak = 0; 
+          newLastCompletedDateLocal = null;
         }
       }
       
