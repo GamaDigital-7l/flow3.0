@@ -25,12 +25,13 @@ const fetchCompanyTransactions = async (userId: string, period: Date): Promise<F
   const end = format(endOfMonth(period), "yyyy-MM-dd");
 
   // Otimizando o select para buscar todos os campos obrigatórios e relações leves
+  // Removendo a referência explícita à FK da categoria para evitar o erro 400
   const { data, error } = await supabase
     .from("financial_transactions")
     .select(`
       id, user_id, date, description, amount, type, is_recurrent_instance,
       category_id, account_id, payment_method, client_id, created_at, updated_at,
-      category:financial_categories!financial_transactions_category_id_fkey(id, name, type),
+      category:financial_categories(id, name, type),
       account:financial_accounts(id, name, type),
       client:clients(id, name)
     `)
