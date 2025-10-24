@@ -146,7 +146,6 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
     },
     onError: (error: any) => {
       showError("Erro ao salvar template: " + error.message);
-      console.error("Erro ao salvar template:", error);
     },
   });
 
@@ -202,7 +201,7 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
                     <FormItem>
                         <FormLabel>Vencimento (Dias após Geração)</FormLabel>
                         <FormControl><Input type="number" min="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} /></FormControl>
-                        <FormDescription>0 = Vence no dia da geração.</FormDescrição>
+                        <FormDescription>0 = Vence no dia da geração.</FormDescription>
                         <FormMessage />
                     </FormItem>
                 )}
