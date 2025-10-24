@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn, getInitials } from '@/lib/utils';
@@ -19,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ClientTaskTemplates from './ClientTaskTemplates'; // Importando o novo componente
 
 // Tipos completos
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -99,6 +101,7 @@ const ClientKanban: React.FC = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'kanban' | 'templates'>('kanban');
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["clientTasks", clientId, userId],
@@ -268,44 +271,57 @@ const ClientKanban: React.FC = () => {
         </div>
       </PageTitle>
       
-      <DndContext 
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar h-[calc(100vh-15rem)]">
-          {KANBAN_COLUMNS.map(column => (
-            <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col">
-              <CardHeader className="p-3 pb-2 flex-shrink-0">
-                <CardTitle className={cn("text-lg font-semibold", column.color)}>{column.title} ({tasksByStatus.get(column.id)?.length || 0})</CardTitle>
-              </CardHeader>
-              
-              <ScrollArea className="flex-1 p-3 pt-0">
-                <CardContent className="space-y-3 min-h-[100px]">
-                  <SortableContext 
-                    items={tasksByStatus.get(column.id)?.map(t => t.id) || []} 
-                    strategy={verticalListSortingStrategy}
-                    id={column.id} // Usar o ID da coluna como containerId
-                  >
-                    {tasksByStatus.get(column.id)?.map(task => (
-                      <ClientTaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onEdit={handleEditTask} 
-                        refetchTasks={refetch}
-                      />
-                    ))}
-                  </SortableContext>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'kanban' | 'templates')} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground">
+          <TabsTrigger value="kanban"><CalendarDays className="mr-2 h-4 w-4" /> Kanban</TabsTrigger>
+          <TabsTrigger value="templates"><Repeat className="mr-2 h-4 w-4" /> Templates</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="kanban" className="mt-4">
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar h-[calc(100vh-15rem)]">
+              {KANBAN_COLUMNS.map(column => (
+                <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col">
+                  <CardHeader className="p-3 pb-2 flex-shrink-0">
+                    <CardTitle className={cn("text-lg font-semibold", column.color)}>{column.title} ({tasksByStatus.get(column.id)?.length || 0})</CardTitle>
+                  </CardHeader>
                   
-                  {tasksByStatus.get(column.id)?.length === 0 && (
-                    <p className="text-muted-foreground text-sm text-center p-4">Arraste tarefas para cá ou crie uma nova.</p>
-                  )}
-                </CardContent>
-              </ScrollArea>
-            </Card>
-          ))}
-        </div>
-      </DndContext>
+                  <ScrollArea className="flex-1 p-3 pt-0">
+                    <CardContent className="space-y-3 min-h-[100px]">
+                      <SortableContext 
+                        items={tasksByStatus.get(column.id)?.map(t => t.id) || []} 
+                        strategy={verticalListSortingStrategy}
+                        id={column.id} // Usar o ID da coluna como containerId
+                      >
+                        {tasksByStatus.get(column.id)?.map(task => (
+                          <ClientTaskCard 
+                            key={task.id} 
+                            task={task} 
+                            onEdit={handleEditTask} 
+                            refetchTasks={refetch}
+                          />
+                        ))}
+                      </SortableContext>
+                      
+                      {tasksByStatus.get(column.id)?.length === 0 && (
+                        <p className="text-muted-foreground text-sm text-center p-4">Arraste tarefas para cá ou crie uma nova.</p>
+                      )}
+                    </CardContent>
+                  </ScrollArea>
+                </Card>
+              ))}
+            </div>
+          </DndContext>
+        </TabsContent>
+        
+        <TabsContent value="templates" className="mt-4">
+          <ClientTaskTemplates clientId={clientId!} clientName={client.name} />
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog para edição de Tarefa (Abre quando editingTask é definido) */}
       <Dialog 
