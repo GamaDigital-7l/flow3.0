@@ -207,7 +207,7 @@ const ClientKanban: React.FC = () => {
 
       if (fetchError) throw fetchError;
       
-      const taskMap = new Map(existingTasks.map(t => [t.id, t.id]));
+      const taskMap = new Map(existingTasks.map(t => [t.id, t]));
 
       // 2. Montar o payload de upsert com todos os campos obrigatórios
       const dbUpdates = updates.map(({ taskId, newStatus, newOrderIndex }) => {
@@ -220,7 +220,7 @@ const ClientKanban: React.FC = () => {
           id: taskId,
           user_id: userId,
           client_id: clientId,
-          title: existing.title, // Incluído
+          title: existing.title, // Incluído - Garante que o título nunca seja nulo
           month_year_reference: existing.month_year_reference, // Incluído
           description: existing.description,
           due_date: existing.due_date,
