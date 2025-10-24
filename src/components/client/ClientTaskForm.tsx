@@ -33,6 +33,7 @@ interface ClientTask {
   user_id: string;
   is_completed: boolean;
   public_approval_link_id: string | null;
+  month_year_reference: string | null; // Adicionado
   tags?: { id: string; name: string; color: string }[];
 }
 
@@ -110,13 +111,20 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
       const isEditing = !!initialData?.id;
       const oldStatus = initialData?.status;
       const newStatus = values.status;
+      
+      // Determinar o mês/ano de referência
+      const monthYearRef = values.due_date 
+        ? format(values.due_date, "yyyy-MM") 
+        : initialData?.month_year_reference // Preserva o mês se for edição e não houver nova data
+        ? initialData.month_year_reference
+        : format(new Date(), "yyyy-MM"); // Fallback para o mês atual
 
       const dataToSave = {
         client_id: clientId,
         user_id: userId,
         title: values.title,
         description: values.description || null,
-        month_year_reference: values.due_date ? format(values.due_date, "yyyy-MM") : format(new Date(), "yyyy-MM"),
+        month_year_reference: monthYearRef, // Usando o valor determinado
         status: newStatus,
         due_date: values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null,
         time: values.time || null,
@@ -188,7 +196,6 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
       // Generate public approval link if enabled
       if (values.public_approval_enabled) {
-        const monthYearRef = dataToSave.month_year_reference;
         
         if (!initialData?.public_approval_link_id) {
             const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {

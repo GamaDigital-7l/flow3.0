@@ -26,6 +26,8 @@ import copy from 'copy-to-clipboard';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
+import ClientMonthSelector from './ClientMonthSelector'; // Importar o seletor
+import { format } from 'date-fns';
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -65,7 +67,7 @@ const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] =
   { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" },
 ];
 
-const fetchClientData = async (clientId: string, userId: string): Promise<{ client: Client | null, tasks: ClientTask[] }> => {
+const fetchClientData = async (clientId: string, userId: string, monthYearRef: string): Promise<{ client: Client | null, tasks: ClientTask[] }> => {
   const [clientResponse, tasksResponse] = await Promise.all([
     supabase
       .from("clients")
@@ -83,6 +85,7 @@ const fetchClientData = async (clientId: string, userId: string): Promise<{ clie
       `)
       .eq("client_id", clientId)
       .eq("user_id", userId)
+      .eq("month_year_reference", monthYearRef) // FILTRO POR MÊS
       .order("order_index", { ascending: true })
   ]);
 
@@ -109,6 +112,9 @@ const ClientKanban: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
+  
+  // Estado para o mês/ano ativo (YYYY-MM)
+  const [currentMonthYear, setCurrentMonthYear] = useState(format(new Date(), 'yyyy-MM'));
 
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ClientTask | undefined>(undefined);
@@ -124,8 +130,8 @@ const ClientKanban: React.FC = () => {
   const [localTasks, setLocalTasks] = useState<ClientTask[]>([]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["clientTasks", clientId, userId],
-    queryFn: () => fetchClientData(clientId!, userId!),
+    queryKey: ["clientTasks", clientId, userId, currentMonthYear], // Adicionado currentMonthYear
+    queryFn: () => fetchClientData(clientId!, userId!, currentMonthYear),
     enabled: !!clientId && !!userId,
     staleTime: 1000 * 60 * 1,
   });
@@ -261,27 +267,23 @@ const ClientKanban: React.FC = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragItem(null);
+    
+    const draggedTask = localTasks.find(t => t.id === active.id);
     if (!draggedTask) return;
 
-    const activeId = active.id as string;
-    const draggedTask = localTasks.find(t => t.id === activeId);
-    
-    // Determinar o ID do container de destino (pode ser o ID de uma tarefa ou o ID da coluna)
     let targetContainerId: UniqueIdentifier | null = null;
     let overId: UniqueIdentifier | null = null;
 
     if (over) {
-        // Se o over for um item, o containerId é o status desse item
         if (over.data.current?.sortable?.containerId) {
             targetContainerId = over.data.current.sortable.containerId;
             overId = over.id;
         } else {
-            // Se o over for a coluna vazia (o droppable container), o ID é o status
+            // Caso 1: Soltou na coluna vazia (over.id é o ID da coluna)
             targetContainerId = over.id;
-            overId = null; // Não há item sobre o qual soltar
+            overId = null; 
         }
     } else {
-        // Se não houver over (soltou fora), não faz nada
         return;
     }
 
@@ -445,9 +447,13 @@ const ClientKanban: React.FC = () => {
         </TabsList>
         
         <TabsContent value="kanban" className="mt-4 flex-grow flex flex-col min-h-0">
+          
+          {/* Seletor de Mês */}
+          <ClientMonthSelector currentMonthYear={currentMonthYear} onMonthChange={setCurrentMonthYear} />
+          
           {/* Botão de Link de Aprovação */}
           {tasksUnderReview.length > 0 && (
-            <div className="mb-4 flex-shrink-0">
+            <div className="mb-4 flex-shrink-0 mt-4">
               <Button 
                 onClick={() => handleGenerateApprovalLink.mutate()} 
                 disabled={handleGenerateApprovalLink.isPending}
