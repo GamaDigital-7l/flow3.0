@@ -16,7 +16,7 @@ import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, Touch
 import { arrayMove } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
 import KanbanColumn from './ClientKanbanColumn';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
