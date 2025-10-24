@@ -98,14 +98,40 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
     mutationFn: async (values: TaskFormValues) => {
       if (!userId) throw new Error("Usuário não autenticado.");
 
+      // --- Lógica de Sincronização de Board e Prioridade ---
+      let finalCurrentBoard = values.current_board;
+      const isPriority = values.is_priority;
+      const dueDate = values.due_date;
+      const today = new Date();
+
+      if (isPriority) {
+        // Se for prioridade, move para o board de alta prioridade de hoje
+        finalCurrentBoard = "today_high_priority";
+      } else if (dueDate) {
+        // Se tiver data de vencimento, mas não for prioridade, move para o board de média prioridade de hoje ou semana baixa
+        if (isSameDay(dueDate, today)) {
+          finalCurrentBoard = "today_medium_priority";
+        } else if (dueDate > today) {
+          // Se for no futuro, move para o board de baixa prioridade da semana
+          finalCurrentBoard = "week_low_priority";
+        } else {
+          // Se a data for passada, a Edge Function ou o fetch de overdue cuidará disso, mas mantemos o board original
+          finalCurrentBoard = values.origin_board;
+        }
+      } else {
+        // Se não for prioridade e não tiver data, volta para o board de origem (geral/client_tasks)
+        finalCurrentBoard = values.origin_board;
+      }
+      // -----------------------------------------------------
+
       const dataToSave = {
         title: values.title,
         description: values.description || null,
         due_date: values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null,
         time: values.time || null,
         origin_board: values.origin_board,
-        current_board: values.current_board,
-        is_priority: values.is_priority,
+        current_board: finalCurrentBoard, // Usando o board calculado
+        is_priority: isPriority,
         client_name: values.client_name || null,
         parent_task_id: values.parent_task_id || null,
         updated_at: new Date().toISOString(),
@@ -156,6 +182,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       queryClient.invalidateQueries({ queryKey: ["tasks", userId] });
       queryClient.invalidateQueries({ queryKey: ["allTasks", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks", userId] });
+      queryClient.invalidateQueries({ queryKey: ["overdueTasks", userId] }); // Invalida o lembrete de atrasadas
       onTaskSaved();
       onClose();
     },
