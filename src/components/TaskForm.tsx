@@ -15,14 +15,20 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import TagSelector from "./TagSelector";
 import TimePicker from "./TimePicker";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { TaskRecurrenceType, TaskOriginBoard, Task } from "@/types/task";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import TaskBasicInfo from "./task/TaskBasicInfo";
-import TaskCategorization from "./task/TaskCategorization";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Tipos simplificados para evitar dependência de '@/types/client'
+interface Client {
+  id: string;
+  name: string;
+}
 
 const taskSchema = z.object({
   id: z.string().optional(),
@@ -49,6 +55,16 @@ interface TaskFormProps {
   parentTaskId?: string;
 }
 
+const fetchClients = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, name")
+    .eq("user_id", userId)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+};
+
 const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, initialOriginBoard, initialDueDate, parentTaskId }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -69,6 +85,14 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
       selected_tag_ids: initialData?.tags?.map(tag => tag.id) || [],
     },
   });
+  
+  const selectedTagIds = form.watch("selected_tag_ids") || [];
+
+  const { data: clients, isLoading: isLoadingClients } = useQuery<Client[], Error>({
+    queryKey: ["clientsList", userId],
+    queryFn: () => fetchClients(userId!),
+    enabled: !!userId,
+  });
 
   const saveTaskMutation = useMutation({
     mutationFn: async (values: TaskFormValues) => {
@@ -79,7 +103,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
         description: values.description || null,
         due_date: values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null,
         time: values.time || null,
-        // Campos de recorrência removidos
         origin_board: values.origin_board,
         current_board: values.current_board,
         is_priority: values.is_priority,
@@ -145,11 +168,52 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
   const onSubmit = (values: TaskFormValues) => {
     saveTaskMutation.mutate(values);
   };
+  
+  const handleTagSelectionChange = (newSelectedTagIds: string[]) => {
+    form.setValue("selected_tag_ids", newSelectedTagIds, { shouldDirty: true });
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl card-hover-effect">
-        <TaskBasicInfo />
+        
+        {/* --- TaskBasicInfo Content --- */}
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground">Título</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Ex: Terminar relatório"
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground">Descrição (Opcional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Detalhes da tarefa..."
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                  {...field}
+                  value={field.value || ''}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {/* --- End TaskBasicInfo Content --- */}
 
         <FormField
           control={form.control}
@@ -208,7 +272,91 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onTaskSaved, onClose, 
           )}
         />
 
-        <TaskCategorization />
+        {/* --- TaskCategorization Content --- */}
+        <FormField
+          control={form.control}
+          name="origin_board"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground">Quadro de Origem</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
+                    <SelectValue placeholder="Selecionar quadro" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
+                  <SelectItem value="general">Geral</SelectItem>
+                  <SelectItem value="today_high_priority">Hoje - Prioridade Alta</SelectItem>
+                  <SelectItem value="today_medium_priority">Hoje - Prioridade Média</SelectItem>
+                  <SelectItem value="week_low_priority">Semana - Baixa</SelectItem>
+                  <SelectItem value="urgent">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="is_priority"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-secondary/50">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0"
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="text-foreground">
+                  Prioridade Alta (Aparece no quadro "Hoje - Prioridade Alta")
+                </FormLabel>
+                <FormDescription className="text-muted-foreground">
+                  Marque se esta tarefa for crucial para o dia.
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="client_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground">Cliente (Opcional)</FormLabel>
+              <Select onValueChange={(value) => field.onChange(value === '__none__' ? null : value)} value={field.value || '__none__'} disabled={isLoadingClients}>
+                <FormControl>
+                  <SelectTrigger className="w-full bg-input border-border text-foreground focus-visible:ring-ring">
+                    {isLoadingClients ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin flex-shrink-0" /> Carregando clientes...
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Selecionar cliente" />
+                    )}
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
+                  <SelectItem value="__none__">Nenhum</SelectItem>
+                  {clients?.map(client => (
+                    <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <TagSelector
+          selectedTagIds={selectedTagIds}
+          onTagSelectionChange={handleTagSelectionChange}
+        />
+        {/* --- End TaskCategorization Content --- */}
 
         <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveTaskMutation.isPending}>
           {saveTaskMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (initialData?.id ? "Atualizar Tarefa" : "Adicionar Tarefa")}
