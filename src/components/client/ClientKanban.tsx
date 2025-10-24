@@ -15,7 +15,7 @@ import { showError, showSuccess, showInfo } from '@/utils/toast';
 import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog'; // Importação corrigida
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,6 +46,7 @@ interface ClientTask {
   order_index: number;
   public_approval_link_id: string | null;
   tags: { id: string; name: string; color: string }[];
+  month_year_reference: string | null; // ADICIONADO para corrigir erro da Edge Function
 }
 interface Client {
   id: string;
@@ -72,7 +73,7 @@ const fetchClientData = async (clientId: string, userId: string): Promise<{ clie
     supabase
       .from("client_tasks")
       .select(`
-        id, title, description, status, due_date, time, image_urls, public_approval_enabled, edit_reason, client_id, user_id, is_completed, order_index, public_approval_link_id,
+        id, title, description, status, due_date, time, image_urls, public_approval_enabled, edit_reason, client_id, user_id, is_completed, order_index, public_approval_link_id, month_year_reference,
         client_task_tags(
           tags(id, name, color)
         )
@@ -247,8 +248,12 @@ const ClientKanban: React.FC = () => {
         return;
       }
       
-      // Usamos o mês de referência da primeira tarefa, assumindo que o link é mensal
+      // Usamos o mês de referência da primeira tarefa.
       const monthYearRef = tasksToReview[0].month_year_reference;
+      if (!monthYearRef) {
+        showError("Nenhuma tarefa em 'Para Aprovação' tem uma data de vencimento definida para gerar o link mensal.");
+        return;
+      }
       
       const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-approval-link', {
         body: {
@@ -280,7 +285,8 @@ const ClientKanban: React.FC = () => {
       showSuccess("Link de aprovação gerado com sucesso!");
     },
     onError: (err: any) => {
-      showError("Erro ao gerar link: " + err.message);
+      // O erro da Edge Function deve ser mais detalhado agora
+      showError("Erro ao gerar link: " + (err.message || "Função Edge retornou um erro."));
     },
   });
   
@@ -314,7 +320,8 @@ const ClientKanban: React.FC = () => {
   const { client } = data;
 
   return (
-    <div className="page-content-wrapper space-y-6">
+    // O page-content-wrapper deve garantir que o conteúdo principal use a largura total disponível
+    <div className="page-content-wrapper space-y-6 flex flex-col h-full">
       <PageTitle title={`Workspace: ${client.name}`} description="Gerencie o fluxo de trabalho e aprovações do cliente.">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
@@ -346,16 +353,16 @@ const ClientKanban: React.FC = () => {
         </div>
       </PageTitle>
       
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'kanban' | 'templates')} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'kanban' | 'templates')} className="w-full flex-grow flex flex-col">
+        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground flex-shrink-0">
           <TabsTrigger value="kanban"><CalendarDays className="mr-2 h-4 w-4" /> Kanban</TabsTrigger>
           <TabsTrigger value="templates"><Repeat className="mr-2 h-4 w-4" /> Templates</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="kanban" className="mt-4">
+        <TabsContent value="kanban" className="mt-4 flex-grow flex flex-col min-h-0">
           {/* Botão de Link de Aprovação */}
           {tasksUnderReview.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-4 flex-shrink-0">
               <Button 
                 onClick={() => handleGenerateApprovalLink.mutate()} 
                 disabled={handleGenerateApprovalLink.isPending}
@@ -372,10 +379,10 @@ const ClientKanban: React.FC = () => {
             collisionDetection={closestCorners}
             onDragEnd={handleDragEnd}
           >
-            {/* Ajuste de altura para melhor responsividade: h-full min-h-[60vh] */}
-            <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar h-full min-h-[60vh]">
+            {/* Container principal do Kanban: w-full, overflow-x-auto para rolagem horizontal */}
+            <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar w-full flex-grow min-h-[50vh]">
               {KANBAN_COLUMNS.map(column => (
-                <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col">
+                <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col h-full max-h-full">
                   <CardHeader className="p-3 pb-2 flex-shrink-0">
                     <CardTitle className={cn("text-lg font-semibold", column.color)}>{column.title} ({tasksByStatus.get(column.id)?.length || 0})</CardTitle>
                     <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
@@ -392,6 +399,7 @@ const ClientKanban: React.FC = () => {
                     </Dialog>
                   </CardHeader>
                   
+                  {/* ScrollArea para o conteúdo da coluna */}
                   <ScrollArea className="flex-1 p-3 pt-0">
                     <CardContent className="space-y-3 min-h-[100px]">
                       <SortableContext 
@@ -405,7 +413,7 @@ const ClientKanban: React.FC = () => {
                             task={task} 
                             onEdit={handleEditTask} 
                             refetchTasks={refetch}
-                            onImageClick={handleImageClick} // Passando a função de clique
+                            onImageClick={handleImageClick}
                           />
                         ))}
                       </SortableContext>

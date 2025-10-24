@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye, XCircle } from 'lucide-react';
 import { cn, formatDateTime, formatTime, parseISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { useMutation, useQueryClient } from '@tanstack/react-query'; // Importação adicionada
+import { useMutation, useQueryClient } from '@tanstack/react-query'; // Importação verificada
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/integrations/supabase/auth';

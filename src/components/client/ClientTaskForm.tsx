@@ -113,7 +113,8 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
     if (!userId) throw new Error("Usuário não autenticado para upload.");
     
     const sanitizedFilename = sanitizeFilename(file.name);
-    // Incluindo userId no path para RLS do Storage
+    // Incluindo userId no path para RLS do Storage. O path deve ser: bucket/folder1/folder2/...
+    // Assumindo que a RLS verifica o segundo segmento como o user_id.
     const filePath = `client_tasks/${userId}/${clientId}/${Date.now()}-${sanitizedFilename}`;
 
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -124,6 +125,10 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
       });
 
     if (uploadError) {
+      // Mensagem de erro mais clara para RLS
+      if (uploadError.message.includes('new row violates row-level security policy')) {
+        throw new Error("Erro de permissão (RLS). Verifique se a política de segurança do bucket 'client-assets' permite uploads para o caminho: " + filePath);
+      }
       throw new Error("Erro ao fazer upload da imagem: " + uploadError.message);
     }
 
@@ -178,7 +183,8 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         user_id: userId,
         title: values.title,
         description: values.description || null,
-        month_year_reference: format(values.due_date || new Date(), "yyyy-MM"),
+        // month_year_reference é crucial para a Edge Function
+        month_year_reference: values.due_date ? format(values.due_date, "yyyy-MM") : format(new Date(), "yyyy-MM"),
         status: newStatus,
         due_date: values.due_date ? format(convertToUtc(values.due_date)!, "yyyy-MM-dd") : null,
         time: values.time || null,
@@ -250,7 +256,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
       // Generate public approval link if enabled
       if (values.public_approval_enabled) {
-        const monthYearRef = format(values.due_date || new Date(), "yyyy-MM");
+        const monthYearRef = dataToSave.month_year_reference;
         
         // Se já existe um link de aprovação para esta tarefa, não precisamos gerar um novo link de aprovação MENSAL
         // A Edge Function 'generate-approval-link' gera um link MENSAL, não por tarefa.
