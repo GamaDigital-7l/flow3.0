@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send, Copy, XCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send, Copy, XCircle, MessageSquare, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, getInitials } from '@/lib/utils';
@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
 import ClientMonthSelector from './ClientMonthSelector'; // Importar o seletor
 import { format } from 'date-fns';
+import { motion } from 'framer-motion'; // Importar motion
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -541,6 +542,34 @@ const ClientKanban: React.FC = () => {
             onClientTaskSaved={handleTaskSaved}
             onClose={() => setIsTaskFormOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Lightbox para Imagem (Tela Cheia) */}
+      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
+        <DialogContent 
+          className="lightbox-fullscreen-override"
+        >
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setLightboxUrl(null)} 
+            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+          {lightboxUrl && (
+            <motion.img
+              key={lightboxUrl}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              src={lightboxUrl}
+              alt="Visualização em Tela Cheia"
+              className="max-w-[95%] max-h-[95%] object-contain"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
