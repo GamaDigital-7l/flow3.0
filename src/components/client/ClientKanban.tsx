@@ -261,16 +261,32 @@ const ClientKanban: React.FC = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragItem(null);
-    if (!over) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-    const draggedTask = localTasks.find(t => t.id === activeId);
     if (!draggedTask) return;
 
+    const activeId = active.id as string;
+    const draggedTask = localTasks.find(t => t.id === activeId);
+    
+    // Determinar o ID do container de destino (pode ser o ID de uma tarefa ou o ID da coluna)
+    let targetContainerId: UniqueIdentifier | null = null;
+    let overId: UniqueIdentifier | null = null;
+
+    if (over) {
+        // Se o over for um item, o containerId é o status desse item
+        if (over.data.current?.sortable?.containerId) {
+            targetContainerId = over.data.current.sortable.containerId;
+            overId = over.id;
+        } else {
+            // Se o over for a coluna vazia (o droppable container), o ID é o status
+            targetContainerId = over.id;
+            overId = null; // Não há item sobre o qual soltar
+        }
+    } else {
+        // Se não houver over (soltou fora), não faz nada
+        return;
+    }
+
     const sourceStatus = draggedTask.status;
-    // O containerId é o ID da coluna (que é o status)
-    const targetStatus = over.data.current?.sortable?.containerId || overId as ClientTaskStatus; 
+    const targetStatus = targetContainerId as ClientTaskStatus; 
     
     if (!targetStatus) return;
 
@@ -286,13 +302,18 @@ const ClientKanban: React.FC = () => {
       
       // Caso 1: Movendo dentro da mesma coluna
       if (sourceStatus === targetStatus) {
-        const oldIndex = tasksInSource.findIndex(t => t.id === activeId);
-        const newIndex = tasksInSource.findIndex(t => t.id === overId);
-        
-        if (oldIndex !== -1 && newIndex !== -1) {
-          newTasksInTarget = arrayMove(tasksInSource, oldIndex, newIndex);
+        if (overId) {
+            const oldIndex = tasksInSource.findIndex(t => t.id === activeId);
+            const newIndex = tasksInSource.findIndex(t => t.id === overId);
+            
+            if (oldIndex !== -1 && newIndex !== -1) {
+              newTasksInTarget = arrayMove(tasksInSource, oldIndex, newIndex);
+            }
+        } else {
+            // Soltou na coluna vazia (mas é a mesma coluna), não faz nada com a ordem
+            newTasksInTarget = tasksInSource;
         }
-        newTasksInSource = []; // Não precisamos da lista de origem separada
+        newTasksInSource = []; 
       } 
       // Caso 2: Movendo para uma coluna diferente
       else {
@@ -300,7 +321,7 @@ const ClientKanban: React.FC = () => {
         newTasksInSource = tasksInSource.filter(t => t.id !== activeId);
         
         // Encontra o índice de inserção na coluna de destino
-        const overIndex = tasksInTarget.findIndex(t => t.id === overId);
+        const overIndex = overId ? tasksInTarget.findIndex(t => t.id === overId) : -1;
         const insertIndex = overIndex === -1 ? tasksInTarget.length : overIndex;
         
         const taskToMove = { ...draggedTask, status: targetStatus };
@@ -325,16 +346,22 @@ const ClientKanban: React.FC = () => {
           finalTasks.push(updatedTask);
           
           // Coleta as atualizações para enviar ao DB
-          updatesToSend.push({
-            taskId: task.id,
-            newStatus: newStatus,
-            newOrderIndex: index,
-          });
+          // Só envia se o status ou a ordem mudou
+          const originalTask = prevTasks.find(t => t.id === task.id);
+          if (!originalTask || originalTask.status !== newStatus || originalTask.order_index !== index) {
+              updatesToSend.push({
+                taskId: task.id,
+                newStatus: newStatus,
+                newOrderIndex: index,
+              });
+          }
         });
       });
       
       // 3. Envia a atualização para o DB (batch update)
-      updateTaskStatusAndOrder.mutate(updatesToSend);
+      if (updatesToSend.length > 0) {
+          updateTaskStatusAndOrder.mutate(updatesToSend);
+      }
       
       return finalTasks;
     });
