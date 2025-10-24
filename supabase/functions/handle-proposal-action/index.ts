@@ -84,6 +84,20 @@ serve(async (req) => {
       console.warn("Telegram secrets not configured. Skipping notification.");
     }
 
+    // 3. Update proposal status
+    const { error: updateError } = await supabaseServiceRole
+      .from('proposals')
+      .update({ status: status, updated_at: new Date().toISOString() })
+      .eq('id', proposalId);
+
+    if (updateError) {
+      console.error("Erro ao atualizar status da proposta:", updateError);
+      return new Response(JSON.stringify({ error: "Failed to update proposal status." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ message: `Proposal ${statusText} handled successfully.` }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
