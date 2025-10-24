@@ -31,7 +31,7 @@ const ProposalViewerPage = lazy(() => import("./pages/PublicProposalPage"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const PortfolioProjectPage = lazy(() => import("./pages/PortfolioProjectPage"));
 const Clients = lazy(() => import("./pages/Clients"));
-const ClientKanban = lazy(() => import("./components/client/ClientKanban"));
+import ClientKanban from "./components/client/ClientKanban"; // Importing directly
 const PublicApprovalPage = lazy(() => import("./pages/PublicApprovalPage")); // NOVO: PublicApprovalPage
 
 // Main App component wrapper for context providers
@@ -171,5 +171,3 @@ function AppContent() {
     </div>
   );
 }
-
-export default App;
