@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { format } from "date-fns";
+import OverdueTasksReminder from "@/components/dashboard/OverdueTasksReminder";
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-primary" },
@@ -100,6 +99,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="page-content-wrapper space-y-6">
+      <OverdueTasksReminder onTaskUpdated={handleTaskUpdated} />
       <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
@@ -167,6 +167,3 @@ const Dashboard: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default Dashboard;
