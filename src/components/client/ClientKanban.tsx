@@ -12,9 +12,10 @@ import { cn, getInitials } from '@/lib/utils';
 import PageTitle from "@/components/layout/PageTitle";
 import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess, showInfo } from '@/utils/toast';
-import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor, DragOverlay, useDndMonitor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
+import KanbanColumn from './ClientKanbanColumn'; // Importando o novo componente de coluna
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
@@ -23,6 +24,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ClientTaskTemplates from './ClientTaskTemplates';
 import copy from 'copy-to-clipboard';
 import { Input } from '@/components/ui/input';
+import { arrayMove } from '@dnd-kit/sortable';
+import { AnimatePresence, motion } from 'framer-motion';
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -46,7 +49,7 @@ interface ClientTask {
   order_index: number;
   public_approval_link_id: string | null;
   tags: { id: string; name: string; color: string }[];
-  month_year_reference: string | null; // ADICIONADO para corrigir erro da Edge Function
+  month_year_reference: string | null;
 }
 interface Client {
   id: string;
@@ -58,7 +61,7 @@ const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] =
   { id: "in_progress", title: "Em Produção", color: "text-muted-foreground" },
   { id: "under_review", title: "Para Aprovação", color: "text-primary" },
   { id: "edit_requested", title: "Edição Solicitada", color: "text-primary" },
-  { id: "approved", title: "Aprovado", color: "text-foreground" }, // Neutro
+  { id: "approved", title: "Aprovado", color: "text-foreground" },
   { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" },
 ];
 
@@ -112,7 +115,11 @@ const ClientKanban: React.FC = () => {
   const [initialStatus, setInitialStatus] = useState<ClientTaskStatus | undefined>(undefined);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null); // Estado para o Lightbox
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  
+  // DND State
+  const [activeDragItem, setActiveDragItem] = useState<ClientTask | null>(null);
+  const [localTasks, setLocalTasks] = useState<ClientTask[]>([]);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["clientTasks", clientId, userId],
@@ -121,25 +128,32 @@ const ClientKanban: React.FC = () => {
     staleTime: 1000 * 60 * 1,
   });
   
+  // Sincronizar tarefas do servidor para o estado local
+  React.useEffect(() => {
+    if (data?.tasks) {
+      setLocalTasks(data.tasks);
+    }
+  }, [data?.tasks]);
+
   // DND Sensors
-  const mouseSensor = useMouseSensor();
-  const touchSensor = useTouchSensor();
+  const mouseSensor = useMouseSensor({ activationConstraint: { distance: 10 } });
+  const touchSensor = useTouchSensor({ activationConstraint: { delay: 250, tolerance: 5 } });
   const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
 
   const tasksByStatus = useMemo(() => {
     const map = new Map<ClientTaskStatus, ClientTask[]>();
     KANBAN_COLUMNS.forEach(col => map.set(col.id, []));
-    data?.tasks.forEach(task => {
+    localTasks.forEach(task => {
       map.get(task.status)?.push(task);
     });
-    // Garantir que as tarefas dentro de cada coluna estejam ordenadas pelo order_index
     map.forEach(tasks => tasks.sort((a, b) => a.order_index - b.order_index));
     return map;
-  }, [data?.tasks]);
+  }, [localTasks]);
   
   const tasksUnderReview = tasksByStatus.get('under_review') || [];
 
   const handleTaskSaved = () => {
+    // Força o refetch do servidor para garantir a consistência
     refetch();
     setIsTaskFormOpen(false);
     setEditingTask(undefined);
@@ -173,40 +187,52 @@ const ClientKanban: React.FC = () => {
   }, [location.search, data?.tasks, openTaskId, handleEditTask]);
 
   const updateTaskStatusAndOrder = useMutation({
-    mutationFn: async ({ taskId, newStatus, newOrderIndex }: { taskId: string, newStatus: ClientTaskStatus, newOrderIndex: number }) => {
+    mutationFn: async (updates: { taskId: string, newStatus: ClientTaskStatus, newOrderIndex: number }[]) => {
       if (!userId) throw new Error("Usuário não autenticado.");
       
-      const isCompleted = newStatus === 'approved' || newStatus === 'posted';
-      
-      const { error } = await supabase
-        .from("client_tasks")
-        .update({ 
-          status: newStatus, 
+      const dbUpdates = updates.map(({ taskId, newStatus, newOrderIndex }) => {
+        const isCompleted = newStatus === 'approved' || newStatus === 'posted';
+        return {
+          id: taskId,
+          status: newStatus,
           order_index: newOrderIndex,
           is_completed: isCompleted,
           completed_at: isCompleted ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", taskId)
-        .eq("user_id", userId);
+        };
+      });
+      
+      const { error } = await supabase
+        .from("client_tasks")
+        .upsert(dbUpdates, { onConflict: 'id' });
       
       if (error) throw error;
     },
     onSuccess: () => {
-      // Não usamos showSuccess aqui para evitar spam de toast durante o DND
+      // Após a atualização do DB, forçamos o refetch para garantir a consistência
       queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
-      queryClient.invalidateQueries({ queryKey: ["allTasks", userId] }); // Invalida tarefas principais
+      queryClient.invalidateQueries({ queryKey: ["allTasks", userId] });
     },
     onError: (err: any) => {
       showError("Erro ao mover tarefa: " + err.message);
+      // Em caso de erro, reverte para o estado do servidor
+      refetch();
     },
   });
 
+  const handleDragStart = (event: any) => {
+    const activeTask = localTasks.find(t => t.id === event.active.id);
+    if (activeTask) {
+      setActiveDragItem(activeTask);
+    }
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveDragItem(null);
     if (!over || active.id === over.id) return;
 
-    const draggedTask = data?.tasks.find(t => t.id === active.id);
+    const draggedTask = localTasks.find(t => t.id === active.id);
     if (!draggedTask) return;
 
     const sourceStatus = draggedTask.status;
@@ -214,28 +240,72 @@ const ClientKanban: React.FC = () => {
     
     if (!targetStatus) return;
 
+    const sourceTasks = tasksByStatus.get(sourceStatus) || [];
     const targetTasks = tasksByStatus.get(targetStatus) || [];
-    let newOrderIndex = targetTasks.length; // Default: move para o final da coluna
-
-    if (over.data.current?.sortable?.index !== undefined) {
-        // Se soltou sobre outro item, use o índice desse item
-        newOrderIndex = over.data.current.sortable.index;
-    }
     
-    // Se o status mudou OU a ordem mudou dentro da mesma coluna
-    if (sourceStatus !== targetStatus || draggedTask.order_index !== newOrderIndex) {
-        // 1. Atualiza o status e a ordem da tarefa arrastada
-        updateTaskStatusAndOrder.mutate({ 
-            taskId: draggedTask.id, 
-            newStatus: targetStatus, 
-            newOrderIndex: newOrderIndex 
-        });
+    const activeIndex = sourceTasks.findIndex(t => t.id === active.id);
+    const overIndex = over.data.current?.sortable?.index !== undefined 
+        ? over.data.current.sortable.index 
+        : targetTasks.length;
+
+    // 1. Otimização: Atualiza o estado localmente para feedback instantâneo
+    setLocalTasks(prevTasks => {
+      const newTasks = prevTasks.map(t => ({ ...t })); // Clonar para mutação segura
+      
+      // Remove o item da lista de origem
+      const taskToRemove = newTasks.findIndex(t => t.id === draggedTask.id);
+      if (taskToRemove !== -1) {
+        newTasks.splice(taskToRemove, 1);
+      }
+      
+      // Encontra a posição correta na lista de destino
+      const tasksInTargetStatus = newTasks.filter(t => t.status === targetStatus);
+      
+      // Insere o item na nova posição
+      const newTask = { ...draggedTask, status: targetStatus };
+      
+      // Se o status mudou, insere no final. Se não, usa a lógica de arrayMove
+      if (sourceStatus !== targetStatus) {
+        // Se mudou de coluna, insere no índice calculado (overIndex)
+        tasksInTargetStatus.splice(overIndex, 0, newTask);
+      } else {
+        // Se a coluna é a mesma, usamos arrayMove para reordenar
+        const oldIndex = tasksInTargetStatus.findIndex(t => t.id === draggedTask.id);
+        if (oldIndex !== -1) {
+            tasksInTargetStatus.splice(oldIndex, 1); // Remove da posição antiga
+        }
+        tasksInTargetStatus.splice(overIndex, 0, newTask); // Insere na nova posição
+      }
+      
+      // Reconstroi o array final e recalcula os order_index
+      const finalTasks = [];
+      const updatesToSend: { taskId: string, newStatus: ClientTaskStatus, newOrderIndex: number }[] = [];
+      
+      KANBAN_COLUMNS.forEach(col => {
+        const tasksInCol = newTasks.filter(t => t.status === col.id);
         
-        // 2. Reordena as outras tarefas na coluna de destino (e origem, se necessário)
-        // Para simplificar, confiamos no refetch para reordenar o array completo.
-        // O DND Kit lida com a reordenação visualmente, mas o DB precisa ser corrigido.
-        // O `order_index` é atualizado na mutação, e o `refetch` garante a consistência.
-    }
+        // Se a coluna é a de destino, usamos a lista atualizada
+        const currentList = col.id === targetStatus ? tasksInTargetStatus : tasksInCol;
+        
+        currentList.forEach((task, index) => {
+          task.order_index = index;
+          task.status = col.id; // Garante que o status local está correto
+          finalTasks.push(task);
+          
+          // Coleta as atualizações para enviar ao DB
+          updatesToSend.push({
+            taskId: task.id,
+            newStatus: col.id,
+            newOrderIndex: index,
+          });
+        });
+      });
+      
+      // 2. Envia a atualização para o DB (batch update)
+      updateTaskStatusAndOrder.mutate(updatesToSend);
+      
+      return finalTasks;
+    });
   };
   
   const handleGenerateApprovalLink = useMutation({
@@ -248,7 +318,6 @@ const ClientKanban: React.FC = () => {
         return;
       }
       
-      // Usamos o mês de referência da primeira tarefa.
       const monthYearRef = tasksToReview[0].month_year_reference;
       if (!monthYearRef) {
         showError("Nenhuma tarefa em 'Para Aprovação' tem uma data de vencimento definida para gerar o link mensal.");
@@ -285,7 +354,6 @@ const ClientKanban: React.FC = () => {
       showSuccess("Link de aprovação gerado com sucesso!");
     },
     onError: (err: any) => {
-      // O erro da Edge Function deve ser mais detalhado agora
       showError("Erro ao gerar link: " + (err.message || "Função Edge retornou um erro."));
     },
   });
@@ -320,7 +388,6 @@ const ClientKanban: React.FC = () => {
   const { client } = data;
 
   return (
-    // O page-content-wrapper deve garantir que o conteúdo principal use a largura total disponível
     <div className="page-content-wrapper space-y-6 flex flex-col h-full">
       <PageTitle title={`Workspace: ${client.name}`} description="Gerencie o fluxo de trabalho e aprovações do cliente.">
         <div className="flex items-center gap-2">
@@ -377,55 +444,35 @@ const ClientKanban: React.FC = () => {
           <DndContext 
             sensors={sensors}
             collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            {/* Container principal do Kanban: w-full, overflow-x-auto para rolagem horizontal */}
-            <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar w-full flex-grow min-h-[50vh]">
+            {/* Container principal do Kanban: flex-wrap no mobile, overflow-x-auto no desktop */}
+            <div className="flex flex-col sm:flex-row sm:overflow-x-auto sm:space-x-4 pb-4 custom-scrollbar w-full flex-grow min-h-[50vh] space-y-4 sm:space-y-0">
               {KANBAN_COLUMNS.map(column => (
-                <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col h-full max-h-full">
-                  <CardHeader className="p-3 pb-2 flex-shrink-0">
-                    <CardTitle className={cn("text-lg font-semibold", column.color)}>{column.title} ({tasksByStatus.get(column.id)?.length || 0})</CardTitle>
-                    <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleAddTaskInColumn(column.id)} 
-                          className="w-full border-dashed border-border text-primary hover:bg-primary/10 h-8 text-sm mt-2"
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
-                        </Button>
-                      </DialogTrigger>
-                    </Dialog>
-                  </CardHeader>
-                  
-                  {/* ScrollArea para o conteúdo da coluna */}
-                  <ScrollArea className="flex-1 p-3 pt-0">
-                    <CardContent className="space-y-3 min-h-[100px]">
-                      <SortableContext 
-                        items={tasksByStatus.get(column.id)?.map(t => t.id) || []} 
-                        strategy={verticalListSortingStrategy}
-                        id={column.id}
-                      >
-                        {tasksByStatus.get(column.id)?.map(task => (
-                          <ClientTaskCard 
-                            key={task.id} 
-                            task={task} 
-                            onEdit={handleEditTask} 
-                            refetchTasks={refetch}
-                            onImageClick={handleImageClick}
-                          />
-                        ))}
-                      </SortableContext>
-                      
-                      {tasksByStatus.get(column.id)?.length === 0 && (
-                        <p className="text-muted-foreground text-sm text-center p-4">Arraste tarefas para cá ou crie uma nova.</p>
-                      )}
-                    </CardContent>
-                  </ScrollArea>
-                </Card>
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  tasks={tasksByStatus.get(column.id) || []}
+                  onAddTask={handleAddTaskInColumn}
+                  onEditTask={handleEditTask}
+                  refetchTasks={refetch}
+                  onImageClick={handleImageClick}
+                />
               ))}
             </div>
+            
+            {/* Drag Overlay para feedback visual suave */}
+            <DragOverlay>
+              {activeDragItem ? (
+                <ClientTaskCard 
+                  task={activeDragItem} 
+                  onEdit={handleEditTask} 
+                  refetchTasks={refetch}
+                  onImageClick={handleImageClick}
+                />
+              ) : null}
+            </DragOverlay>
           </DndContext>
         </TabsContent>
         
@@ -434,7 +481,7 @@ const ClientKanban: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para edição de Tarefa (Abre quando editingTask é definido) */}
+      {/* Dialog para edição de Tarefa */}
       <Dialog 
         open={isTaskFormOpen} 
         onOpenChange={(open) => {

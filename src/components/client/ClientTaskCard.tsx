@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye, XCircle } from 'lucide-react';
 import { cn, formatDateTime, formatTime, parseISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { useMutation, useQueryClient } from '@tanstack/react-query'; // Importação verificada
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/integrations/supabase/auth';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import copy from 'copy-to-clipboard';
+import { motion } from 'framer-motion'; // Importando motion
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -41,7 +42,7 @@ interface ClientTaskCardProps {
   onImageClick: (url: string) => void; // Nova prop para Lightbox
 }
 
-const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTasks, onImageClick }) => {
+const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit, refetchTasks, onImageClick }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
@@ -60,6 +61,8 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
     transition,
     zIndex: isDragging ? 10 : 0,
     opacity: isDragging ? 0.8 : 1,
+    // Adicionando uma transição de escala sutil ao soltar
+    boxShadow: isDragging ? '0 0 0 1px rgba(237, 24, 87, 0.5), 0 10px 20px rgba(0, 0, 0, 0.2)' : undefined,
   };
   
   const handleDeleteTask = useMutation({
@@ -129,15 +132,16 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
   const isEditRequested = task.status === 'edit_requested';
 
   return (
-    <Card 
+    <motion.div
       ref={setNodeRef} 
       style={style} 
+      // Adicionando layoutId para animações de movimento (se o componente pai usar AnimatePresence)
+      layoutId={task.id} 
       className={cn(
         "bg-card border border-border rounded-xl shadow-md cursor-grab active:cursor-grabbing",
         isDragging && "ring-2 ring-primary",
-        // Usando cores do tema para destaque de status
-        isApproved && "border-green-500/50", // Verde suave para aprovado
-        isEditRequested && "border-primary ring-1 ring-primary/50" // Rosa primário para edição solicitada
+        isApproved && "border-green-500/50",
+        isEditRequested && "border-primary ring-1 ring-primary/50"
       )}
     >
       {/* Imagem de Capa (Proporção 4:5) - Movida para o topo */}
@@ -202,7 +206,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
               <Button 
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('approved')} 
-                className="flex-1 bg-green-600 text-white hover:bg-green-700 h-8 text-xs" // Mantido verde para aprovação
+                className="flex-1 bg-green-600 text-white hover:bg-green-700 h-8 text-xs"
                 disabled={handleStatusUpdate.isPending}
               >
                 <CheckCircle2 className="mr-1 h-3 w-3" /> Aprovar
@@ -211,7 +215,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('edit_requested')} 
                 variant="secondary" 
-                className="flex-1 border-secondary text-foreground hover:bg-secondary h-8 text-xs" // Usando secundário neutro
+                className="flex-1 border-secondary text-foreground hover:bg-secondary h-8 text-xs"
                 disabled={handleStatusUpdate.isPending}
               >
                 <Edit3 className="mr-1 h-3 w-3" /> Editar
@@ -257,8 +261,8 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
           </div>
         )}
       </CardContent>
-    </Card>
+    </motion.div>
   );
-};
+});
 
 export default ClientTaskCard;
