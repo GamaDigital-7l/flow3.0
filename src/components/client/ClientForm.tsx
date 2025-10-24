@@ -7,13 +7,13 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload, XCircle, Trash2, Users, Settings, AlertTriangle } from "lucide-react";
+import { Loader2, Upload, XCircle, Trash2, Users, Settings, AlertTriangle, UserPlus, UserMinus } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { cn, sanitizeFilename, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
@@ -27,6 +27,17 @@ interface Client {
   contact_email: string | null;
   contact_phone: string | null;
   monthly_delivery_goal: number;
+}
+
+interface WorkspaceMember {
+  client_id: string;
+  user_id: string;
+  role: string;
+  profile: {
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+  };
 }
 
 const clientSchema = z.object({
@@ -46,6 +57,19 @@ interface ClientFormProps {
   onClose: () => void;
 }
 
+const fetchWorkspaceMembers = async (clientId: string): Promise<WorkspaceMember[]> => {
+  const { data, error } = await supabase
+    .from("client_workspace_members")
+    .select(`
+      client_id, user_id, role,
+      profile:auth.users(first_name, last_name, avatar_url)
+    `)
+    .eq("client_id", clientId);
+
+  if (error) throw error;
+  return data as any[] || [];
+};
+
 const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onClose }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -54,6 +78,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
   const [isUploading, setIsUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(initialData?.logo_url || null);
   const [activeTab, setActiveTab] = useState('general');
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+
+  const { data: members, isLoading: isLoadingMembers, refetch: refetchMembers } = useQuery<WorkspaceMember[], Error>({
+    queryKey: ["workspaceMembers", initialData?.id],
+    queryFn: () => fetchWorkspaceMembers(initialData!.id),
+    enabled: !!userId && !!initialData?.id,
+  });
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
@@ -246,8 +277,46 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
 
       <TabsContent value="members" className="mt-4 space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Gerenciar Membros</h3>
-        <p className="text-muted-foreground">Funcionalidade em desenvolvimento. Apenas o criador tem acesso total por enquanto.</p>
-        {/* Implementação futura de listagem e adição de membros */}
+        {isLoadingMembers ? (
+          <div className="flex items-center justify-center p-4">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : members && members.length > 0 ? (
+          <div className="space-y-2">
+            {members.map(member => (
+              <div key={`${member.client_id}-${member.user_id}`} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border border-border">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={member.profile?.avatar_url || undefined} alt={member.profile?.first_name || 'Avatar'} />
+                    <AvatarFallback className="text-sm bg-primary/20 text-primary">{getInitials(member.profile?.first_name || 'Membro')}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold text-foreground">{member.profile?.first_name} {member.profile?.last_name}</p>
+                    <p className="text-xs text-muted-foreground">{member.role}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-500/10">
+                  <UserMinus className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Nenhum membro adicionado a este workspace.</p>
+        )}
+
+        <div className="flex items-center space-x-2">
+          <Input
+            type="email"
+            placeholder="Email do novo membro"
+            value={newMemberEmail}
+            onChange={(e) => setNewMemberEmail(e.target.value)}
+            className="flex-1 bg-input border-border text-foreground focus-visible:ring-ring"
+          />
+          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/10">
+            <UserPlus className="mr-2 h-4 w-4" /> Adicionar
+          </Button>
+        </div>
       </TabsContent>
 
       <TabsContent value="danger" className="mt-4 space-y-4">
