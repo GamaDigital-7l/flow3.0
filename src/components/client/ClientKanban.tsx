@@ -138,6 +138,7 @@ const ClientKanban: React.FC = () => {
   }, [data?.tasks]);
 
   // DND Sensors
+  // Aumentando a tolerância para toque para facilitar o arraste em dispositivos móveis
   const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
   const touchSensor = useTouchSensor({ activationConstraint: { delay: 100, tolerance: 5 } });
   const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
@@ -242,22 +243,14 @@ const ClientKanban: React.FC = () => {
     
     if (!targetStatus) return;
 
-    const sourceTasks = tasksByStatus.get(sourceStatus) || [];
-    const targetTasks = tasksByStatus.get(targetStatus) || [];
-    
-    const activeIndex = sourceTasks.findIndex(t => t.id === active.id);
-    const overIndex = over.data.current?.sortable?.index !== undefined 
-        ? over.data.current.sortable.index 
-        : targetTasks.length;
-
     // 1. Otimização: Atualiza o estado localmente para feedback instantâneo
     setLocalTasks(prevTasks => {
       const newTasks = prevTasks.map(t => ({ ...t })); // Clonar para mutação segura
       
       // Remove o item da lista de origem
-      const taskToRemove = newTasks.findIndex(t => t.id === draggedTask.id);
-      if (taskToRemove !== -1) {
-        newTasks.splice(taskToRemove, 1);
+      const taskToRemoveIndex = newTasks.findIndex(t => t.id === draggedTask.id);
+      if (taskToRemoveIndex !== -1) {
+        newTasks.splice(taskToRemoveIndex, 1);
       }
       
       // Encontra a posição correta na lista de destino
