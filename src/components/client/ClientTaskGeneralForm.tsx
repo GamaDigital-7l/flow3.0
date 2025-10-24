@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import TagSelector from "../TagSelector";
 import TimePicker from "../TimePicker";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Link as LinkIcon } from "lucide-react"; // Importação corrigida
 import { cn, formatDateTime } from "@/lib/utils";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { ClientTaskFormValues } from "./ClientTaskForm"; // Importando o tipo do arquivo principal
