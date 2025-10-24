@@ -12,7 +12,6 @@ import { Task, TaskCurrentBoard } from "@/types/task";
 import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
-import DashboardFinanceSummary from "@/components/dashboard/DashboardFinanceSummary";
 import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
@@ -130,10 +129,14 @@ const Dashboard: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Seção de Resumos (Produtividade) */}
+      <h2 className="text-xl font-bold text-foreground pt-4">Métricas de Produtividade</h2>
+      <DashboardResultsSummary />
+
       {/* Seção de Listas de Tarefas (Grid 2x3 ou 1x6) */}
-      <h2 className="text-xl font-bold text-foreground pt-4">Seu Fluxo de Trabalho</h2>
+      <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {/* Novo Quadro de Hábitos */}
+        {/* Quadro de Hábitos */}
         <HabitListBoard 
           habits={todayHabits || []} 
           isLoading={isLoadingHabits} 
@@ -161,19 +164,6 @@ const Dashboard: React.FC = () => {
             originBoard={board.id}
           />
         ))}
-      </div>
-
-      {/* Seção de Resumos (Financeiro e Produtividade) - MOVIDA PARA O FINAL */}
-      <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Resumos e Métricas</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 xl:col-span-2">
-          <h3 className="text-lg font-bold text-foreground mb-3">Resumo Financeiro do Mês</h3>
-          <DashboardFinanceSummary />
-        </div>
-        <div className="xl:col-span-1">
-          <h3 className="text-lg font-bold text-foreground mb-3">Produtividade</h3>
-          <DashboardResultsSummary />
-        </div>
       </div>
     </div>
   );

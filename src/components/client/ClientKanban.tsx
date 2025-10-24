@@ -12,7 +12,7 @@ import { cn, getInitials } from '@/lib/utils';
 import PageTitle from "@/components/layout/PageTitle";
 import { useSession } from "@/integrations/supabase/auth";
 import { showError, showSuccess, showInfo } from "@/utils/toast";
-import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor, DragOverlay, UniqueIdentifier } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
 import KanbanColumn from './ClientKanbanColumn';
@@ -138,7 +138,6 @@ const ClientKanban: React.FC = () => {
   }, [data?.tasks]);
 
   // DND Sensors
-  // Aumentando a tolerância para toque para facilitar o arraste em dispositivos móveis
   const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
   const touchSensor = useTouchSensor({ activationConstraint: { delay: 100, tolerance: 5 } });
   const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
@@ -233,70 +232,79 @@ const ClientKanban: React.FC = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragItem(null);
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
-    const draggedTask = localTasks.find(t => t.id === active.id);
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    const draggedTask = localTasks.find(t => t.id === activeId);
     if (!draggedTask) return;
 
     const sourceStatus = draggedTask.status;
-    const targetStatus = over.data.current?.sortable?.containerId as ClientTaskStatus;
+    // O containerId é o ID da coluna (que é o status)
+    const targetStatus = over.data.current?.sortable?.containerId || overId as ClientTaskStatus; 
     
     if (!targetStatus) return;
 
-    // 1. Otimização: Atualiza o estado localmente para feedback instantâneo
+    // 1. Atualiza o estado localmente para feedback instantâneo
     setLocalTasks(prevTasks => {
-      const newTasks = prevTasks.map(t => ({ ...t })); // Clonar para mutação segura
+      const tasksInSource = prevTasks.filter(t => t.status === sourceStatus).sort((a, b) => a.order_index - b.order_index);
+      const tasksInTarget = prevTasks.filter(t => t.status === targetStatus).sort((a, b) => a.order_index - b.order_index);
       
-      // Remove o item da lista de origem
-      const taskToRemoveIndex = newTasks.findIndex(t => t.id === draggedTask.id);
-      if (taskToRemoveIndex !== -1) {
-        newTasks.splice(taskToRemoveIndex, 1);
-      }
+      let newTasksInTarget: ClientTask[] = [...tasksInTarget];
+      let newTasksInSource: ClientTask[] = [...tasksInSource];
       
-      // Encontra a posição correta na lista de destino
-      const tasksInTargetStatus = newTasks.filter(t => t.status === targetStatus);
-      
-      // Insere o item na nova posição
-      const newTask = { ...draggedTask, status: targetStatus };
-      
-      // Se o status mudou, insere no índice calculado (overIndex)
-      if (sourceStatus !== targetStatus) {
-        // Se mudou de coluna, insere no índice calculado (overIndex)
-        tasksInTargetStatus.splice(overIndex, 0, newTask);
-      } else {
-        // Se a coluna é a mesma, usamos arrayMove para reordenar
-        const oldIndex = tasksInTargetStatus.findIndex(t => t.id === draggedTask.id);
-        if (oldIndex !== -1) {
-            tasksInTargetStatus.splice(oldIndex, 1); // Remove da posição antiga
-        }
-        tasksInTargetStatus.splice(overIndex, 0, newTask); // Insere na nova posição
-      }
-      
-      // Reconstroi o array final e recalcula os order_index
-      const finalTasks = [];
       const updatesToSend: { taskId: string, newStatus: ClientTaskStatus, newOrderIndex: number }[] = [];
       
-      KANBAN_COLUMNS.forEach(col => {
-        const tasksInCol = newTasks.filter(t => t.status === col.id);
+      // Caso 1: Movendo dentro da mesma coluna
+      if (sourceStatus === targetStatus) {
+        const oldIndex = tasksInSource.findIndex(t => t.id === activeId);
+        const newIndex = tasksInSource.findIndex(t => t.id === overId);
         
-        // Se a coluna é a de destino, usamos a lista atualizada
-        const currentList = col.id === targetStatus ? tasksInTargetStatus : tasksInCol;
+        if (oldIndex !== -1 && newIndex !== -1) {
+          newTasksInTarget = arrayMove(tasksInSource, oldIndex, newIndex);
+        }
+        newTasksInSource = []; // Não precisamos da lista de origem separada
+      } 
+      // Caso 2: Movendo para uma coluna diferente
+      else {
+        // Remove da origem
+        newTasksInSource = tasksInSource.filter(t => t.id !== activeId);
+        
+        // Encontra o índice de inserção na coluna de destino
+        const overIndex = tasksInTarget.findIndex(t => t.id === overId);
+        const insertIndex = overIndex === -1 ? tasksInTarget.length : overIndex;
+        
+        const taskToMove = { ...draggedTask, status: targetStatus };
+        newTasksInTarget.splice(insertIndex, 0, taskToMove);
+      }
+      
+      // 2. Recalcula os order_index e coleta as atualizações
+      const finalTasks: ClientTask[] = [];
+      
+      KANBAN_COLUMNS.forEach(col => {
+        let currentList = prevTasks.filter(t => t.status === col.id).sort((a, b) => a.order_index - b.order_index);
+        
+        if (col.id === sourceStatus && sourceStatus !== targetStatus) {
+          currentList = newTasksInSource;
+        } else if (col.id === targetStatus) {
+          currentList = newTasksInTarget;
+        }
         
         currentList.forEach((task, index) => {
-          task.order_index = index;
-          task.status = col.id; // Garante que o status local está correto
-          finalTasks.push(task);
+          const newStatus = col.id;
+          const updatedTask = { ...task, status: newStatus, order_index: index };
+          finalTasks.push(updatedTask);
           
           // Coleta as atualizações para enviar ao DB
           updatesToSend.push({
             taskId: task.id,
-            newStatus: col.id,
+            newStatus: newStatus,
             newOrderIndex: index,
           });
         });
       });
       
-      // 2. Envia a atualização para o DB (batch update)
+      // 3. Envia a atualização para o DB (batch update)
       updateTaskStatusAndOrder.mutate(updatesToSend);
       
       return finalTasks;
