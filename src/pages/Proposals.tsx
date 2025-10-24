@@ -5,7 +5,7 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Proposal, ProposalStatus, PROPOSAL_STATUS_LABELS, ProposalItem } from '@/types/proposal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, Trash2, Loader2, FileText, Send, Eye, CheckCircle2, XCircle, Clock, Copy, Link as LinkIcon, Search, SortAsc, SortDesc, Download, CalendarDays } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, FileText, Send, Eye, CheckCircle2, XCircle, Clock, Copy, Link as LinkIcon, Search, SortAsc, SortDesc, Download, CalendarDays, Users } from 'lucide-react';
 import { showError, showSuccess, showInfo } from '@/utils/toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
