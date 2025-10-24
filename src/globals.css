@@ -280,9 +280,11 @@
 
   /* Ajustes para o layout principal */
   .main-content-area {
-    @apply flex flex-1 flex-col relative mt-[calc(3.5rem+var(--sat))] p-0;
+    /* Ajustado para usar a altura do header como margem superior */
+    @apply flex flex-1 flex-col relative p-0;
+    margin-top: calc(3.5rem + var(--sat)); /* Altura do Header */
   }
-
+  
   /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
   .page-content-wrapper {
     @apply p-3 md:p-4 lg:p-6;

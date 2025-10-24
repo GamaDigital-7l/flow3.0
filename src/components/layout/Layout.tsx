@@ -51,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClic
       <div className="flex flex-col flex-1">
         <Header onMenuClick={() => setIsSidebarOpen(true)} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
         <OfflineIndicator isOnline={isOnline} />
-        <main className="main-content-area"> {/* Usando a classe CSS ajustada */}
+        <main className="main-content-area"> {/* A margem superior é definida em globals.css */}
           <AnimatePresence>
             {isLoading && (
               <motion.div
