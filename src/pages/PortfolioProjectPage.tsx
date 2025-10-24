@@ -5,7 +5,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PortfolioProject } from "@/types/portfolio";
-import { Loader2, ArrowLeft, Users, CalendarDays, Link as LinkIcon, Share2, MessageSquare, ExternalLink, Zap } from "lucide-react";
+import { Loader2, ArrowLeft, Users, CalendarDays, Link as LinkIcon, Share2, MessageSquare, ExternalLink, Zap, X } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ const fetchSuggestedProjects = async (userId: string, currentProjectId: string):
 const PortfolioProjectPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null); // Estado para o Lightbox
 
   const { data: project, isLoading, error } = useQuery<PortfolioProject | null, Error>({
     queryKey: ["portfolioProjectPublic", slug],
@@ -130,7 +130,7 @@ const PortfolioProjectPage: React.FC = () => {
             src={url} 
             alt={`Galeria ${index + 1}`} 
             className="w-full h-auto object-cover transition-transform duration-500 hover:scale-[1.01] cursor-pointer" 
-            // Implementação de Lightbox seria aqui
+            onClick={() => setLightboxUrl(url)} // Adiciona a função de Lightbox
           />
         )}
       </motion.div>
@@ -187,7 +187,19 @@ const PortfolioProjectPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Descrição e Resultado */}
+        {/* Galeria de Conteúdo (Movida para cima) */}
+        {project.gallery_urls && project.gallery_urls.length > 0 && (
+          <div className="space-y-6">
+            {/* Título da Galeria Removido */}
+            <div className="grid grid-cols-1 gap-6">
+              {project.gallery_urls.map((url, index) => (
+                <GalleryItem key={index} url={url} index={index} />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Descrição e Resultado (Movida para baixo) */}
         <Card className="bg-card border border-border rounded-xl shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-foreground">O Projeto</CardTitle>
@@ -207,18 +219,6 @@ const PortfolioProjectPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Galeria de Conteúdo */}
-        {project.gallery_urls && project.gallery_urls.length > 0 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-foreground">Galeria de Imagens</h2>
-            <div className="grid grid-cols-1 gap-6">
-              {project.gallery_urls.map((url, index) => (
-                <GalleryItem key={index} url={url} index={index} />
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Tags */}
         {project.tags && project.tags.length > 0 && (
@@ -269,6 +269,32 @@ const PortfolioProjectPage: React.FC = () => {
             </div>
         )}
       </div>
+      
+      {/* Lightbox Dialog */}
+      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
+        <DialogContent className="fixed inset-0 w-full h-full max-w-full max-h-full p-0 bg-black/90 border-none rounded-none flex items-center justify-center z-[9999]">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setLightboxUrl(null)} 
+            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+          {lightboxUrl && (
+            <motion.img
+              key={lightboxUrl}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              src={lightboxUrl}
+              alt="Visualização em Tela Cheia"
+              className="max-w-[95%] max-h-[95%] object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
