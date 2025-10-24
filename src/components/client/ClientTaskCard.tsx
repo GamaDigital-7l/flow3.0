@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2 } from 'lucide-react';
+import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare } from 'lucide-react';
 import { cn, formatDateTime, formatTime, parseISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/integrations/supabase/auth';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import copy from 'copy-to-clipboard';
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -29,6 +30,7 @@ interface ClientTask {
   client_id: string;
   user_id: string;
   is_completed: boolean;
+  public_approval_link_id: string | null;
   tags?: { id: string; name: string; color: string }[];
 }
 
@@ -50,7 +52,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: task.id, data: { type: 'ClientTask', task } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -109,6 +111,16 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
       showError("Erro ao atualizar status: " + err.message);
     },
   });
+  
+  const handleCopyApprovalLink = () => {
+    if (!task.public_approval_link_id) {
+      showError("Link de aprovação não gerado.");
+      return;
+    }
+    const link = `${window.location.origin}/approval/${task.public_approval_link_id}`;
+    copy(link);
+    showSuccess("Link de aprovação copiado!");
+  };
 
   const mainImageUrl = task.image_urls?.[0];
   const isUnderReview = task.status === 'under_review';
@@ -136,6 +148,12 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
           </CardTitle>
         </div>
         <div className="flex gap-1 flex-shrink-0">
+          {task.public_approval_enabled && task.public_approval_link_id && (
+            <Button variant="ghost" size="icon" onClick={handleCopyApprovalLink} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
+              <LinkIcon className="h-4 w-4" />
+              <span className="sr-only">Copiar Link de Aprovação</span>
+            </Button>
+          )}
           <Button variant="ghost" size="icon" onClick={() => onEdit(task)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
             <Edit className="h-4 w-4" />
           </Button>
@@ -213,6 +231,16 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
               disabled={handleStatusUpdate.isPending}
             >
               <Edit3 className="mr-1 h-3 w-3" /> Retomar Edição
+            </Button>
+          )}
+          {task.status === 'in_progress' && (
+            <Button 
+              size="sm" 
+              onClick={() => handleStatusUpdate.mutate('under_review')} 
+              className="w-full bg-yellow-600 text-white hover:bg-yellow-700 h-8 text-xs"
+              disabled={handleStatusUpdate.isPending}
+            >
+              <Eye className="mr-1 h-3 w-3" /> Enviar para Revisão
             </Button>
           )}
         </div>
