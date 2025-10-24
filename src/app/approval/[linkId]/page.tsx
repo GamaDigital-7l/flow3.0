@@ -229,7 +229,7 @@ const PublicApprovalPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40">
+      <div className="flex min-h-screen w-full items-center justify-center bg-background text-foreground">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
@@ -237,7 +237,7 @@ const PublicApprovalPage: React.FC = () => {
 
   if (error || !approvalData) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4 text-center">
+      <div className="flex min-h-screen w-full items-center justify-center bg-background text-foreground">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center justify-center text-destructive">
@@ -256,7 +256,7 @@ const PublicApprovalPage: React.FC = () => {
   const { client, tasks, link } = approvalData;
 
   return (
-    <div className="min-h-screen w-full bg-muted/40">
+    <div className="min-h-screen w-full bg-background text-foreground">
       {/* Container principal com layout corrigido */}
       <main className="w-full py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center text-center mb-8">
@@ -357,122 +357,3 @@ const PublicApprovalPage: React.FC = () => {
 };
 
 export default PublicApprovalPage;
-</dyad-file>
-
-<dyad-write path="src/components/finance/QuickCategoryForm.tsx" description="Fixing TypeScript and JSX errors in the QuickCategoryForm component.">
-"use client";
-
-import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { FinancialTransactionType, FinancialScope } from '@/types/finance';
-
-const quickCategorySchema = z.object({
-  name: z.string().min(1, "O nome da categoria é obrigatório."),
-  type: z.enum(["income", "expense"]),
-  scope: z.enum(["company", "personal"]),
-});
-
-export type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
-
-interface QuickCategoryFormProps {
-  onCategorySaved: () => void;
-  onClose: () => void;
-}
-
-const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, onClose }) => {
-  const form = useForm<QuickCategoryFormValues>({
-    resolver: zodResolver(quickCategorySchema),
-    defaultValues: {
-      name: "",
-      type: "expense",
-      scope: "company",
-    },
-  });
-
-  const onSubmit = (values: QuickCategoryFormValues) => {
-    onCategorySaved();
-    onClose();
-  };
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Nome da Categoria</FormLabel>
-            <FormControl>
-              <Input placeholder="Ex: Aluguel, Salário" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="income">Receita</SelectItem>
-                  <SelectItem value="expense">Despesa</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="scope"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Escopo</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o escopo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="company">Empresa</SelectItem>
-                  <SelectItem value="personal">Pessoal</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-      </div>
-
-      <Button type="submit">Salvar Categoria</Button>
-    </form>
-  );
-};
-
-export default QuickCategoryForm;

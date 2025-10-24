@@ -4,15 +4,14 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye, XCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye, XCircle } from "lucide-react";
 import { cn, formatDateTime, formatTime, parseISO } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
-import { useSession } from '@/integrations/supabase/auth';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/integrations/supabase/auth";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import copy from 'copy-to-clipboard';
 import { motion } from 'framer-motion'; // Importando motion
 
@@ -39,7 +38,7 @@ interface ClientTaskCardProps {
   task: ClientTask;
   onEdit: (task: ClientTask) => void;
   refetchTasks: () => void;
-  onImageClick: (url: string) => void; // Nova prop para Lightbox
+  onImageClick: (url: string) => void;
 }
 
 const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit, refetchTasks, onImageClick }) => {
@@ -61,7 +60,6 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
     transition,
     zIndex: isDragging ? 10 : 0,
     opacity: isDragging ? 0.8 : 1,
-    // Adicionando uma transição de escala sutil ao soltar
     boxShadow: isDragging ? '0 0 0 1px rgba(237, 24, 87, 0.5), 0 10px 20px rgba(0, 0, 0, 0.2)' : undefined,
   };
   
@@ -102,7 +100,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
           completed_at: isCompleted ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", task.id)
+        .eq("id", taskId)
         .eq("user_id", userId);
       
       if (error) throw error;
@@ -135,10 +133,8 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
     <motion.div
       ref={setNodeRef} 
       style={style} 
-      // Aplicando listeners e attributes ao elemento raiz para arrastar o card inteiro
       {...listeners} 
       {...attributes}
-      // Adicionando layoutId para animações de movimento (se o componente pai usar AnimatePresence)
       layoutId={task.id} 
       className={cn(
         "bg-card border border-border rounded-xl shadow-md cursor-grab active:cursor-grabbing",
@@ -172,9 +168,11 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
           )}
           <Button variant="ghost" size="icon" onClick={() => onEdit(task)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
             <Edit className="h-4 w-4" />
+            <span className="sr-only">Editar Tarefa</span>
           </Button>
           <Button variant="ghost" size="icon" onClick={() => handleDeleteTask.mutate(task.id)} className="h-7 w-7 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
             <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Deletar Tarefa</span>
           </Button>
         </div>
       </CardHeader>

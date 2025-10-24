@@ -12,11 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskTemplateForm from './ClientTaskTemplateForm';
 import { ClientTaskTemplate, DAYS_OF_WEEK_OPTIONS, WEEK_OPTIONS } from '@/types/client';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ClientTaskTemplatesProps {
   clientId: string;
@@ -108,8 +108,8 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
       if (error) throw error;
       return newStatus;
     },
-    onSuccess: (newStatus) => {
-      showSuccess(`Template ${newStatus ? 'ativado' : 'pausado'} com sucesso!`);
+    onSuccess: (data, variables) => {
+      showSuccess(`Template ${variables.is_active ? 'ativado' : 'pausado'} com sucesso!`);
       refetch();
     },
     onError: (err: any) => {
@@ -125,6 +125,7 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
         body: {
           clientId: clientId,
           monthYearRef: selectedMonth,
+          userId: userId,
         },
       });
       
@@ -165,22 +166,39 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Repeat className="h-4 w-4 text-status-recurring" /> Templates de Geração
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3">
+          <p className="text-muted-foreground text-sm">Carregando templates...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
-    showError("Erro ao carregar templates: " + error.message);
-    return <p className="text-red-500">Erro ao carregar templates.</p>;
+    return (
+      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Repeat className="h-4 w-4 text-status-recurring" /> Templates de Geração
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3">
+          <p className="text-red-500 text-sm">Erro ao carregar templates: {error.message}</p>
+        </CardContent>
+      </Card>
+    );
   }
-
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Repeat className="h-6 w-6 text-primary" /> Templates de Geração
+          <Repeat className="h-7 w-7 text-status-recurring" /> Templates de Geração
         </h2>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
@@ -190,9 +208,9 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
           </DialogTrigger>
           <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
             <DialogHeader>
-              <DialogTitle className="text-foreground">{editingTemplate ? "Editar Template" : "Criar Novo Template"}</DialogTitle>
+              <DialogTitle className="text-foreground">Adicionar Novo Template</DialogTitle>
               <DialogDescription>
-                Defina um padrão de recorrência para tarefas do cliente {clientName}.
+                Crie um template para gerar tarefas recorrentes para o cliente {clientName}.
               </DialogDescription>
             </DialogHeader>
             <ClientTaskTemplateForm
@@ -206,7 +224,7 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
       </div>
       
       {/* Interface de Geração de Tarefas */}
-      <Card className="bg-card border-border shadow-lg">
+      <Card className="bg-card border border-border shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
             <Zap className="h-5 w-5 text-yellow-500" /> Gerar Tarefas Mensais
@@ -244,26 +262,42 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
       </Card>
 
       {/* Templates Ativos */}
-      <Card className="bg-card border-border shadow-lg">
+      <Card className="bg-card border border-border shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Ativos ({activeTemplates.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {activeTemplates.length > 0 ? (
             activeTemplates.map(template => (
-              <div key={template.id} className="p-3 border border-border rounded-lg bg-muted/20 space-y-2">
+              <div key={template.id} className="p-3 border border-border rounded-lg bg-muted/20 flex flex-col">
                 <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-lg text-foreground">{template.template_name}</h3>
+                  <h3 className="font-semibold text-foreground">{template.template_name}</h3>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" onClick={() => handleEditTemplate(template)} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleToggleActive.mutate(template)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
-                      <Pause className="h-4 w-4" />
+                      {template.is_active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplate.mutate(template.id)} className="h-7 w-7 text-red-500 hover:bg-red-500/10">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-500/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tem certeza que deseja deletar?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação irá deletar o template permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteTemplate.mutate(template.id)}>Deletar</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">{template.description || 'Sem descrição.'}</p>

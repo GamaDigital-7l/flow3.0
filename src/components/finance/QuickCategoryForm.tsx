@@ -1,7 +1,9 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+"use client";
+
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +13,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+} from "@/components/ui/select";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { FinancialTransactionType, FinancialScope } from '@/types/finance';
 
 const quickCategorySchema = z.object({
@@ -21,7 +23,7 @@ const quickCategorySchema = z.object({
   scope: z.enum(["company", "personal"]),
 });
 
-type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
+export type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
 
 interface QuickCategoryFormProps {
   onCategorySaved: () => void;
@@ -76,33 +78,34 @@ const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, 
                   <SelectItem value="income">Receita</SelectItem>
                   <SelectItem value="expense">Despesa</SelectItem>
                 </SelectContent>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="scope"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Escopo</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o escopo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="company">Empresa</SelectItem>
-                    <SelectItem value="personal">Pessoal</SelectItem>
-                  </SelectContent>
-                  <FormMessage />
-                </FormItem>
-              )}
-            )}
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        </div>
+
+        <FormField
+          control={form.control}
+          name="scope"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Escopo</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o escopo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="company">Empresa</SelectItem>
+                  <SelectItem value="personal">Pessoal</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
       </div>
 
       <Button type="submit">Salvar Categoria</Button>
