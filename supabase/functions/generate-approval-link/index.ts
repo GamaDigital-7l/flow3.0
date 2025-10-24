@@ -60,10 +60,8 @@ serve(async (req) => {
       .gte('expires_at', new Date().toISOString()) // Link ainda válido
       .single();
 
-    if (fetchLinkError) {
-        if (fetchLinkError.code !== 'PGRST116') {
-            throw fetchLinkError;
-        }
+    if (fetchLinkError && typeof fetchLinkError === 'object' && Object.prototype.hasOwnProperty.call(fetchLinkError, 'code') && fetchLinkError.code !== 'PGRST116') {
+      throw fetchLinkError;
     }
 
     if (existingLink) {
