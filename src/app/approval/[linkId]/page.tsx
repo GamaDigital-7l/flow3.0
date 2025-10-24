@@ -14,6 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 // Tipos
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -114,7 +116,7 @@ const ApprovalTaskCard = ({ task, onApprove, onEditRequest, isProcessing, onImag
   return (
     <Card className="w-full overflow-hidden shadow-lg bg-card border-border transition-all duration-300">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-foreground">{task.title}</CardTitle>
+        <CardTitle className="text-lg font-semibold text-foreground">{task.title}</CardHeader>
       </CardHeader>
       <CardContent className="space-y-4">
         {task.image_urls && task.image_urls.length > 0 && (
@@ -266,7 +268,7 @@ const ApprovalPageContent = () => {
   return (
     <div className="min-h-screen w-full bg-muted/40">
       {/* Container principal com layout corrigido */}
-      <main className="w-full max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="w-full py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center text-center mb-8">
           <Avatar className="h-16 w-16 mb-4">
             <AvatarImage src={data.clientLogoUrl || undefined} alt={data.clientName} />
@@ -292,7 +294,7 @@ const ApprovalPageContent = () => {
 
         {pendingTasks.length > 0 && (
           <>
-            <h2 className="text-xl font-semibold mb-4 text-foreground">Itens Pendentes de Aprovação</h2>
+            <h2 className="text-xl font-bold mb-4 text-foreground">Itens Pendentes de Aprovação</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pendingTasks.map(task => (
                 <ApprovalTaskCard
