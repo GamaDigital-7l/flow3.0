@@ -1,102 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Light Mode (Mantido como estava, mas ajustado para ser um tema claro padrão) */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
+    /* Light Theme - Minimalista (Fundo Cinza Suave) */
+    --background: 210 20% 96%; /* #F4F5F7 */
+    --foreground: 222.2 84% 4.9%; /* #1A1A1A */
+    
+    --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 222.2 84% 4.9%;
+    --card-rgb: 255, 255, 255;
+
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
+
+    --primary: 340 80% 51%; /* #ED1857 - Gama Pink */
+    --primary-hover: 340 80% 60%; /* #FF2E6E */
+    --primary-foreground: 0 0% 100%; /* Branco */
+    --primary-light: 340 80% 60%;
+
+    --secondary: 210 40% 94%; /* #F1F2F4 - Fundo de botões/inputs secundários */
+    --secondary-hover: 210 40% 90%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
+
+    --muted: 210 40% 94%; /* Cinza claro para muted */
+    --muted-foreground: 215.4 16.3% 46.9%; /* #6B7280 - Texto secundário */
+
+    --accent: 210 40% 94%; /* Cinza claro para accent */
     --accent-foreground: 222.2 47.4% 11.2%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
 
-    /* Status Colors (Light Mode) */
-    --status-success: 142 71% 45%;
-    --status-alert: 48 96% 50%;
-    --status-overdue: 0 84% 60%;
-    --status-urgent: 337 100% 43%; /* Usando a cor primária para urgente no light mode */
-    --status-today: 221.2 83.2% 53.3%;
-    --status-completed: 215.4 16.3% 46.9%;
-    --status-recurring: 262 80% 60%;
+    --border: 214.3 31.8% 89%; /* #E2E4E8 - Borda suave */
+    --border-rgb: 226, 228, 232;
+    --input: 0 0% 100%; /* Input branco */
+    --ring: 340 80% 51%; /* Gama Pink */
+
+    /* Arredondamento: Mantido em 0.75rem */
+    --radius: 0.75rem; 
+
+    /* Cores de status (Minimalista Light) */
+    --status-success: 140 70% 48%; /* Verde suave */
+    --status-alert: 45 90% 50%; /* Amarelo suave */
+    --status-overdue: 340 80% 51%; /* Rosa para urgência */
+    --status-urgent: 340 80% 51%; /* Rosa para urgência */
+    --status-today: 340 80% 51%; /* Rosa para hoje */
+    --status-completed: 215.4 16.3% 46.9%; /* Cinza para concluído */
+    --status-recurring: 340 80% 51%; /* Rosa para recorrência */
 
     /* Sidebar Colors (Light Mode) */
-    --sidebar-background: 210 40% 98%;
+    --sidebar-background: 0 0% 100%; /* #FFFFFF */
     --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 221.2 83.2% 53.3%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-primary: 340 80% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 94%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 221.2 83.2% 53.3%;
+    --sidebar-border: 214.3 31.8% 89%;
+    --sidebar-ring: 340 80% 51%;
+
+    /* Variáveis para safe areas */
+    --sab: env(safe-area-inset-bottom);
+    --sat: env(safe-area-inset-top);
+    --sal: env(safe-area-inset-left);
+    --sar: env(safe-area-inset-right);
   }
 
+  /* Tema Escuro (Dark Mode) - Minimalista */
   .dark {
-    /* Dark Mode - NOVAS CORES */
-    --background: 228 25% 14%; /* #1A1E2B */
-    --foreground: 210 40% 98%; /* Branco/Claro para texto */
+    --background: 220 15% 8%; /* #141416 */
+    --foreground: 210 20% 98%; /* #E5E5E5 */
     
-    --card: 216 19% 22%; /* #2E3743 */
-    --card-foreground: 210 40% 98%;
-    
-    --popover: 216 19% 22%;
-    --popover-foreground: 210 40% 98%;
-    
-    --primary: 337 100% 43%; /* #DB0058 (Rosa Destaque) */
-    --primary-foreground: 210 40% 98%; /* Texto branco no rosa */
-    --primary-hover: 337 100% 50%; /* Rosa um pouco mais claro no hover */
-    --primary-light: 337 100% 55%; /* Rosa mais claro para uso em backgrounds sutis */
+    --card: 220 15% 12%; /* #1C1D21 */
+    --card-foreground: 210 20% 98%;
+    --card-rgb: 28, 29, 33;
 
-    --secondary: 216 19% 22%; /* #2E3743 */
-    --secondary-foreground: 210 40% 98%;
-    --secondary-hover: 216 19% 28%; /* Um pouco mais escuro no hover */
+    --popover: 220 15% 12%;
+    --popover-foreground: 210 20% 98%;
 
-    --muted: 216 19% 28%; /* Um pouco mais claro que o card para elementos muted */
-    --muted-foreground: 215 20.2% 65.1%; /* Cinza claro para texto muted */
-    
-    --accent: 216 19% 28%;
-    --accent-foreground: 210 40% 98%;
-    
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    
-    --border: 216 19% 35%; /* Borda sutil */
-    --input: 216 19% 28%;
-    --ring: 337 100% 43%; /* Rosa Destaque */
+    --primary: 340 80% 51%; /* #ED1857 - Gama Pink */
+    --primary-hover: 340 80% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Status Colors (Dark Mode) */
-    --status-success: 142 71% 45%;
-    --status-alert: 48 96% 50%;
-    --status-overdue: 0 84% 60%;
-    --status-urgent: 337 100% 43%;
-    --status-today: 221.2 83.2% 53.3%;
-    --status-completed: 215 20.2% 65.1%;
-    --status-recurring: 262 80% 60%;
+    --secondary: 220 15% 18%; /* #2A2B2F */
+    --secondary-hover: 220 15% 22%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 220 15% 18%;
+    --muted-foreground: 215 14% 75%; /* #A1A1A1 */
+
+    --accent: 220 15% 18%;
+    --accent-foreground: 210 20% 98%;
+    
+    --destructive: 0 80% 50%;
+    --destructive-foreground: 210 20% 98%;
+    
+    --border: 220 15% 18%; /* #2A2B2F */
+    --border-rgb: 42, 43, 47;
+    --input: 220 15% 18%;
+    --ring: 340 80% 51%;
+
+    /* Cores de status (Minimalista Dark) */
+    --status-success: 140 70% 48%;
+    --status-alert: 45 90% 50%;
+    --status-overdue: 340 80% 51%;
+    --status-urgent: 340 80% 51%;
+    --status-today: 340 80% 51%;
+    --status-completed: 215 14% 75%;
+    --status-recurring: 340 80% 51%;
 
     /* Sidebar Colors (Dark Mode) */
-    --sidebar-background: 216 19% 22%; /* #2E3743 */
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 337 100% 43%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 216 19% 28%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 216 19% 35%;
-    --sidebar-ring: 337 100% 43%;
+    --sidebar-background: 220 15% 12%; /* #1C1D21 */
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 340 80% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 18%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 340 80% 51%;
   }
 }
 
@@ -104,36 +128,191 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    min-height: 100vh;
+    width: 100vw;
   }
-}
+  
+  #root {
+    @apply min-h-screen flex flex-col;
+    padding-top: var(--sat);
+    padding-bottom: var(--sab);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+    width: 100%;
+    box-sizing: border-box; /* Garante que o padding não cause overflow */
+  }
 
-/* Estilos globais para efeitos de hover */
-.card-hover-effect {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
+  /* Para navegadores Webkit (Chrome, Safari) */
+  body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  body::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  body::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 4px;
+    border: 2px solid hsl(var(--background));
+  }
+  /* Para Firefox */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+  }
 
-.card-hover-effect:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-}
+  /* Estilos globais para tipografia Inter */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-foreground;
+  }
 
-/* Estilo para o scrollbar no modo escuro */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+  h1 {
+    @apply text-2xl sm:text-3xl lg:text-4xl tracking-tight;
+    letter-spacing: -0.5px;
+  }
 
-.dark ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
-}
+  h2 {
+    @apply text-xl sm:text-2xl lg:text-3xl tracking-tight;
+    letter-spacing: -0.5px;
+  }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
-  border-radius: 4px;
-}
+  /* Subtítulos / seções */
+  .subtitle {
+    @apply font-normal text-[--muted-foreground] text-sm sm:text-base;
+  }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  /* Texto padrão / corpo */
+  p, span, div {
+    @apply font-normal text-[--foreground] text-xs sm:text-sm;
+  }
+
+  /* Pequenos labels / legendas */
+  .label-sm {
+    @apply font-medium text-[--muted-foreground] opacity-80 text-xs;
+  }
+
+  /* Imagens responsivas por padrão */
+  img {
+    @apply max-w-full h-auto;
+  }
+
+  /* Estilo para o efeito de elevação no hover de cards (Minimalista) */
+  .card-hover-effect {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra inicial mínima */
+  }
+
+  .dark .card-hover-effect {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .card-hover-effect:hover {
+    transform: translateY(-2px);
+    /* Sombra sutil de elevação */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .card-hover-effect:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Estilos para links de navegação da Sidebar */
+  @layer components {
+    .nav-link-base {
+      @apply flex items-center gap-2 rounded-md px-3 py-2 transition-all text-sm;
+    }
+
+    .nav-link-active {
+      /* Usando primary/10 para fundo suave e primary para texto */
+      @apply bg-primary/10 text-primary shadow-sm;
+    }
+
+    .nav-link-inactive {
+      @apply text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
+    }
+  }
+
+  /* Custom Scrollbar Utility Class */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 4px;
+    border: 2px solid hsl(var(--background));
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+  }
+
+  /* Ajustes para o Quill Editor */
+  .ql-toolbar.ql-snow {
+    @apply border-border rounded-t-lg bg-input;
+  }
+
+  .ql-container.ql-snow {
+    @apply border-border rounded-b-lg bg-input;
+    min-height: 100px;
+  }
+
+  .ql-editor {
+    @apply text-foreground text-sm;
+    min-height: 100px;
+  }
+
+  /* Ajustes para modais e popovers no mobile */
+  .dialog-content-mobile-full {
+    @apply fixed inset-0 w-full h-full max-w-full max-h-full rounded-none;
+  }
+
+  /* Ajustes para o layout principal */
+  .main-content-area {
+    /* Ajustado para usar a altura do header como margem superior */
+    @apply flex flex-1 flex-col relative p-0;
+    margin-top: calc(3.5rem + var(--sat)); /* Altura do Header */
+  }
+  
+  /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
+  .page-content-wrapper {
+    @apply p-3 md:p-4 lg:p-6;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* ESTILO AGRESSIVO PARA LIGHTBOX (SOBRESCRITA DO SHADCN/UI) */
+  .lightbox-fullscreen-override {
+    /* Remove todas as restrições de tamanho e centralização padrão */
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background-color: rgba(0, 0, 0, 0.9) !important; /* Fundo escuro */
+    
+    /* Garante que o modal esteja fixo e cubra tudo */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important; /* Remove a transformação de centralização padrão */
+    
+    /* Centraliza o conteúdo interno (a imagem) */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
 }
