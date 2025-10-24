@@ -52,11 +52,11 @@ interface Client {
 }
 
 const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] = [
-  { id: "in_progress", title: "Em Produção", color: "text-blue-500" },
-  { id: "under_review", title: "Para Aprovação", color: "text-yellow-500" },
-  { id: "edit_requested", title: "Edição Solicitada", color: "text-orange-500" },
-  { id: "approved", title: "Aprovado", color: "text-green-500" },
-  { id: "posted", title: "Postado/Concluído", color: "text-purple-500" },
+  { id: "in_progress", title: "Em Produção", color: "text-muted-foreground" }, // Neutro
+  { id: "under_review", title: "Para Aprovação", color: "text-primary" }, // Rosa Destaque
+  { id: "edit_requested", title: "Edição Solicitada", color: "text-primary" }, // Rosa Destaque
+  { id: "approved", title: "Aprovado", color: "text-green-500" }, // Verde para sucesso
+  { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" }, // Neutro
 ];
 
 const fetchClientData = async (clientId: string, userId: string): Promise<{ client: Client | null, tasks: ClientTask[] }> => {

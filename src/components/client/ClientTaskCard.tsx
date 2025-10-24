@@ -134,9 +134,9 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
       className={cn(
         "bg-card border border-border rounded-xl shadow-md cursor-grab active:cursor-grabbing",
         isDragging && "ring-2 ring-primary",
-        // Usando cores de status mais discretas ou primárias
-        isApproved && "border-green-500/50",
-        isEditRequested && "border-primary ring-1 ring-primary/50"
+        // Usando cores do tema para destaque de status
+        isApproved && "border-green-500/50", // Mantido verde suave para aprovação
+        isEditRequested && "border-primary ring-1 ring-primary/50" // Usando o rosa primário para edição solicitada
       )}
     >
       <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between gap-2">
@@ -198,7 +198,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
               <Button 
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('approved')} 
-                className="flex-1 bg-green-600 text-white hover:bg-green-700 h-8 text-xs"
+                className="flex-1 bg-primary text-white hover:bg-primary/90 h-8 text-xs" // Usando primary
                 disabled={handleStatusUpdate.isPending}
               >
                 <CheckCircle2 className="mr-1 h-3 w-3" /> Aprovar
@@ -207,7 +207,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('edit_requested')} 
                 variant="outline" 
-                className="flex-1 border-primary text-primary hover:bg-primary/10 h-8 text-xs"
+                className="flex-1 border-muted-foreground text-muted-foreground hover:bg-accent h-8 text-xs" // Usando neutro
                 disabled={handleStatusUpdate.isPending}
               >
                 <Edit3 className="mr-1 h-3 w-3" /> Editar

@@ -8,13 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { TaskFormValues } from "@/components/TaskForm";
 
 const TaskBasicInfo: React.FC = () => {
-  // Assuming TaskForm provides context via <Form {...form}>
-  const { control } = useFormContext<TaskFormValues>();
+  // Use useFormContext para acessar o contexto do formulário
+  const form = useFormContext<TaskFormValues>();
 
   return (
     <>
       <FormField
-        control={control}
+        control={form.control}
         name="title"
         render={({ field }) => (
           <FormItem>
@@ -31,7 +31,7 @@ const TaskBasicInfo: React.FC = () => {
         )}
       />
       <FormField
-        control={control}
+        control={form.control}
         name="description"
         render={({ field }) => (
           <FormItem>
