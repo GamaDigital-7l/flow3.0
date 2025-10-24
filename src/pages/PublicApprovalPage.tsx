@@ -6,7 +6,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send, Users, Clock, MessageSquare, Info } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send, Users, Clock, MessageSquare, Info, X } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, isPast, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
@@ -16,6 +16,7 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { cn, formatDateTime, getInitials } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { motion } from 'framer-motion'; // Importar motion
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -123,6 +124,7 @@ const PublicApprovalPage: React.FC = () => {
     queryFn: () => fetchApprovalData(uniqueId!),
     enabled: !!uniqueId,
     staleTime: 1000 * 60 * 5,
+    retry: false,
   });
   
   const handleAction = async (taskId: string, newStatus: ClientTaskStatus) => {
@@ -150,7 +152,7 @@ const PublicApprovalPage: React.FC = () => {
 
       if (fnError) throw fnError;
       
-      showSuccess(`Tarefa ${newStatus === 'approved' ? 'Aprovada' : 'Edição Solicitada'} com sucesso!`);
+      showSuccess(`Tarefa ${newStatus === 'approved' ? 'Aprovada' : newStatus === 'rejected' ? 'Rejeitada' : 'Edição Solicitada'} com sucesso!`);
       refetch();
       setIsModalOpen(false);
       setEditReason('');
@@ -355,7 +357,7 @@ const PublicApprovalPage: React.FC = () => {
                 Cancelar
               </Button>
               <Button 
-                onClick={() => handleAction(currentTaskId!, 'edit_requested')} 
+                onClick={() => handleAction(currentTaskId!, actionType === 'edit' ? 'edit_requested' : 'rejected')} 
                 className="bg-primary text-white hover:bg-primary/90" 
                 disabled={!editReason || isSubmitting}
               >
@@ -375,10 +377,15 @@ const PublicApprovalPage: React.FC = () => {
             onClick={() => setLightboxUrl(null)} 
             className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
           >
-            <XCircle className="h-6 w-6" />
+            <X className="h-6 w-6" />
           </Button>
           {lightboxUrl && (
-            <img
+            <motion.img
+              key={lightboxUrl}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
               src={lightboxUrl}
               alt="Visualização em Tela Cheia"
               className="max-w-[95%] max-h-[95%] object-contain"
