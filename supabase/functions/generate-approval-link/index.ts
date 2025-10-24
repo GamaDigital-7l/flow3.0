@@ -27,7 +27,7 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response('Unauthorized', { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response('Unauthorized', { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const token = authHeader.replace('Bearer ', '');
     const { data: userAuth, error: authError } = await supabaseServiceRole.auth.getUser(token);
@@ -60,7 +60,7 @@ serve(async (req) => {
       .gte('expires_at', new Date().toISOString()) // Link ainda válido
       .single();
 
-    if (fetchLinkError && fetchLinkError.code !== 'PGRST116') { // PGRST116 = no rows found
+    if (fetchLinkError && fetchLinkError.code !== 'PGRST116') {
       throw fetchLinkError;
     }
 
