@@ -10,21 +10,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2, XCircle, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
-import { cn, parseISO, sanitizeFilename, convertToUtc, formatDateTime } from "@/lib/utils"; // Importando parseISO, sanitizeFilename, convertToUtc de utils
+import { cn, parseISO, sanitizeFilename, convertToUtc, formatDateTime } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { useQueryClient, useQuery } from "@tanstack/react-query"; // Adicionado useQuery
-// import { ClientTask, ClientTaskStatus } from "@/types/client"; // Removido
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import TagSelector from "../TagSelector";
 import { Checkbox } from "../ui/checkbox";
 import { ptBR } from "date-fns/locale/pt-BR";
 import TimePicker from "../TimePicker";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Adicionado FormDescription
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Adicionado Select components
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AspectRatio } from "@/components/ui/aspect-ratio"; // Adicionado AspectRatio
 
 // Tipos simplificados para evitar dependência de '@/types/client'
-type ClientTaskStatus = "pending" | "in_progress" | "under_review" | "approved" | "rejected" | "completed" | "edit_requested" | "posted";
+type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
 interface ClientTask {
   id: string;
   title: string;
@@ -35,6 +35,11 @@ interface ClientTask {
   responsible_id: string | null;
   image_urls: string[] | null;
   public_approval_enabled: boolean;
+  edit_reason: string | null;
+  order_index: number;
+  client_id: string;
+  user_id: string;
+  is_completed: boolean;
   tags?: { id: string; name: string; color: string }[];
 }
 
@@ -43,7 +48,7 @@ const clientTaskSchema = z.object({
   description: z.string().optional().nullable(),
   due_date: z.date().nullable().optional(),
   time: z.string().optional().nullable(),
-  status: z.enum(["pending", "in_progress", "under_review", "approved", "rejected", "completed", "edit_requested", "posted"]).default("pending"),
+  status: z.enum(["in_progress", "under_review", "approved", "edit_requested", "posted"]).default("in_progress"),
   responsible_id: z.string().nullable().optional(),
   selected_tag_ids: z.array(z.string()).optional(),
   image_files: z.any().optional(), // Para lidar com FileList
@@ -89,7 +94,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
       description: initialData?.description || null,
       due_date: initialData?.due_date ? parseISO(initialData.due_date) : null,
       time: initialData?.time || null,
-      status: initialData?.status || "pending",
+      status: initialData?.status || "in_progress",
       responsible_id: initialData?.responsible_id || null,
       selected_tag_ids: initialData?.tags?.map(tag => tag.id) || [],
       image_urls: initialData?.image_urls || [],
@@ -108,6 +113,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
     setIsUploading(true);
     const uploadPromises = Array.from(files).map(async (file) => {
       const sanitizedFilename = sanitizeFilename(file.name);
+      // Usando pasta 'client_tasks' para assets
       const filePath = `client_tasks/${clientId}/${Date.now()}-${sanitizedFilename}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -152,6 +158,8 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
     try {
       let clientTaskId: string;
+      
+      const isCompleted = values.status === 'approved' || values.status === 'posted';
 
       const dataToSave = {
         client_id: clientId,
@@ -165,6 +173,8 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         responsible_id: values.responsible_id || null,
         image_urls: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
         public_approval_enabled: values.public_approval_enabled,
+        is_completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       };
 
@@ -181,10 +191,21 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         clientTaskId = data.id;
         showSuccess("Tarefa de cliente atualizada com sucesso!");
       } else {
+        // Busca o maior order_index para a coluna atual para definir o novo índice
+        const { data: maxOrderData, error: maxOrderError } = await supabase
+          .from("client_tasks")
+          .select("order_index")
+          .eq("client_id", clientId)
+          .eq("status", values.status)
+          .order("order_index", { ascending: false })
+          .limit(1)
+          .single();
+          
+        const newOrderIndex = (maxOrderData?.order_index || 0) + 1;
+
         const { data, error } = await supabase.from("client_tasks").insert({
           ...dataToSave,
-          is_completed: false,
-          order_index: 0, // Deve ser ajustado pelo DND
+          order_index: newOrderIndex,
         }).select("id").single();
 
         if (error) throw error;
@@ -206,7 +227,6 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
       form.reset();
       onClientTaskSaved();
-      onClose();
       queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
     } catch (error: any) {
       showError("Erro ao salvar tarefa de cliente: " + error.message);
@@ -238,9 +258,9 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Descrição (Opcional)</FormLabel>
+              <FormLabel>Descrição (Legenda)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Detalhes da entrega..." {...field} value={field.value || ''} />
+                <Textarea placeholder="Detalhes da entrega/legenda..." {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -267,7 +287,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                         {field.value ? (
-                          formatDateTime(field.value, false) // Usando formatDateTime
+                          formatDateTime(field.value, false)
                         ) : (
                           <span>Escolha uma data</span>
                         )}
@@ -349,11 +369,10 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="pending">A Fazer</SelectItem>
                     <SelectItem value="in_progress">Em Produção</SelectItem>
                     <SelectItem value="under_review">Para Aprovação</SelectItem>
                     <SelectItem value="approved">Aprovado</SelectItem>
-                    <SelectItem value="posted">Postado</SelectItem>
+                    <SelectItem value="posted">Postado/Concluído</SelectItem>
                     <SelectItem value="edit_requested">Edição Solicitada</SelectItem>
                   </SelectContent>
                 </Select>
@@ -371,7 +390,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
         {/* Imagens */}
         <div className="space-y-2">
-          <Label>Imagens/Anexos (Opcional)</Label>
+          <Label>Capa/Anexos (Proporção 4:5 para Capa)</Label>
           <Input
             type="file"
             accept="image/*"
@@ -383,7 +402,9 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
           <div className="flex flex-wrap gap-2 mt-2">
             {uploadedImageUrls.map((url, index) => (
               <div key={index} className="relative h-20 w-20 rounded-md overflow-hidden group">
-                <img src={url} alt={`Anexo ${index + 1}`} className="h-full w-full object-cover" />
+                <AspectRatio ratio={4 / 5}>
+                  <img src={url} alt={`Anexo ${index + 1}`} className="h-full w-full object-cover" />
+                </AspectRatio>
                 <Button
                   type="button"
                   variant="destructive"

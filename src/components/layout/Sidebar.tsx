@@ -20,8 +20,9 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Tarefas", href: "/tasks", icon: ListTodo },
   { name: "Recorrência", href: "/recurrence", icon: Repeat },
+  { name: "Clientes", href: "/clients", icon: Users }, // NOVO ITEM
   { name: "Orçamentos", href: "/proposals", icon: FileText },
-  { name: "Portfólio", href: "/portfolio", icon: Image }, // NOVO ITEM
+  { name: "Portfólio", href: "/portfolio", icon: Image },
   { name: "Financeiro", href: "/finance", icon: DollarSign },
   { name: "Metas", href: "/goals", icon: Target },
   { name: "Saúde", href: "/health", icon: Dumbbell },
