@@ -99,7 +99,9 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="page-content-wrapper space-y-6">
+      {/* Lembrete de Tarefas Atrasadas no Topo */}
       <OverdueTasksReminder onTaskUpdated={handleTaskUpdated} />
+      
       <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
