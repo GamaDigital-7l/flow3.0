@@ -54,15 +54,12 @@ const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] =
 ];
 
 const fetchClientData = async (clientId: string, userId: string): Promise<{ client: Client | null, tasks: ClientTask[] }> => {
-  const [clientResponse, tasksResponse] = await Promise.all([
-    supabase.from("clients").select("id, name, logo_url").eq("id", clientId).eq("user_id", userId).single(),
-    supabase.from("client_tasks").select(`
-      *,
-      client_task_tags(
-        tags(id, name, color)
-      )
-    `).eq("client_id", clientId).eq("user_id", userId).order("order_index", { ascending: true }),
-  ]);
+  const [clientResponse, tasksResponse] = await supabase
+    .from("clients")
+    .select("id, name, logo_url")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
 
   if (clientResponse.error && clientResponse.error.code !== 'PGRST116') throw clientResponse.error;
   if (tasksResponse.error) throw tasksResponse.error;
@@ -124,6 +121,7 @@ const ClientKanban: React.FC = () => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", taskId)
+        .eq("client_id", clientId)
         .eq("user_id", userId);
       
       if (error) throw error;
@@ -138,57 +136,42 @@ const ClientKanban: React.FC = () => {
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
-    const activeTask = tasks.find(t => t.id === active.id);
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    const oldContainerId = active.data.current?.sortable.containerId as ClientTaskStatus;
+    const newContainerId = over.data.current?.sortable.containerId as ClientTaskStatus;
+
+    if (oldContainerId === newContainerId && activeId === overId) {
+      return; // No change
+    }
+
+    const activeTask = tasks.find(t => t.id === activeId);
     if (!activeTask) return;
 
-    const oldStatus = activeTask.status;
-    const newStatus = over.data.current?.sortable?.containerId || oldStatus;
-    
-    if (oldStatus === newStatus) {
-      // Reordenar dentro da mesma coluna
-      const columnTasks = tasksByColumn[oldStatus];
-      const oldIndex = columnTasks.findIndex(t => t.id === active.id);
-      const newIndex = columnTasks.findIndex(t => t.id === over.id);
-      
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrderedTasks = arrayMove(columnTasks, oldIndex, newIndex);
-        
-        // Otimisticamente atualiza a ordem localmente
-        queryClient.setQueryData(["clientTasks", clientId, userId], (oldData: any) => {
-          if (!oldData) return oldData;
-          const updatedTasks = oldData.tasks.map((t: ClientTask) => {
-            const newIndexInColumn = newOrderedTasks.findIndex(nt => nt.id === t.id);
-            if (newIndexInColumn !== -1) {
-              return { ...t, order_index: newIndexInColumn };
-            }
-            return t;
-          });
-          return { ...oldData, tasks: updatedTasks };
-        });
+    const newStatus = newContainerId;
 
-        // Atualiza o DB em background
-        newOrderedTasks.forEach((task, index) => {
-          if (task.order_index !== index) {
-            updateTaskStatusAndOrder.mutate({ taskId: task.id, newStatus: oldStatus, newOrderIndex: index });
-          }
-        });
-      }
-    } else {
-      // Mover para nova coluna
-      const newStatusTyped = newStatus as ClientTaskStatus;
-      const targetTasks = tasksByColumn[newStatusTyped];
-      const newIndex = targetTasks.findIndex(t => t.id === over.id);
-      const finalIndex = newIndex === -1 ? targetTasks.length : newIndex;
+    // Determine the new order index
+    const newIndex = tasksByColumn[newStatus].findIndex(t => t.id === overId);
+    const finalIndex = newIndex === -1 ? tasksByColumn[newStatus].length : newIndex;
 
-      // 1. Atualiza a tarefa movida
-      updateTaskStatusAndOrder.mutate({ taskId: activeTask.id, newStatus: newStatusTyped, newOrderIndex: finalIndex });
-      
-      // 2. Reordena as tarefas na coluna de destino (simplificado: apenas move para o final)
-      // A reordenação completa é complexa e pode ser feita de forma mais simples no backend ou aceitando a ordem padrão.
-      // Para manter a simplicidade e evitar muitas chamadas, confiamos no refetch após a mutação principal.
-    }
+    // Optimistically update the UI
+    queryClient.setQueryData(["clientTasks", clientId, userId], (oldData: any) => {
+      if (!oldData) return oldData;
+
+      const newTasks = oldData.tasks.map((t: ClientTask) => {
+        if (t.id === activeId) {
+          return { ...t, status: newStatus, order_index: finalIndex };
+        }
+        return t;
+      });
+
+      return { ...oldData, tasks: newTasks };
+    });
+
+    // Call the mutation to update the task
+    updateTaskStatusAndOrder.mutate({ taskId: activeTask.id, newStatus: newStatus, newOrderIndex: finalIndex });
   }, [tasks, tasksByColumn, updateTaskStatusAndOrder, clientId, userId, queryClient]);
 
   const handleTaskSaved = () => {
