@@ -16,6 +16,7 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { cn, formatCurrency, formatDateTime } from '@/lib/utils';
 import { Proposal, ProposalItem, PROPOSAL_STATUS_LABELS } from '@/types/proposal';
 import { Separator } from '@/components/ui/separator';
+import ProposalPortfolioGallery from '@/components/proposal/ProposalPortfolioGallery'; // Importando a galeria
 
 type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'expired' | 'rejected' | 'edit_requested';
 
@@ -270,6 +271,11 @@ const ProposalViewerPage: React.FC = () => {
           </CardContent>
         </Card>
         
+        {/* NOVO: Galeria de Portfólio */}
+        {proposal.user_id && (
+          <ProposalPortfolioGallery userId={proposal.user_id} proposalId={proposal.id} />
+        )}
+
         {/* Status Final */}
         {isFinalized && (
             <Card className={cn("bg-card border rounded-xl shadow-lg", proposal.status === 'accepted' ? 'border-green-500' : 'border-red-500')}>
