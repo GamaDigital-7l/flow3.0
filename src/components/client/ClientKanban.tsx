@@ -190,13 +190,14 @@ const ClientKanban: React.FC = () => {
 
   const updateTaskStatusAndOrder = useMutation({
     mutationFn: async (updates: { taskId: string, newStatus: ClientTaskStatus, newOrderIndex: number }[]) => {
-      if (!userId) throw new Error("Usuário não autenticado.");
+      if (!userId || !clientId) throw new Error("Usuário não autenticado ou cliente inválido.");
       
       const dbUpdates = updates.map(({ taskId, newStatus, newOrderIndex }) => {
         const isCompleted = newStatus === 'approved' || newStatus === 'posted';
         return {
           id: taskId,
-          user_id: userId, // Adicionado user_id para RLS
+          user_id: userId,
+          client_id: clientId, // Adicionado client_id
           status: newStatus,
           order_index: newOrderIndex,
           is_completed: isCompleted,
