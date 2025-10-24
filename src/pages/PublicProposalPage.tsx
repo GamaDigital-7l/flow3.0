@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-// import { ClientTask, PublicApprovalLink, ClientTaskStatus } from '@/types/client'; // Removido
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send } from 'lucide-react';
@@ -44,7 +43,7 @@ const fetchApprovalData = async (uniqueId: string): Promise<PublicApprovalLink |
   return null;
 };
 
-const PublicApprovalPage: React.FC = () => {
+const PublicProposalPage: React.FC = () => {
   const { uniqueId } = useParams<{ uniqueId: string }>();
   const navigate = useNavigate();
   const [editReason, setEditReason] = useState('');

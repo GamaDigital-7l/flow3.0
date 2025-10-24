@@ -148,41 +148,24 @@ const Proposals: React.FC = () => {
       return;
     }
     
-    if (!proposal.client_id) {
-      showError("A proposta deve estar vinculada a um cliente para gerar um link de aprovação.");
+    if (!proposal.unique_link_id) {
+      showError("Erro: A proposta não possui um link único. Tente editar e salvar novamente.");
       return;
     }
 
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-approval-link', {
-        body: {
-          clientId: proposal.client_id,
-          monthYearRef: format(new Date(), "yyyy-MM"),
-        },
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
+    const publicLink = `${window.location.origin}/proposal/${proposal.unique_link_id}`;
+    setCurrentProposalLink({ link: publicLink, clientName: proposal.client_name });
+    setIsLinkModalOpen(true);
 
+    // Atualiza o status para 'sent' se for 'draft'
+    if (proposal.status === 'draft') {
+      const { error } = await supabase.from('proposals').update({ status: 'sent', updated_at: new Date().toISOString() }).eq('id', proposal.id);
       if (error) {
-        console.error("Erro ao gerar link de aprovação:", error);
-        showError("Erro ao gerar link de aprovação: " + error.message);
-        return;
+        console.error("Erro ao atualizar status para 'sent':", error);
+        showError("Erro ao atualizar status da proposta.");
+      } else {
+        refetch();
       }
-
-      const publicLink = `${window.location.origin}/proposal/${data.uniqueId}`;
-      setCurrentProposalLink({ link: publicLink, clientName: proposal.client_name });
-      setIsLinkModalOpen(true);
-
-      // Atualiza o status para 'sent' se for 'draft'
-      if (proposal.status === 'draft') {
-        supabase.from('proposals').update({ status: 'sent', updated_at: new Date().toISOString() }).eq('id', proposal.id).then(({ error }) => {
-          if (error) console.error("Erro ao atualizar status para 'sent':", error);
-          else refetch();
-        });
-      }
-    } catch (err: any) {
-      showError("Erro ao gerar link: " + err.message);
     }
   };
 
@@ -333,7 +316,7 @@ const Proposals: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
-                          <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); handleGenerateLink(proposal); }} className="h-8 w-8 text-green-500 hover:bg-green-500/10" disabled={!proposal.client_id}>
+                          <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); handleGenerateLink(proposal); }} className="h-8 w-8 text-green-500 hover:bg-green-500/10" disabled={!proposal.unique_link_id}>
                             <Send className="h-4 w-4" />
                             <span className="sr-only">Enviar Link</span>
                           </Button>
