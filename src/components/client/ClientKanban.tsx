@@ -19,7 +19,7 @@ import KanbanColumn from './ClientKanbanColumn';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientTaskTemplates from './ClientTaskTemplates';
 import copy from 'copy-to-clipboard';
@@ -266,7 +266,7 @@ const ClientKanban: React.FC = () => {
       // Insere o item na nova posição
       const newTask = { ...draggedTask, status: targetStatus };
       
-      // Se o status mudou, insere no final. Se não, usa a lógica de arrayMove
+      // Se o status mudou, insere no índice calculado (overIndex)
       if (sourceStatus !== targetStatus) {
         // Se mudou de coluna, insere no índice calculado (overIndex)
         tasksInTargetStatus.splice(overIndex, 0, newTask);
@@ -400,8 +400,42 @@ const ClientKanban: React.FC = () => {
                 Gerar Link de Aprovação ({tasksUnderReview.filter(t => t.public_approval_enabled).length} itens)
               </Button>
             </div>
+          )}
           
-          </TabsContent>
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            {/* Container principal do Kanban: flex-col no mobile, flex-row e overflow-x-auto no desktop */}
+            <div className="flex flex-col sm:flex-row sm:overflow-x-auto sm:space-x-4 pb-4 custom-scrollbar w-full flex-grow min-h-[50vh] space-y-4 sm:space-y-0">
+              {KANBAN_COLUMNS.map(column => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  tasks={tasksByStatus.get(column.id) || []}
+                  onAddTask={handleAddTaskInColumn}
+                  onEditTask={handleEditTask}
+                  refetchTasks={refetch}
+                  onImageClick={handleImageClick}
+                />
+              ))}
+            </div>
+            
+            {/* Drag Overlay para feedback visual suave */}
+            <DragOverlay>
+              {activeDragItem ? (
+                <ClientTaskCard 
+                  task={activeDragItem} 
+                  onEdit={handleEditTask} 
+                  refetchTasks={refetch}
+                  onImageClick={handleImageClick}
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </TabsContent>
         
         <TabsContent value="templates" className="mt-4">
           <ClientTaskTemplates clientId={clientId!} clientName={data?.client?.name!} />
