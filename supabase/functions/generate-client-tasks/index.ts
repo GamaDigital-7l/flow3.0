@@ -128,7 +128,9 @@ serve(async (req) => {
 
     // Calcular o início e fim do mês de referência no fuso horário do usuário
     const [year, month] = monthYearRef.split('-').map(Number);
+    // Criar a data de início do mês no fuso horário do usuário
     const startOfMonthInTimezone = utcToZonedTime(new Date(year, month - 1, 1), userTimezone);
+    // Criar a data de fim do mês no fuso horário do usuário
     const endOfMonthInTimezone = utcToZonedTime(new Date(year, month, 0), userTimezone);
 
     for (const template of templates) {
@@ -142,9 +144,21 @@ serve(async (req) => {
           const weekNumber = getWeek(currentDay, { weekStartsOn: 0 }); // Sunday is 0, Monday is 1
           const dayOfWeek = getDay(currentDay); // 0 for Sunday, 1 for Monday, etc.
 
-          // Ajustar weekNumber para ser 1-4 dentro do mês
+          // Ajustar weekNumber para ser 1-5 dentro do mês
           const firstDayOfMonthWeek = getWeek(startOfMonthInTimezone, { weekStartsOn: 0 });
-          const adjustedWeekNumber = weekNumber - firstDayOfMonthWeek + 1;
+          let adjustedWeekNumber = weekNumber - firstDayOfMonthWeek + 1;
+          
+          // Lógica para a "Última Semana" (5)
+          if (pattern.week === 5) {
+              const lastDayOfMonthWeek = getWeek(endOfMonthInTimezone, { weekStartsOn: 0 });
+              const isLastWeek = weekNumber === lastDayOfMonthWeek;
+              if (!isLastWeek) {
+                  currentDay = addDays(currentDay, 1);
+                  continue;
+              }
+              adjustedWeekNumber = 5; // Força a correspondência se for a última semana
+          }
+
 
           if (adjustedWeekNumber === pattern.week && dayOfWeek === DAYS_OF_WEEK_MAP[pattern.day_of_week]) {
             const taskDueDate = template.default_due_days !== null && template.default_due_days !== undefined
@@ -178,7 +192,7 @@ serve(async (req) => {
             let newMainTaskId: string | null = null;
 
             // Se for uma tarefa padrão, criar também no dashboard principal
-            if (template.is_standard_task) { // Assumindo que template.is_standard_task existe
+            if (template.is_standard_task) {
               newMainTaskId = crypto.randomUUID();
               mainTasksToInsert.push({
                 id: newMainTaskId,
@@ -187,9 +201,6 @@ serve(async (req) => {
                 description: `Tarefa de cliente: ${client.name}`,
                 due_date: taskDueDate,
                 time: null,
-                recurrence_type: "none",
-                recurrence_details: null,
-                recurrence_time: null,
                 origin_board: "client_tasks",
                 current_board: "client_tasks",
                 is_completed: false,
@@ -212,20 +223,20 @@ serve(async (req) => {
               client_id: clientId,
               user_id: userId,
               title: template.template_name,
-              description: `Gerado a partir do template: ${template.template_name}`,
+              description: template.description,
               month_year_reference: monthYearRef,
-              status: 'in_progress', // Status inicial agora é 'in_production'
+              status: 'in_progress',
               due_date: taskDueDate,
               time: null,
               responsible_id: null,
               is_completed: false,
               completed_at: null,
-              order_index: 0,
+              order_index: 0, // Ordem inicial
               created_at: nowUtc.toISOString(),
               updated_at: nowUtc.toISOString(),
               image_urls: null,
               edit_reason: null,
-              is_standard_task: template.is_standard_task, // Usar o valor do template
+              is_standard_task: template.is_standard_task,
               main_task_id: newMainTaskId, // Vincular ao ID da tarefa principal
             });
 

@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Repeat, Edit, Trash2, CalendarDays, CheckCircle2, Pause, Play } from 'lucide-react';
+import { PlusCircle, Loader2, Repeat, Edit, Trash2, CalendarDays, CheckCircle2, Pause, Play, Zap } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
@@ -14,8 +14,9 @@ import ClientTaskTemplateForm from './ClientTaskTemplateForm';
 import { ClientTaskTemplate, DAYS_OF_WEEK_OPTIONS, WEEK_OPTIONS } from '@/types/client';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addMonths, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ClientTaskTemplatesProps {
   clientId: string;
@@ -46,6 +47,7 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ClientTaskTemplate | undefined>(undefined);
+  const [selectedMonth, setSelectedMonth] = useState(format(startOfMonth(new Date()), 'yyyy-MM'));
 
   const { data: templates, isLoading, error, refetch } = useQuery<ClientTaskTemplate[], Error>({
     queryKey: ["clientTaskTemplates", clientId, userId],
@@ -109,6 +111,31 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
     },
   });
   
+  const handleGenerateTasks = useMutation({
+    mutationFn: async () => {
+      if (!userId) throw new Error("Usuário não autenticado.");
+      
+      const { data, error } = await supabase.functions.invoke('generate-client-tasks', {
+        body: {
+          clientId: clientId,
+          monthYearRef: selectedMonth,
+        },
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      showSuccess("Tarefas geradas com sucesso! Atualize o Kanban para ver.");
+      // Invalida a query do Kanban para forçar o recarregamento
+      queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
+    },
+    onError: (err: any) => {
+      showError("Erro ao gerar tarefas: " + err.message);
+      console.error("Erro ao gerar tarefas:", err);
+    },
+  });
+
   const renderPattern = (pattern: ClientTaskTemplate['generation_pattern']) => {
     return pattern.map(p => {
       const weekLabel = WEEK_OPTIONS.find(w => w.value === p.week)?.label;
@@ -119,6 +146,16 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
   
   const activeTemplates = templates?.filter(t => t.is_active) || [];
   const inactiveTemplates = templates?.filter(t => !t.is_active) || [];
+  
+  const generateMonthOptions = () => {
+    const options = [];
+    const today = startOfMonth(new Date());
+    for (let i = -3; i <= 6; i++) { // 3 meses para trás e 6 meses para frente
+      const date = addMonths(today, i);
+      options.push(date);
+    }
+    return options;
+  };
 
   if (isLoading) {
     return (
@@ -162,6 +199,44 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
         </Dialog>
       </div>
       
+      {/* Interface de Geração de Tarefas */}
+      <Card className="bg-card border-border shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+            <Zap className="h-5 w-5 text-yellow-500" /> Gerar Tarefas Mensais
+          </CardTitle>
+          <CardDescription>
+            Selecione o mês e gere todas as tarefas baseadas nos templates ativos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-3">
+          <Select
+            value={selectedMonth}
+            onValueChange={setSelectedMonth}
+          >
+            <SelectTrigger className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring h-10 text-sm">
+              <CalendarDays className="mr-2 h-4 w-4 flex-shrink-0" />
+              <SelectValue placeholder="Selecionar Mês" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
+              {generateMonthOptions().map((date) => {
+                const value = format(date, "yyyy-MM");
+                const label = format(date, "MMMM yyyy", { locale: ptBR }); 
+                return <SelectItem key={value} value={value}>{label}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={() => handleGenerateTasks.mutate()} 
+            disabled={handleGenerateTasks.isPending || activeTemplates.length === 0}
+            className="w-full sm:w-auto bg-green-600 text-white hover:bg-green-700 h-10 text-sm flex-shrink-0"
+          >
+            {handleGenerateTasks.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+            Gerar Tarefas
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Templates Ativos */}
       <Card className="bg-card border-border shadow-lg">
         <CardHeader>
