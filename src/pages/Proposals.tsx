@@ -147,6 +147,11 @@ const Proposals: React.FC = () => {
       showError("Usuário não autenticado.");
       return;
     }
+    
+    if (!proposal.client_id) {
+      showError("A proposta deve estar vinculada a um cliente para gerar um link de aprovação.");
+      return;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-approval-link', {
@@ -285,8 +290,6 @@ const Proposals: React.FC = () => {
             <SelectItem value="created_at:desc">Data de Criação (Mais Recente)</SelectItem>
             <SelectItem value="updated_at:asc">Data de Modificação (Mais Antiga)</SelectItem>
             <SelectItem value="updated_at:desc">Data de Modificação (Mais Recente)</SelectItem>
-            <SelectItem value="validity_days:asc">Validade (Menor)</SelectItem>
-            <SelectItem value="validity_days:desc">Validade (Maior)</SelectItem>
             <SelectItem value="total_amount:asc">Valor Total (Menor)</SelectItem>
             <SelectItem value="total_amount:desc">Valor Total (Maior)</SelectItem>
           </SelectContent>
@@ -330,7 +333,7 @@ const Proposals: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
-                          <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); handleGenerateLink(proposal); }} className="h-8 w-8 text-green-500 hover:bg-green-500/10">
+                          <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); handleGenerateLink(proposal); }} className="h-8 w-8 text-green-500 hover:bg-green-500/10" disabled={!proposal.client_id}>
                             <Send className="h-4 w-4" />
                             <span className="sr-only">Enviar Link</span>
                           </Button>
