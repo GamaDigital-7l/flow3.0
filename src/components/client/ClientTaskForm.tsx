@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AspectRatio } from "@/components/ui/aspect-ratio"; // Adicionado AspectRatio
 
-// Tipos simplificados para evitar dependência de '@/types/client'
+// Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
 interface ClientTask {
   id: string;
@@ -32,11 +34,9 @@ interface ClientTask {
   status: ClientTaskStatus;
   due_date: string | null;
   time: string | null;
-  responsible_id: string | null;
   image_urls: string[] | null;
   public_approval_enabled: boolean;
   edit_reason: string | null;
-  order_index: number;
   client_id: string;
   user_id: string;
   is_completed: boolean;
@@ -158,8 +158,6 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
 
     try {
       let clientTaskId: string;
-      
-      const isCompleted = values.status === 'approved' || values.status === 'posted';
 
       const dataToSave = {
         client_id: clientId,
@@ -173,9 +171,9 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         responsible_id: values.responsible_id || null,
         image_urls: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
         public_approval_enabled: values.public_approval_enabled,
-        is_completed: isCompleted,
-        completed_at: isCompleted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
+        is_completed: false,
+        completed_at: null,
       };
 
       if (initialData?.id) {
@@ -191,22 +189,7 @@ const ClientTaskForm: React.FC<ClientTaskFormProps> = ({ clientId, initialData, 
         clientTaskId = data.id;
         showSuccess("Tarefa de cliente atualizada com sucesso!");
       } else {
-        // Busca o maior order_index para a coluna atual para definir o novo índice
-        const { data: maxOrderData, error: maxOrderError } = await supabase
-          .from("client_tasks")
-          .select("order_index")
-          .eq("client_id", clientId)
-          .eq("status", values.status)
-          .order("order_index", { ascending: false })
-          .limit(1)
-          .single();
-          
-        const newOrderIndex = (maxOrderData?.order_index || 0) + 1;
-
-        const { data, error } = await supabase.from("client_tasks").insert({
-          ...dataToSave,
-          order_index: newOrderIndex,
-        }).select("id").single();
+        const { data, error } = await supabase.from("client_tasks").insert(dataToSave).select("id").single();
 
         if (error) throw error;
         clientTaskId = data.id;
