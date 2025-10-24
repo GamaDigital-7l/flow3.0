@@ -66,6 +66,33 @@ const sanitizeFilename = (filename: string) => {
     .toLowerCase();
 };
 
+// Função para fazer upload via Edge Function Proxy
+const uploadFileViaProxy = async (file: File, userId: string, folder: string): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('folder', folder);
+  formData.append('filename', sanitizeFilename(file.name));
+
+  const { data, error } = await supabase.functions.invoke('upload-proxy', {
+    body: formData,
+    method: 'POST',
+    headers: {
+      // Content-Type é definido automaticamente como multipart/form-data pelo fetch/invoke
+    }
+  });
+
+  if (error) {
+    throw new Error(`Erro no proxy de upload: ${error.message}`);
+  }
+  
+  if (data && data.publicUrl) {
+    return data.publicUrl;
+  }
+  
+  throw new Error("Resposta do proxy de upload inválida.");
+};
+
+
 const BookForm: React.FC<BookFormProps> = ({ onBookAdded, onClose, initialData }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -133,74 +160,21 @@ const BookForm: React.FC<BookFormProps> = ({ onBookAdded, onClose, initialData }
       let bookContent: string | null = values.content || null;
 
       // Lógica de upload/preservação
-      if (isEditing) {
-        // Se estiver editando, preservamos o PDF/Conteúdo existente, a menos que um novo PDF seja enviado (o que não deve acontecer se o campo estiver desabilitado)
-        if (hasExistingPdf) {
-          pdfUrl = initialData!.pdf_url!;
-          bookContent = null;
-        } else if (hasExistingContent) {
-          pdfUrl = null;
-          bookContent = initialData!.content!;
-        } else if (values.pdf_file) {
-          // Caso de edição onde o livro não tinha PDF/Conteúdo, mas um novo PDF foi adicionado
-          const file = values.pdf_file;
-          const sanitizedFilename = sanitizeFilename(file.name);
-          const filePath = `public/${Date.now()}-${sanitizedFilename}`;
-
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("book-pdfs")
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              upsert: false,
-            });
-
-          if (uploadError) {
-            throw new Error("Erro ao fazer upload do PDF: " + uploadError.message);
-          }
-
-          const { data: publicUrlData } = supabase.storage
-            .from("book-pdfs")
-            .getPublicUrl(filePath);
-          
-          pdfUrl = publicUrlData.publicUrl;
-          bookContent = null;
-        } else if (bookContent && bookContent.trim() !== "" && bookContent !== "<p><br></p>") {
-          // Caso de edição onde o livro não tinha PDF/Conteúdo, mas um novo conteúdo foi adicionado
-          pdfUrl = null;
-        } else {
-          pdfUrl = null;
-          bookContent = null;
-        }
+      if (values.pdf_file) {
+        // Novo PDF selecionado (criação ou edição sem conteúdo bloqueado)
+        pdfUrl = await uploadFileViaProxy(values.pdf_file, userId, 'book-pdfs');
+        bookContent = null;
+      } else if (isContentLocked) {
+        // Edição com conteúdo bloqueado: preserva o que já existia
+        pdfUrl = initialData?.pdf_url || null;
+        bookContent = initialData?.content || null;
+      } else if (bookContent && bookContent.trim() !== "" && bookContent !== "<p><br></p>") {
+        // Conteúdo de texto inserido
+        pdfUrl = null;
       } else {
-        // Lógica de criação (mantida)
-        if (values.pdf_file) {
-          const file = values.pdf_file;
-          const sanitizedFilename = sanitizeFilename(file.name);
-          const filePath = `public/${Date.now()}-${sanitizedFilename}`;
-
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("book-pdfs")
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              upsert: false,
-            });
-
-          if (uploadError) {
-            throw new Error("Erro ao fazer upload do PDF: " + uploadError.message);
-          }
-
-          const { data: publicUrlData } = supabase.storage
-            .from("book-pdfs")
-            .getPublicUrl(filePath);
-          
-          pdfUrl = publicUrlData.publicUrl;
-          bookContent = null;
-        } else if (bookContent && bookContent.trim() !== "" && bookContent !== "<p><br></p>") {
-          pdfUrl = null;
-        } else {
-          pdfUrl = null;
-          bookContent = null;
-        }
+        // Nenhum PDF e nenhum conteúdo de texto
+        pdfUrl = null;
+        bookContent = null;
       }
 
 
