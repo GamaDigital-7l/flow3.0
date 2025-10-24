@@ -12,7 +12,7 @@ import { cn, getInitials } from '@/lib/utils';
 import PageTitle from "@/components/layout/PageTitle";
 import { useSession } from '@/integrations/supabase/auth';
 import { showError, showSuccess } from '@/utils/toast';
-import { DndContext, closestCorners, DragEndEvent, useSensor, useMouseSensor, useTouchSensor } from '@dnd-kit/core';
+import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
@@ -21,6 +21,10 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ClientTaskTemplates from './ClientTaskTemplates'; // Importando o novo componente
+
+// Define custom hooks locally to ensure compatibility
+const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
+const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, options);
 
 // Tipos completos
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
