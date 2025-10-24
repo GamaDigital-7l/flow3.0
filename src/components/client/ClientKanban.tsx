@@ -5,23 +5,24 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send, Copy, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn, getInitials } from '@/lib/utils';
 import PageTitle from "@/components/layout/PageTitle";
 import { useSession } from '@/integrations/supabase/auth';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError, showSuccess, showInfo } from '@/utils/toast';
 import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ClientTaskForm from './ClientTaskForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ClientTaskTemplates from './ClientTaskTemplates';
 import copy from 'copy-to-clipboard';
+import { Input } from '@/components/ui/input';
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -56,7 +57,7 @@ const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] =
   { id: "in_progress", title: "Em Produção", color: "text-muted-foreground" },
   { id: "under_review", title: "Para Aprovação", color: "text-primary" },
   { id: "edit_requested", title: "Edição Solicitada", color: "text-primary" },
-  { id: "approved", title: "Aprovado", color: "text-foreground" },
+  { id: "approved", title: "Aprovado", color: "text-foreground" }, // Neutro
   { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" },
 ];
 
@@ -110,6 +111,7 @@ const ClientKanban: React.FC = () => {
   const [initialStatus, setInitialStatus] = useState<ClientTaskStatus | undefined>(undefined);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null); // Estado para o Lightbox
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["clientTasks", clientId, userId],
@@ -192,6 +194,7 @@ const ClientKanban: React.FC = () => {
     onSuccess: () => {
       // Não usamos showSuccess aqui para evitar spam de toast durante o DND
       queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
+      queryClient.invalidateQueries({ queryKey: ["allTasks", userId] }); // Invalida tarefas principais
     },
     onError: (err: any) => {
       showError("Erro ao mover tarefa: " + err.message);
@@ -285,6 +288,10 @@ const ClientKanban: React.FC = () => {
     copy(link);
     showSuccess("Link copiado!");
   };
+  
+  const handleImageClick = (url: string) => {
+    setLightboxUrl(url);
+  };
 
   if (isLoading) {
     return (
@@ -365,7 +372,8 @@ const ClientKanban: React.FC = () => {
             collisionDetection={closestCorners}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar h-[calc(100vh-15rem)]">
+            {/* Ajuste de altura para melhor responsividade: h-full min-h-[60vh] */}
+            <div className="flex overflow-x-auto space-x-4 pb-4 custom-scrollbar h-full min-h-[60vh]">
               {KANBAN_COLUMNS.map(column => (
                 <Card key={column.id} className="w-80 flex-shrink-0 bg-secondary/50 border-border shadow-lg flex flex-col">
                   <CardHeader className="p-3 pb-2 flex-shrink-0">
@@ -393,6 +401,7 @@ const ClientKanban: React.FC = () => {
                             task={task} 
                             onEdit={handleEditTask} 
                             refetchTasks={refetch}
+                            onImageClick={handleImageClick} // Passando a função de clique
                           />
                         ))}
                       </SortableContext>
@@ -459,6 +468,27 @@ const ClientKanban: React.FC = () => {
               <Copy className="mr-2 h-4 w-4" /> Copiar Link
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Lightbox para Imagem */}
+      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
+        <DialogContent className="lightbox-fullscreen-override">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setLightboxUrl(null)} 
+            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
+          >
+            <XCircle className="h-6 w-6" />
+          </Button>
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Visualização em Tela Cheia"
+              className="max-w-[95%] max-h-[95%] object-contain"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

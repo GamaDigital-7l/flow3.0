@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye } from 'lucide-react';
+import { Edit, Trash2, CalendarDays, Clock, CheckCircle2, Edit3, GripVertical, Share2, Link as LinkIcon, MessageSquare, Eye, XCircle } from 'lucide-react';
 import { cn, formatDateTime, formatTime, parseISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -38,9 +38,10 @@ interface ClientTaskCardProps {
   task: ClientTask;
   onEdit: (task: ClientTask) => void;
   refetchTasks: () => void;
+  onImageClick: (url: string) => void; // Nova prop para Lightbox
 }
 
-const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTasks }) => {
+const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTasks, onImageClick }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
@@ -142,7 +143,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
       {/* Imagem de Capa (Proporção 4:5) - Movida para o topo */}
       {mainImageUrl && (
         <div className="p-3 pb-0">
-          <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden border border-border bg-secondary">
+          <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden border border-border bg-secondary cursor-pointer" onClick={() => onImageClick(mainImageUrl)}>
             <img src={mainImageUrl} alt={task.title} className="h-full w-full object-cover" />
           </AspectRatio>
         </div>
@@ -209,7 +210,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = ({ task, onEdit, refetchTa
               <Button 
                 size="sm" 
                 onClick={() => handleStatusUpdate.mutate('edit_requested')} 
-                variant="outline" 
+                variant="secondary" 
                 className="flex-1 border-secondary text-foreground hover:bg-secondary h-8 text-xs" // Usando secundário neutro
                 disabled={handleStatusUpdate.isPending}
               >
