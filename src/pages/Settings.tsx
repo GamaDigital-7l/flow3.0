@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { sendDailyTelegramSummary } from "@/utils/telegram";
 
 // Schema para as configurações, incluindo Telegram
 const settingsSchema = z.object({
@@ -129,6 +130,14 @@ const Settings: React.FC = () => {
             </div>
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar Configurações"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => sendDailyTelegramSummary(userId)}
+              disabled={isSubmitting}
+              className="w-full bg-green-500 text-white hover:bg-green-700"
+            >
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste Telegram"}
             </Button>
             <p className="text-xs text-muted-foreground">
               Para configurar o Telegram, você precisa adicionar o token e o chat ID no console do Supabase.
