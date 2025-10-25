@@ -9,6 +9,8 @@ import QuickTransactionEntry from './QuickTransactionEntry';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
+import FinanceSummary from './FinanceSummary';
+import FinanceReport from './FinanceReport';
 
 const FinanceLayout: React.FC = () => {
   const [currentPeriod, setCurrentPeriod] = useState(new Date());
@@ -36,6 +38,12 @@ const FinanceLayout: React.FC = () => {
       </div>
 
       <PeriodSelector currentPeriod={currentPeriod} onPeriodChange={setCurrentPeriod} />
+      
+      {/* Adicionando o componente FinanceSummary */}
+      <FinanceSummary />
+      
+      {/* Adicionando o componente FinanceReport */}
+      <FinanceReport />
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'company' | 'personal')} className="w-full mt-6">
         {/* Usando grid-cols-2 para garantir que as abas dividam o espaço igualmente */}
