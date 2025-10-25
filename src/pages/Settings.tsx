@@ -29,30 +29,63 @@ const Settings: React.FC = () => {
   const userEmail = session?.user?.email;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { data: userSettings, isLoading, error, refetch } = useQuery(
+    ['userSettings', userId],
+    async () => {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('telegram_bot_token, telegram_chat_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      return data || {};
+    },
+    {
+      enabled: !!userId,
+    }
+  );
+
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      telegram_bot_token: "",
-      telegram_chat_id: "",
+      telegram_bot_token: userSettings?.telegram_bot_token || "",
+      telegram_chat_id: userSettings?.telegram_chat_id || "",
     },
+    values: userSettings,
+    resetOptions: {
+      keepDirty: true,
+    }
   });
+
+  useEffect(() => {
+    if (userSettings) {
+      form.reset(userSettings);
+    }
+  }, [userSettings, form]);
 
   const onSubmit = async (values: SettingsFormValues) => {
     setIsSubmitting(true);
     try {
-      // Call the Edge Function
-      const { data, error } = await supabase.functions.invoke('set-env-vars', {
-        body: {
-          telegram_bot_token: values.telegram_bot_token,
-          telegram_chat_id: values.telegram_chat_id,
-        },
-      });
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert(
+          {
+            user_id: userId,
+            telegram_bot_token: values.telegram_bot_token,
+            telegram_chat_id: values.telegram_chat_id,
+          },
+          { onConflict: 'user_id' }
+        );
 
       if (error) {
         throw error;
       }
 
-      showSuccess("Configurações salvas com sucesso! Lembre-se de configurar as variáveis de ambiente no console do Supabase.");
+      showSuccess("Configurações salvas com sucesso!");
+      refetch();
     } catch (error: any) {
       showError("Erro ao salvar configurações: " + error.message);
     } finally {
