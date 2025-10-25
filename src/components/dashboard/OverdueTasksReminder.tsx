@@ -188,11 +188,11 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
                         <p className="text-xs">Descrição: {task.description || 'Nenhuma descrição'}</p>
                       </div>
                     </TooltipContent>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+                  </Tooltip>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       </div>
     </div>
