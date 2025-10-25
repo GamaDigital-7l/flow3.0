@@ -1,13 +1,12 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, ListTodo, Repeat, Settings, Users, X, LogOut, Calendar, BarChart3 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom'; // Changed from next/link and next/navigation
+import { Home, ListTodo, Repeat, Settings, Users, X, LogOut, Calendar, BarChart3, NotebookText, DollarSign, Heart, BookOpen, FileText, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useSupabaseAuth } from '@/integrations/supabase/auth';
-import AppLogo from './AppLogo'; // Importando o novo componente de logo
+import { useSupabaseAuth } from '@/integrations/supabase/auth'; // Importando useSupabaseAuth
+import AppLogo from './AppLogo'; 
 
 interface NavItem {
   href: string;
@@ -16,21 +15,28 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: <Home className="h-5 w-5" /> },
-  { href: '/tasks', label: 'Todas as Tarefas', icon: <ListTodo className="h-5 w-5" /> },
-  { href: '/recurrence', label: 'Recorrência/Hábitos', icon: <Repeat className="h-5 w-5" /> },
-  { href: '/calendar', label: 'Calendário', icon: <Calendar className="h-5 w-5" /> },
+  { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-5 w-5" /> },
+  { href: '/tasks', label: 'Tarefas', icon: <ListTodo className="h-5 w-5" /> },
+  { href: '/recurrence', label: 'Hábitos', icon: <Repeat className="h-5 w-5" /> },
+  { href: '/notes', label: 'Notas', icon: <NotebookText className="h-5 w-5" /> },
+  { href: '/books', label: 'Biblioteca', icon: <BookOpen className="h-5 w-5" /> },
+  { href: '/finance', label: 'Finanças', icon: <DollarSign className="h-5 w-5" /> },
+  { href: '/proposals', label: 'Propostas', icon: <FileText className="h-5 w-5" /> },
+  { href: '/portfolio', label: 'Portfólio', icon: <Image className="h-5 w-5" /> },
   { href: '/clients', label: 'Clientes', icon: <Users className="h-5 w-5" /> },
-  { href: '/reports', label: 'Relatórios', icon: <BarChart3 className="h-5 w-5" /> },
+  { href: '/health', label: 'Saúde', icon: <Heart className="h-5 w-5" /> },
+  { href: '/results', label: 'Resultados', icon: <BarChart3 className="h-5 w-5" /> },
 ];
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  deferredPrompt: Event | null;
+  onInstallClick: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const pathname = usePathname();
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
+  const location = useLocation();
   const { signOut } = useSupabaseAuth();
 
   const handleSignOut = async () => {
@@ -50,9 +56,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         )}
       >
         {/* Header da Sidebar */}
-        <div className="h-14 flex items-center justify-between p-4 border-b border-sidebar-border">
-          <Link href="/" className="flex items-center gap-2">
-            <AppLogo /> {/* Usando o novo componente de logo */}
+        <div className="h-14 flex items-center justify-between p-4 border-b border-sidebar-border pt-[var(--sat)]">
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <AppLogo />
           </Link>
           <Button 
             variant="ghost" 
@@ -69,12 +75,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {navItems.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={cn(
                 "nav-link-base",
-                pathname === item.href ? "nav-link-active" : "nav-link-inactive"
+                location.pathname === item.href ? "nav-link-active" : "nav-link-inactive"
               )}
-              onClick={onClose} // Fecha a sidebar no mobile ao clicar
+              onClick={onClose}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -83,12 +89,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Footer da Sidebar (Configurações e Logout) */}
-        <div className="p-4 border-t border-sidebar-border space-y-1">
+        <div className="p-4 border-t border-sidebar-border space-y-1 pb-[var(--sab)]">
+          {deferredPrompt && (
+            <Button
+              variant="outline"
+              className="w-full justify-start text-primary hover:bg-primary/10 nav-link-base"
+              onClick={onInstallClick}
+            >
+              <Download className="h-5 w-5 mr-2" />
+              Instalar App
+            </Button>
+          )}
           <Link
-            href="/settings"
+            to="/settings"
             className={cn(
               "nav-link-base",
-              pathname === '/settings' ? "nav-link-active" : "nav-link-inactive"
+              location.pathname === '/settings' ? "nav-link-active" : "nav-link-inactive"
             )}
             onClick={onClose}
           >

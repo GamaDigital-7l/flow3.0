@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from './client';
+import { useQueryClient } from '@tanstack/react-query';
+import { showError, showSuccess } from '@/utils/toast';
 
 interface SessionContextType {
   session: Session | null;
@@ -42,4 +44,22 @@ export const useSession = () => {
     throw new Error('useSession must be used within a SessionContextProvider');
   }
   return context;
+};
+
+export const useSupabaseAuth = () => {
+  const queryClient = useQueryClient();
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Error signing out:", error);
+      showError("Erro ao sair: " + error.message);
+    } else {
+      // Clear all cached data upon sign out
+      queryClient.clear();
+      showSuccess("Sessão encerrada com sucesso.");
+    }
+  };
+
+  return { signOut };
 };

@@ -9,8 +9,8 @@ import Login from "./pages/Login";
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
-import LoadingScreen from "./components/layout/LoadingScreen"; // Importar LoadingScreen
-import { TooltipProvider } from "@/components/ui/tooltip"; // Import TooltipProvider
+import LoadingScreen from "./components/layout/LoadingScreen";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Lazy Loaded Pages
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -31,8 +31,8 @@ const ProposalViewerPage = lazy(() => import("./pages/PublicProposalPage"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const PortfolioProjectPage = lazy(() => import("./pages/PortfolioProjectPage"));
 const Clients = lazy(() => import("./pages/Clients"));
-import ClientKanban from "./components/client/ClientKanban"; // Importing directly
-const PublicApprovalPage = lazy(() => import("./pages/PublicApprovalPage")); // NOVO: PublicApprovalPage
+import ClientKanban from "./components/client/ClientKanban";
+const PublicApprovalPage = lazy(() => import("./pages/PublicApprovalPage"));
 
 // Main App component wrapper for context providers
 function App() {
@@ -44,7 +44,7 @@ function App() {
       >
         <Toaster position="top-right" richColors />
         <ErrorBoundary>
-          <TooltipProvider> {/* Global Tooltip Provider */}
+          <TooltipProvider>
             <AppContent />
           </TooltipProvider>
         </ErrorBoundary>
@@ -70,19 +70,16 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true, error: error, errorInfo: null };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // You can also log the error to an error reporting service
     console.error("Caught an error: ", error, errorInfo);
     this.setState({ errorInfo: errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
-      // You could render any custom fallback UI
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
           <div className="text-center">
@@ -109,21 +106,44 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 function AppContent() {
   const { session, isLoading } = useSession();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null); // Adicionado estado para PWA
   
   const handleOnline = () => setIsOnline(true);
   const handleOffline = () => setIsOnline(false);
+  
+  const handleBeforeInstallPrompt = (e: Event) => {
+    e.preventDefault();
+    setDeferredPrompt(e);
+  };
+  
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      (deferredPrompt as any).prompt();
+      (deferredPrompt as any).userChoice.then((choiceResult: { outcome: string }) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setDeferredPrompt(null);
+      });
+    }
+  };
 
   useEffect(() => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Carregando sessão...</div>;
+    return <LoadingScreen />;
   }
 
   return (
@@ -133,14 +153,14 @@ function AppContent() {
         <Routes>
           {/* Rotas Públicas */}
           <Route path="/login" element={<Login />} />
-          <Route path="/approval/:uniqueId" element={<PublicApprovalPage />} /> {/* CORRIGIDO */}
+          <Route path="/approval/:uniqueId" element={<PublicApprovalPage />} />
           <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
           <Route path="/proposal/:uniqueId" element={<ProposalViewerPage />} />
           <Route path="/portfolio/:slug" element={<PortfolioProjectPage />} />
 
-          {/* Rotas Protegidas */}
-          <Route element={<ProtectedRoute session={session} />}>
-            <Route element={<Layout isOnline={isOnline} deferredPrompt={null} onInstallClick={() => {}} />}>
+          {/* Rotas Protegidas (Usando ProtectedRoute como wrapper) */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout isOnline={isOnline} deferredPrompt={deferredPrompt} onInstallClick={handleInstallClick} />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               
               <Route path="/dashboard" element={<Dashboard />} />

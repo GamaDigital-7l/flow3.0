@@ -2,13 +2,16 @@
 
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { Session } from '@supabase/supabase-js';
+import { useSession } from '@/integrations/supabase/auth';
+import LoadingScreen from './layout/LoadingScreen';
 
-interface ProtectedRouteProps {
-  session: Session | null;
-}
+const ProtectedRoute: React.FC = () => {
+  const { session, isLoading } = useSession();
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ session }) => {
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   if (!session) {
     return <Navigate to="/login" replace />;
   }
