@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
+import React, { useState } from 'react';
+import { useSortable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,10 +42,22 @@ interface ClientTaskCardProps {
   onImageClick: (url: string) => void; // Nova prop para Lightbox
 }
 
+const getAssetIcon = (assetType: string) => {
+  switch (assetType) {
+    case 'file': return <FileText className="h-6 w-6 text-blue-500" />;
+    case 'color_palette': return <Palette className="h-6 w-6 text-primary" />;
+    case 'font': return <Type className="h-6 w-6 text-green-500" />;
+    case 'secret': return <Lock className="h-6 w-6 text-red-500" />;
+    default: return <FileText className="h-6 w-6 text-muted-foreground" />;
+  }
+};
+
 const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit, refetchTasks, onImageClick }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const queryClient = useQueryClient();
+
+  const [showDescription, setShowDescription] = useState(false);
 
   const {
     attributes,
@@ -61,7 +73,6 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
     transition,
     zIndex: isDragging ? 10 : 0,
     opacity: isDragging ? 0.8 : 1,
-    // Adicionando uma transição de escala sutil ao soltar
     boxShadow: isDragging ? '0 0 0 1px rgba(237, 24, 87, 0.5), 0 10px 20px rgba(0, 0, 0, 0.2)' : undefined,
   };
   
@@ -142,12 +153,13 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
         isApproved && "border-green-500/50",
         isEditRequested && "border-primary ring-1 ring-primary/50"
       )}
+      onClick={() => setShowDescription(!showDescription)}
     >
       {/* Imagem de Capa (Proporção 4:5) - Movida para o topo */}
       {mainImageUrl && (
         <div className="p-3 pb-0">
-          <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden border border-border bg-secondary cursor-pointer" onClick={() => onImageClick(mainImageUrl)}>
-            <img src={mainImageUrl} alt={task.title} className="h-full w-full object-cover" />
+          <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden border border-border bg-secondary cursor-pointer">
+            <img src={mainImageUrl} alt={task.title} className="h-full w-full object-cover" onClick={(e) => { e.stopPropagation(); onImageClick(mainImageUrl); }} />
           </AspectRatio>
         </div>
       )}
@@ -162,10 +174,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
           >
             <GripVertical className="h-4 w-4" />
           </div>
-          <CardTitle 
-            className="text-sm font-semibold text-foreground line-clamp-2 break-words cursor-pointer hover:text-primary transition-colors"
-            onClick={() => onEdit(task)} // Torna o título clicável para edição
-          >
+          <CardTitle className="text-sm font-semibold text-foreground line-clamp-2 break-words">
             {task.title}
           </CardTitle>
         </div>
@@ -186,10 +195,9 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
       </CardHeader>
       
       <CardContent className="p-3 pt-0 space-y-2">
-        
         {/* Descrição / Legenda */}
         {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+          <p className={cn("text-xs text-muted-foreground line-clamp-2 transition-opacity duration-300", showDescription ? "opacity-100" : "opacity-0")}>{task.description}</p>
         )}
         
         {/* Metadados */}
@@ -199,7 +207,7 @@ const ClientTaskCard: React.FC<ClientTaskCardProps> = React.memo(({ task, onEdit
               <CalendarDays className="h-3 w-3" /> {formatDateTime(task.due_date, false)}
             </Badge>
           )}
-          {task.tags && task.tags.map(tag => (
+          {task.tags && task.tags.map((tag) => (
             <Badge key={tag.id} style={{ backgroundColor: tag.color, color: '#FFFFFF' }} className="text-xs flex-shrink-0 h-5 px-1.5">
               {tag.name}
             </Badge>
