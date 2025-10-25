@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { format, isBefore, startOfDay, parseISO } from "https://esm.sh/date-fns@3.6.0";
-import { utcToZonedTime } from "https://esm.sh/date-fns-tz@3.0.1";
+import { utcToZonedTime } from "https://esm.sh/date-fns-tz@3.0.1/esm";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +19,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Fetch all users and their timezones
     const { data: users, error: fetchUsersError } = await supabase
       .from('profiles')
       .select('id, timezone');
@@ -80,8 +79,8 @@ serve(async (req) => {
         message += `\n✅ Parabéns! Você está em dia com suas tarefas.`;
       }
 
-      const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-      const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
+      const TELEGRAM_BOT_TOKEN = Deno.env.get("SUPABASE_URL");
+      const TELEGRAM_CHAT_ID = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
         const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
