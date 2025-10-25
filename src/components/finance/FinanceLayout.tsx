@@ -1,20 +1,23 @@
+"use client";
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageTitle from '@/components/layout/PageTitle';
-import { DollarSign, Briefcase, User, Settings } from 'lucide-react';
+import { DollarSign, Briefcase, User, Settings, BarChart3 } from 'lucide-react';
 import PeriodSelector from './PeriodSelector';
 import CompanyFinance from './CompanyFinance';
 import PersonalFinance from './PersonalFinance';
 import QuickTransactionEntry from './QuickTransactionEntry';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
+import PageWrapper from '@/components/layout/PageWrapper';
 import FinanceSummary from './FinanceSummary';
 import FinanceReport from './FinanceReport';
 
 const FinanceLayout: React.FC = () => {
   const [currentPeriod, setCurrentPeriod] = useState(new Date());
   const [activeTab, setActiveTab] = useState<'company' | 'personal'>('company');
+  const [showReport, setShowReport] = useState(false);
 
   const handleTransactionAdded = () => {
     // This function is passed down to trigger refetches in children components
@@ -41,9 +44,6 @@ const FinanceLayout: React.FC = () => {
       
       {/* Adicionando o componente FinanceSummary */}
       <FinanceSummary />
-      
-      {/* Adicionando o componente FinanceReport */}
-      <FinanceReport />
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'company' | 'personal')} className="w-full mt-6">
         {/* Usando grid-cols-2 para garantir que as abas dividam o espaço igualmente */}
@@ -61,6 +61,14 @@ const FinanceLayout: React.FC = () => {
           <PersonalFinance currentPeriod={currentPeriod} onTransactionAdded={handleTransactionAdded} /> 
         </TabsContent>
       </Tabs>
+      
+      {/* Botão para exibir o relatório */}
+      <Button onClick={() => setShowReport(!showReport)} className="mt-4">
+        <BarChart3 className="mr-2 h-4 w-4" /> {showReport ? "Ocultar Relatório" : "Exibir Relatório"}
+      </Button>
+
+      {/* Renderização condicional do relatório */}
+      {showReport && <FinanceReport />}
     </PageWrapper>
   );
 };
