@@ -1,34 +1,23 @@
 {
   "name": "Gama Flow",
   "short_name": "GamaFlow",
-  "description": "Sistema de gestão profissional e fluxo de trabalho da Gama Creative Design Studio.",
+  "description": "Seu sistema de gestão de tarefas e produtividade.",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#12141A",
-  "theme_color": "#1D2028",
+  "background_color": "#141416",
+  "theme_color": "#ED1857",
   "icons": [
     {
-      "src": "/icons/icon-192x192.svg",
+      "src": "/images/foto de perfil gama .jpg",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/images/foto de perfil gama .jpg",
       "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-maskable-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/icon-maskable-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }

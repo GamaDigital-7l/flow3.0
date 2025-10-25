@@ -1,101 +1,112 @@
-import { Button } from "@/components/ui/button";
-import { Menu, Bell, Plus, Download, Instagram, MessageSquare, Globe } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useSession } from "@/integrations/supabase/auth";
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError, showInfo } from "@/utils/toast";
-import React from "react";
-import { ThemeToggle } from "../ThemeToggle"; // Importar ThemeToggle
-import { cn } from "@/lib/utils";
+"use client";
 
-interface HeaderProps {
-  onMenuClick: () => void;
-  deferredPrompt: Event | null; // Mantido para compatibilidade com Layout, mas não usado
-  onInstallClick: () => void; // Mantido para compatibilidade com Layout, mas não usado
-}
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Menu, Bell, User, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import Sidebar from './Sidebar';
+import { useSession } from '@/integrations/supabase/auth';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { usePathname } from 'next/navigation';
 
-const SOCIAL_LINKS = [
-  { icon: Instagram, href: "https://instagram.com/gama.creative", label: "Instagram" },
-  { icon: Globe, href: "https://gamacreative.com.br", label: "Site" },
-  { icon: MessageSquare, href: "https://wa.me/5531999999999", label: "WhatsApp" }, // Placeholder
-];
+const Header: React.FC = () => {
+  const { session, signOut } = useSession();
+  const pathname = usePathname();
+  const [isDark, setIsDark] = useState(false);
 
-export const Header: React.FC<HeaderProps> = ({ onMenuClick, deferredPrompt, onInstallClick }) => {
-  const { session } = useSession();
+  // Lógica de detecção de tema (verifica a classe 'dark' no <html>)
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkTheme();
+    
+    // Observa mudanças na classe do <html> (para quando o usuário troca o tema)
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      showSuccess("Desconectado com sucesso!");
-    } catch (error: any) {
-      showError("Erro ao desconectar: " + error.message);
-    }
-  };
+    return () => observer.disconnect();
+  }, []);
+
+  // Define a fonte da logo baseada no tema
+  const logoSrc = isDark ? "/images/Gama Logo - Branca.png" : "/images/Gama-01.png";
+  const logoAlt = "Gama Flow Logo";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex h-[calc(3.5rem+var(--sat))] items-center gap-2 border-b border-border bg-card px-3 shadow-sm pt-[var(--sat)]">
-      {/* Botão de Menu (Sempre visível) */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="shrink-0 h-8 w-8"
-        onClick={onMenuClick}
-      >
-        <Menu className="h-4 w-4" />
-        <span className="sr-only">Toggle navigation menu</span>
-      </Button>
-      
-      {/* Branding Gama Flow */}
-      <div className="flex-1">
-        <Link to="/dashboard" className="text-base font-semibold text-foreground hover:text-primary transition-colors">
-          Gama Flow
-        </Link>
-      </div>
-      
-      {/* Links Sociais (Desktop) */}
-      <div className="hidden lg:flex items-center gap-1">
-        {SOCIAL_LINKS.map(link => {
-          const Icon = link.icon;
-          return (
-            <Button key={link.label} variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:bg-accent hover:text-primary">
-              <a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label}>
-                <Icon className="h-4 w-4" />
-              </a>
-            </Button>
-          );
-        })}
-      </div>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border h-14 flex items-center px-4 md:px-6 shadow-sm">
+      <div className="flex items-center justify-between w-full max-w-[98vw] mx-auto">
+        
+        {/* Mobile Menu Trigger and Logo */}
+        <div className="flex items-center gap-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[280px] sm:w-[300px]">
+              <Sidebar />
+            </SheetContent>
+          </Sheet>
+          
+          {/* Logo Image */}
+          <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
+            <img 
+              src={logoSrc} 
+              alt={logoAlt} 
+              className="h-8 w-auto" // Ajuste o tamanho conforme necessário
+            />
+          </Link>
+        </div>
 
-      {/* Ações do Usuário */}
-      <div className="flex items-center gap-2">
-        <ThemeToggle />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={session?.user?.user_metadata?.avatar_url || "https://github.com/shadcn.png"} alt="Avatar" />
-                <AvatarFallback className="text-xs">{session?.user?.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-              </Avatar>
-              <span className="sr-only">Toggle user menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover border border-border text-popover-foreground text-sm">
-            <DropdownMenuLabel className="py-1.5 px-2">Minha Conta</DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-border" />
-            <DropdownMenuItem asChild className="py-1.5 px-2">
-              <Link to="/settings" className="cursor-pointer">Configurações</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer py-1.5 px-2">Suporte</DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-border" />
-            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive hover:bg-destructive/10 py-1.5 px-2">
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Right Side: Notifications and User Menu */}
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Notifications</span>
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                <Avatar className="h-9 w-9 border-2 border-primary">
+                  <AvatarImage src={session?.user?.user_metadata?.avatar_url || "/images/default-avatar.png"} alt={session?.user?.email || "User"} />
+                  <AvatarFallback>
+                    {session?.user?.email ? session.user.email[0].toUpperCase() : <User className="h-5 w-5" />}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{session?.user?.user_metadata?.first_name || "Usuário"}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {session?.user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Configurações
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={signOut} className="cursor-pointer text-destructive focus:text-destructive">
+                <User className="mr-2 h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );
 };
+
+export default Header;
