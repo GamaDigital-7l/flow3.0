@@ -71,7 +71,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
         setIsLinkModalOpen(true);
       }
     } catch (e) {
-      // Error handled in hook mutation onError
+      // Error handled in hook mutationOnError
     }
   };
   
@@ -165,7 +165,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                   onAddTask={onAddTask}
                   onEditTask={onEditTask}
                   refetchTasks={refetch}
-                  onImageClick={onImageClick}
+                  onImageClick={setLightboxUrl}
                 />
               ))}
             </div>
@@ -177,7 +177,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                 task={activeDragItem as ClientTask} 
                 onEdit={onEditTask} 
                 refetchTasks={refetch}
-                onImageClick={onImageClick}
+                onImageClick={setLightboxUrl}
               />
             ) : null}
           </DragOverlay>
