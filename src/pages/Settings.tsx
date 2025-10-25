@@ -30,9 +30,9 @@ const Settings: React.FC = () => {
   const userEmail = session?.user?.email;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: userSettings, isLoading, error, refetch } = useQuery(
-    ['userSettings', userId],
-    async () => {
+  const { data: userSettings, isLoading, error, refetch } = useQuery({
+    queryKey: ['userSettings', userId],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('user_settings')
         .select('telegram_bot_token, telegram_chat_id')
@@ -44,10 +44,8 @@ const Settings: React.FC = () => {
       }
       return data || {};
     },
-    {
-      enabled: !!userId,
-    }
-  );
+    enabled: !!userId,
+  });
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
