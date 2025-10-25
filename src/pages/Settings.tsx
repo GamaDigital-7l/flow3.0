@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toast";
+import { showSuccess, showError, showInfo } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { sendDailyTelegramSummary } from "@/utils/telegram";
+import axios from "axios";
 
 // Schema para as configurações, incluindo Telegram e WhatsApp
 const settingsSchema = z.object({
@@ -98,6 +99,48 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleTestWhatsApp = async () => {
+    const whatsappApiToken = form.getValues('whatsapp_api_token');
+    const whatsappPhoneNumberId = form.getValues('whatsapp_phone_number_id');
+
+    if (!whatsappApiToken || !whatsappPhoneNumberId) {
+      showError("Por favor, preencha o token e o ID do número do WhatsApp.");
+      return;
+    }
+
+    try {
+      const evolutionApiUrl = Deno.env.get("EVOLUTION_API_URL");
+      const evolutionApiKey = Deno.env.get("EVOLUTION_API_KEY");
+
+      if (!evolutionApiUrl || !evolutionApiKey) {
+        showError("URL ou chave da API Evolution não configuradas.");
+        return;
+      }
+
+      const testMessage = "Teste de mensagem da Gama Flow!";
+
+      const evolutionResponse = await axios.post(evolutionApiUrl, {
+        phone: whatsappPhoneNumberId,
+        message: testMessage,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${evolutionApiKey}`,
+        },
+      });
+
+      if (evolutionResponse.status === 200) {
+        showSuccess("Mensagem de teste enviada para o WhatsApp!");
+      } else {
+        showError("Erro ao enviar mensagem de teste para o WhatsApp.");
+        console.error("Erro na resposta da Evolution API:", evolutionResponse.status, evolutionResponse.data);
+      }
+    } catch (error: any) {
+      showError("Erro ao enviar mensagem de teste para o WhatsApp: " + error.message);
+      console.error("Erro ao enviar mensagem de teste para o WhatsApp:", error);
+    }
+  };
+
   return (
     <PageWrapper className="space-y-6">
       <h1 className="text-3xl font-bold">Configurações</h1>
@@ -173,6 +216,14 @@ const Settings: React.FC = () => {
                 className="w-full bg-green-500 text-white hover:bg-green-700"
               >
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste Telegram (Noite)"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleTestWhatsApp}
+                disabled={isSubmitting}
+                className="w-full bg-blue-500 text-white hover:bg-blue-700"
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste WhatsApp"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
