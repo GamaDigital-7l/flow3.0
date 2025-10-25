@@ -193,8 +193,8 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
       <Card className={cn(
         "border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
         isCompleted ? "opacity-70" : "card-hover-effect",
-        // Usando a cor primária para destaque de atraso
-        isTrulyOverdue && "border-status-overdue ring-1 ring-status-overdue/50",
+        // Removendo a borda de destaque para atraso aqui, pois o OverdueTasksReminder já lida com isso.
+        // isTrulyOverdue && "border-status-overdue ring-1 ring-status-overdue/50",
         compactMode ? "p-1.5" : "p-2" // Ajuste de padding
       )}>
         <div className="flex items-start gap-2">
