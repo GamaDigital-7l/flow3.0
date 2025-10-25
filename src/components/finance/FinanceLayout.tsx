@@ -8,6 +8,7 @@ import PersonalFinance from './PersonalFinance';
 import QuickTransactionEntry from './QuickTransactionEntry';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 const FinanceLayout: React.FC = () => {
   const [currentPeriod, setCurrentPeriod] = useState(new Date());
@@ -21,7 +22,7 @@ const FinanceLayout: React.FC = () => {
   };
 
   return (
-    <div className="page-content-wrapper overflow-x-hidden">
+    <PageWrapper className="flex-1 flex flex-col">
       {/* Empilhando o título e a entrada rápida no mobile */}
       <div className="space-y-4 mb-6">
         <PageTitle title="Finanças" description="Gerencie as finanças pessoais e da empresa.">
@@ -52,7 +53,7 @@ const FinanceLayout: React.FC = () => {
           <PersonalFinance currentPeriod={currentPeriod} onTransactionAdded={handleTransactionAdded} /> 
         </TabsContent>
       </Tabs>
-    </div>
+    </PageWrapper>
   );
 };
 

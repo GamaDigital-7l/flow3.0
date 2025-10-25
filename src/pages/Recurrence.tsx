@@ -18,6 +18,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 const Recurrence: React.FC = () => {
   const { session } = useSession();
@@ -79,7 +80,7 @@ const Recurrence: React.FC = () => {
   };
 
   return (
-    <div className="page-content-wrapper space-y-6">
+    <PageWrapper className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Repeat className="h-7 w-7 text-status-recurring" /> Hábitos e Recorrências
@@ -198,7 +199,7 @@ const Recurrence: React.FC = () => {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageWrapper>
   );
 };
 

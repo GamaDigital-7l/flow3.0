@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 type SortOrder = 'asc' | 'desc';
 type SortColumn = 'created_at' | 'updated_at' | 'validity_days' | 'total_amount';
@@ -200,7 +201,7 @@ const Proposals: React.FC = () => {
   const totalPages = Math.ceil((proposals?.length || 0) / ITEMS_PER_PAGE);
 
   return (
-    <div className="page-content-wrapper space-y-6">
+    <PageWrapper className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <FileText className="h-7 w-7 text-primary" /> Orçamentos Profissionais
@@ -396,7 +397,7 @@ const Proposals: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };
 

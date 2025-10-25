@@ -9,6 +9,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 // Schema vazio, pois todas as configurações foram removidas.
 const settingsSchema = z.object({});
@@ -30,7 +31,7 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6 bg-background text-foreground">
+    <PageWrapper className="space-y-6">
       <h1 className="text-3xl font-bold">Configurações</h1>
       <p className="text-lg text-muted-foreground">
         Gerencie as configurações do seu aplicativo.
@@ -53,7 +54,7 @@ const Settings: React.FC = () => {
       <Button type="submit" onClick={onSubmit} className="w-full max-w-lg bg-primary text-primary-foreground hover:bg-primary/90 self-center mt-6">
         Salvar Configurações
       </Button>
-    </div>
+    </PageWrapper>
   );
 };
 

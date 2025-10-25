@@ -23,6 +23,7 @@ import TagForm from "@/components/TagForm";
 import { Badge } from "@/components/ui/badge";
 import QuickNoteCreator from "@/components/QuickNoteCreator";
 import NoteViewer from "@/components/NoteViewer";
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 // Definir o tipo para um item de checklist
 interface ChecklistItem {
@@ -188,13 +189,13 @@ const Notes: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4 lg:p-6">
+    <PageWrapper className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 sm:text-3xl">
           <NotebookText className="h-6 w-6 text-primary flex-shrink-0" /> Segundo Cérebro (Notas)
         </h1>
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-lg text-muted-foreground">
         Seu caderno digital para todas as suas ideias, pensamentos e informações importantes.
       </p>
 
@@ -309,7 +310,7 @@ const Notes: React.FC = () => {
             ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">Nenhuma nota ativa encontrada. Adicione uma nova nota!</p>
+        <p className="text-muted-foreground">Nenhuma nota ativa encontrada. Adicione uma nova nota!</p>
       )}
 
       {/* Dialog para o NoteViewer */}
@@ -344,7 +345,7 @@ const Notes: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };
 

@@ -14,6 +14,7 @@ import PortfolioCard from "@/components/portfolio/PortfolioCard";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 const fetchPortfolioProjects = async (userId: string): Promise<PortfolioProject[]> => {
   const { data, error } = await supabase
@@ -100,7 +101,7 @@ const Portfolio: React.FC = () => {
   }
 
   return (
-    <div className="page-content-wrapper space-y-6">
+    <PageWrapper className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Image className="h-7 w-7 text-primary" /> Portfólio
@@ -184,7 +185,7 @@ const Portfolio: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza que deseja deletar?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação irá deletar o projeto "{projectToDelete?.title}" permanentemente.
+              Esta ação é irreversível. Todas as tarefas, histórico e dados associados a este cliente serão permanentemente excluídos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -212,7 +213,7 @@ const Portfolio: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };
 

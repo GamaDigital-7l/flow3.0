@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 interface Book {
   id: string;
@@ -65,13 +66,13 @@ const BookDetails: React.FC = () => {
 
   if (!id) {
     return (
-      <div className="flex flex-1 flex-col gap-4 p-4 md:px-10 lg:p-6 bg-background text-foreground">
+      <PageWrapper className="flex flex-1 flex-col gap-4 bg-background text-foreground">
         <h1 className="text-3xl font-bold">Livro Não Encontrado</h1>
         <p className="text-lg text-muted-foreground">O ID do livro não foi fornecido.</p>
         <Button onClick={() => navigate("/books")} className="w-fit bg-primary text-primary-foreground hover:bg-primary/90">
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a Biblioteca
         </Button>
-      </div>
+      </PageWrapper>
     );
   }
 
@@ -111,8 +112,8 @@ const BookDetails: React.FC = () => {
   }
 
   return (
-    <div
-      className="flex flex-1 flex-col gap-4 p-4 md:px-10 lg:p-6 bg-background text-foreground"
+    <PageWrapper
+      className="flex flex-1 flex-col gap-4 bg-background text-foreground"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -164,7 +165,7 @@ const BookDetails: React.FC = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageWrapper>
   );
 };
 

@@ -14,6 +14,7 @@ import ClientList from '@/components/client/ClientList';
 import ClientForm from '@/components/client/ClientForm';
 import { Input } from '@/components/ui/input';
 import PageTitle from '@/components/layout/PageTitle';
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 // Tipo simplificado para Client (deve ser consistente com ClientList.tsx)
 interface Client {
@@ -106,7 +107,7 @@ const Clients: React.FC = () => {
   }
 
   return (
-    <div className="page-content-wrapper space-y-6">
+    <PageWrapper className="space-y-6">
       <PageTitle title="Clientes & Workspaces" description="Gerencie seus clientes e seus quadros de tarefas/posts.">
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
@@ -150,7 +151,7 @@ const Clients: React.FC = () => {
           }
         }}
       />
-    </div>
+    </PageWrapper>
   );
 };
 

@@ -14,6 +14,7 @@ import GoalForm, { GoalFormValues } from "@/components/GoalForm";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { parseISO } from "@/lib/utils";
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 interface Goal extends Omit<GoalFormValues, 'target_date'> {
   id: string;
@@ -96,7 +97,7 @@ const Goals: React.FC = () => {
   const completedGoals = goals?.filter(g => g.status === 'completed') || [];
 
   return (
-    <div className="p-4 md:p-8">
+    <PageWrapper className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Target className="h-7 w-7 text-primary" /> Metas
@@ -206,7 +207,7 @@ const Goals: React.FC = () => {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageWrapper>
   );
 };
 

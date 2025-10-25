@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useSession } from "@/integrations/supabase/auth";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 interface Book {
   id: string;
@@ -128,10 +129,10 @@ const Books: React.FC = () => {
 
   if (!userId) {
     return (
-      <div className="flex flex-1 flex-col gap-4 p-4 md:px-10 lg:p-6 bg-background text-foreground">
+      <PageWrapper className="flex flex-1 flex-col gap-4 bg-background text-foreground">
         <h1 className="text-3xl font-bold text-foreground">Sua Biblioteca de Livros</h1>
         <p className="text-lg text-muted-foreground">Faça login para ver seus livros.</p>
-      </div>
+      </PageWrapper>
     );
   }
 
@@ -155,7 +156,7 @@ const Books: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:px-10 lg:p-6 bg-background text-foreground">
+    <PageWrapper className="flex flex-1 flex-col gap-4 bg-background text-foreground">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2">
         <h1 className="text-3xl font-bold text-foreground">Sua Biblioteca de Livros</h1>
         <Dialog
@@ -276,7 +277,7 @@ const Books: React.FC = () => {
 
       <div className="flex-1 flex items-end justify-center">
       </div>
-    </div>
+    </PageWrapper>
   );
 };
 

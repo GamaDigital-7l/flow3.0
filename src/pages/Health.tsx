@@ -16,6 +16,7 @@ import HealthMetricForm, { HealthMetricFormValues } from "@/components/HealthMet
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { parseISO } from "@/lib/utils";
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 interface Goal extends Omit<GoalFormValues, 'target_date'> {
   id: string;
@@ -154,7 +155,7 @@ const Health: React.FC = () => {
   const currentWeight = latestWeightMetric?.weight_kg || latestWeight;
 
   return (
-    <div className="p-4 md:p-8">
+    <PageWrapper className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Dumbbell className="h-7 w-7 text-primary" /> Saúde e Bem-Estar
@@ -325,7 +326,7 @@ const Health: React.FC = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageWrapper>
   );
 };
 

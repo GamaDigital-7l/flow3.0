@@ -286,13 +286,7 @@
     margin-top: calc(3.5rem + var(--sat)); /* Altura do Header */
   }
   
-  /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
-  .page-content-wrapper {
-    /* REMOVIDO PADDING LATERAL AQUI. O DashboardWrapper ou o componente de página deve aplicá-lo. */
-    @apply p-0; 
-    width: 100%;
-    box-sizing: border-box;
-  }
+  /* REMOVIDO: .page-content-wrapper */
   
   /* ESTILO AGRESSIVO PARA LIGHTBOX (SOBRESCRITA DO SHADCN/UI) */
   .lightbox-fullscreen-override {

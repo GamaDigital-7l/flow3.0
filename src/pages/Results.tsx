@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import MotivationalQuoteCard from "@/components/results/MotivationalQuoteCard";
 import GoalsProgress from "@/components/results/GoalsProgress";
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 interface Profile {
   points: number;
@@ -99,7 +100,7 @@ const Results: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <PageWrapper className="space-y-6">
       <h1 className="text-3xl font-bold text-foreground mb-6">Mural de Auto-Feedback</h1>
       <p className="text-lg text-muted-foreground mb-8">
         Acompanhe seu progresso, celebre suas conquistas e mantenha-se motivado.
@@ -177,7 +178,7 @@ const Results: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageWrapper>
   );
 };
 

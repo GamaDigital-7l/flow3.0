@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@/tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { FinancialAccount, FinancialCategory } from '@/types/finance';
@@ -15,6 +15,7 @@ import FinancialAccountForm from '@/components/finance/FinancialAccountForm';
 import FinancialCategoryForm from '@/components/finance/FinancialCategoryForm';
 import { cn } from '@/lib/utils';
 import QuickCategoryForm from '@/components/finance/QuickCategoryForm';
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 const fetchAccounts = async (userId: string): Promise<FinancialAccount[]> => {
   const { data, error } = await supabase
@@ -116,7 +117,7 @@ const FinancialManagement: React.FC = () => {
   });
 
   return (
-    <div className="page-content-wrapper space-y-6">
+    <PageWrapper className="space-y-6">
       <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
         <Banknote className="h-7 w-7 text-primary" /> Gerenciamento Financeiro
       </h1>
@@ -248,7 +249,7 @@ const FinancialManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageWrapper>
   );
 };
 

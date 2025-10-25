@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HabitListBoard from "@/components/dashboard/HabitListBoard"; // Importar HabitListBoard
 import { useTodayHabits } from "@/hooks/useHabits"; // Importar hook de hábitos
 import HabitItem from "@/components/HabitItem"; // Importar HabitItem
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 const TASK_BOARDS: { id: TaskCurrentBoard; title: string }[] = [
   { id: "today_high_priority", title: "Hoje (Alta Prioridade)" },
@@ -158,7 +159,7 @@ const Tasks: React.FC = () => {
   }
 
   return (
-    <div className="page-content-wrapper">
+    <PageWrapper className="flex-1 flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <CalendarDays className="h-7 w-7 text-primary" /> Minhas Tarefas
@@ -263,7 +264,7 @@ const Tasks: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };
 

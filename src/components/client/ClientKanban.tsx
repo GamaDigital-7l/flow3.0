@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Loader2, Repeat, CalendarDays, Lock, X } from 'lucide-react';
+import { Loader2, Repeat, CalendarDays, Lock, X, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskForm from './ClientTaskForm';
@@ -15,6 +15,7 @@ import { useClientKanban } from '@/hooks/useClientKanban';
 import { ClientTaskStatus, ClientTask } from '@/types/client';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 type TabValue = "kanban" | "templates" | "vault";
 
@@ -107,7 +108,7 @@ const ClientKanban: React.FC = () => {
   }
 
   return (
-    <div className="page-content-wrapper flex flex-col h-full min-h-screen">
+    <PageWrapper className="flex-1 flex flex-col">
       {/* Header */}
       <ClientKanbanHeader client={client} />
 
@@ -119,7 +120,7 @@ const ClientKanban: React.FC = () => {
           <TabsTrigger value="vault" className="flex items-center gap-2"><Lock className="h-4 w-4" /> Cofre</TabsTrigger>
         </TabsList>
         
-        <TabsContent value={currentTab} className="outline-none pt-4">
+        <TabsContent value={currentTab} className="outline-none pt-4 flex-1 flex flex-col">
           {renderTabContent()}
         </TabsContent>
       </Tabs>
@@ -141,7 +142,7 @@ const ClientKanban: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };
 
