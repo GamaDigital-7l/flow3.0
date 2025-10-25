@@ -123,7 +123,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
         <div className="mb-4 flex-shrink-0 mt-4">
           <Button 
             onClick={handleGenerateLinkClick} 
-            disabled={handleGenerateApprovalLink.isPending || !tasksByStatus.get('under_review')?.filter(t => t.public_approval_enabled).length}
+            disabled={handleGenerateApprovalLink.isPending || !tasksByStatus.get('under_review')?.filter(function(t) { return t.public_approval_enabled; }).length}
             className="w-full bg-primary text-white hover:bg-primary/90"
           >
             {handleGenerateApprovalLink.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
