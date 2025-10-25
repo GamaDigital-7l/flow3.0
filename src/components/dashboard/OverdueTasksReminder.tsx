@@ -7,22 +7,35 @@ import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { parseISO } from '@/lib/utils';
-import { differenceInDays } from 'date-fns'; // Importando differenceInDays
+import { differenceInDays, isBefore, startOfDay } from 'date-fns';
+import { Task } from '@/types/task'; // Importando o tipo Task completo
 
 interface OverdueTask {
   id: string;
   title: string;
   due_date: string;
+  is_priority: boolean; // Adicionado para exibir a prioridade
 }
 
 interface OverdueTasksReminderProps {
   tasks: OverdueTask[];
   onTaskUpdated: () => void;
 }
+
+// Função para buscar detalhes adicionais da tarefa (se necessário)
+const fetchTaskDetails = async (taskId: string) => {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("is_priority")
+    .eq("id", taskId)
+    .single();
+  if (error) throw error;
+  return data;
+};
 
 const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTaskUpdated }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -56,7 +69,7 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
 
       if (updateError) throw updateError;
       
-      // Simplificação: não atualiza pontos aqui, mas invalida as queries
+      // Invalida as queries para atualizar o dashboard
     },
     onSuccess: () => {
       showSuccess("Tarefa concluída!");
@@ -74,7 +87,7 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-semibold flex items-center text-status-overdue">
           <AlertCircle className="h-5 w-5 mr-2" />
-          Tarefas Atrasadas ({tasks.length})
+          {tasks.length} Tarefa(s) Atrasada(s)
         </h2>
         
         {/* Botões de Navegação (Apenas Desktop) */}
@@ -98,29 +111,40 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
       >
         {tasks.map((task) => {
           // Calcula a diferença em dias entre a data de vencimento e hoje
-          const daysOverdue = task.due_date ? Math.abs(differenceInDays(parseISO(task.due_date), new Date())) : 0;
+          const dueDate = parseISO(task.due_date);
+          const daysOverdue = differenceInDays(startOfDay(new Date()), dueDate);
           
           return (
             <Card 
               key={task.id} 
-              // Estilo visual padrão do app, compacto
-              className="p-3 bg-card border border-border flex-shrink-0 shadow-sm card-hover-effect"
+              className="p-3 bg-card border border-status-overdue flex-shrink-0 shadow-lg card-hover-effect"
               style={{ width: '240px' }} 
             >
-              <div className="flex flex-col space-y-1">
-                <p className="font-medium text-sm truncate text-foreground">{task.title}</p>
-                <div className="flex items-center justify-between">
-                  <Badge className="bg-status-overdue text-white h-5 px-1.5 text-xs flex-shrink-0">
-                    Atrasada
+              <div className="flex flex-col space-y-2">
+                <p className="font-semibold text-base truncate text-foreground">{task.title}</p>
+                
+                <div className="flex items-center justify-between text-xs">
+                  <Badge 
+                    className={cn(
+                      "h-5 px-1.5 text-xs flex-shrink-0",
+                      task.is_priority ? "bg-primary text-white" : "bg-muted/50 text-muted-foreground"
+                    )}
+                  >
+                    {task.is_priority ? "Prioridade Alta" : "Atrasada"}
                   </Badge>
-                  <p className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                    {daysOverdue} dias
+                  <p className="text-xs text-status-overdue font-medium ml-2 flex-shrink-0">
+                    {daysOverdue} DIA(S) DE ATRASO
                   </p>
                 </div>
+                
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" /> Vencimento: {format(dueDate, 'dd/MM/yyyy')}
+                </p>
+                
                 <Button 
                   size="sm" 
                   onClick={() => completeTaskMutation.mutate(task.id)} 
-                  className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs mt-2"
+                  className="w-full bg-green-600 text-white hover:bg-green-700 h-8 text-sm mt-2"
                   disabled={completeTaskMutation.isPending}
                 >
                   {completeTaskMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}

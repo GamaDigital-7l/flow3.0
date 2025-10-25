@@ -55,18 +55,19 @@ interface OverdueTask {
   id: string;
   title: string;
   due_date: string;
+  is_priority: boolean; // Adicionado
 }
 
 const fetchOverdueTasks = async (userId: string): Promise<OverdueTask[]> => {
   const { data, error } = await supabase
     .from("tasks")
-    .select("id, title, due_date")
+    .select("id, title, due_date, is_priority") // Incluindo is_priority
     .eq("user_id", userId)
     .eq("overdue", true)
     .eq("is_completed", false)
     .order("due_date", { ascending: true });
   if (error) throw error;
-  return data || [];
+  return data as OverdueTask[] || [];
 };
 
 const Dashboard: React.FC = () => {
@@ -163,7 +164,8 @@ const Dashboard: React.FC = () => {
               tasks={overdueTasks.map(t => ({ 
                 id: t.id, 
                 title: t.title, 
-                due_date: t.due_date
+                due_date: t.due_date,
+                is_priority: t.is_priority, // Passando a prioridade
               }))} 
               onTaskUpdated={handleTaskUpdated}
             />
