@@ -189,6 +189,7 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
                 uncompleteTaskMutation.mutate(task.id);
               }
             }}
+            // Revertendo para usar a cor primary (rosa) no estado checked
             className={cn("border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground flex-shrink-0 mt-1", compactMode ? "h-3.5 w-3.5" : "h-4 w-4")}
             disabled={completeTaskMutation.isPending || uncompleteTaskMutation.isPending || isClientTaskMirrored}
           />
