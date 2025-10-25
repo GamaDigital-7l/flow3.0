@@ -16,6 +16,8 @@ import VaultAssetCard from './VaultAssetCard';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import copy from 'copy-to-clipboard';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface ClientVaultProps {
   clientId: string;
@@ -223,7 +225,6 @@ const ClientVault: React.FC<ClientVaultProps> = ({ clientId }) => {
             <SelectValue placeholder="Filtrar por Tipo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os Tipos</SelectItem>
             {Object.entries(ASSET_TYPE_LABELS).map(([key, label]) => (
               <SelectItem key={key} value={key}>{label}</SelectItem>
             ))}
@@ -257,41 +258,26 @@ const ClientVault: React.FC<ClientVaultProps> = ({ clientId }) => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <Label htmlFor="expiration">Expiração (dias)</Label>
+            <Input
+              id="expiration"
+              type="number"
+              min="1"
+              max="30"
+              value={linkExpirationDays}
+              onChange={(e) => setLinkExpirationDays(parseInt(e.target.value))}
+              className="bg-input border-border text-foreground focus-visible:ring-ring"
+            />
             <Input value={generatedLink || ''} readOnly className="bg-input border-border text-foreground focus-visible:ring-ring" />
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => copy(generatedLink || '')} className="w-full">
+              <Button variant="outline" onClick={() => copy(generatedLink || '')} className="w-1/2 mr-2">
                 <Copy className="mr-2 h-4 w-4" /> Copiar Link
+              </Button>
+              <Button onClick={() => {}} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+                <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Lightbox para Imagem */}
-      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
-        <DialogContent 
-          className="lightbox-fullscreen-override"
-        >
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setLightboxUrl(null)} 
-            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          {lightboxUrl && (
-            <motion.img
-              key={lightboxUrl}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              src={lightboxUrl}
-              alt="Visualização em Tela Cheia"
-              className="max-w-[95%] max-h-[95%] object-contain"
-            />
-          )}
         </DialogContent>
       </Dialog>
     </div>
