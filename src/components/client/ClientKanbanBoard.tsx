@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { DndContext, closestCorners, DragOverlay, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCorners, DragOverlay, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { Loader2, Send, Copy, MessageSquare, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -10,27 +10,26 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskCard from './ClientTaskCard';
 import KanbanColumn from './ClientKanbanColumn';
 import ClientMonthSelector from './ClientMonthSelector';
-import { useClientKanban } from '@/hooks/useClientKanban';
-import { ClientTaskStatus, ClientTask } from '@/types/client';
 import { motion } from 'framer-motion';
 import copy from 'copy-to-clipboard';
 import { Input } from "@/components/ui/input";
 import { showSuccess } from '@/utils/toast';
-import { MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { ClientKanbanHook, KANBAN_COLUMNS } from '@/hooks/useClientKanban';
+import { ClientTaskStatus, ClientTask } from '@/types/client';
 
 // Define custom sensors locally
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
-const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, options);
+const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, TouchSensor);
 
 interface ClientKanbanBoardProps {
   hook: ClientKanbanHook;
   onAddTask: (status: ClientTaskStatus) => void;
   onEditTask: (task: ClientTask) => void;
   refetchTasks: () => void;
-  onImageClick: (url: string) => void; 
+  // onImageClick: (url: string) => void; // Removido, pois o lightbox será local
 }
 
-const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
+const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
   hook,
   onAddTask,
   onEditTask,
@@ -39,20 +38,18 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const {
     tasksByStatus,
     isLoading,
-    error,
-    refetch,
-    KANBAN_COLUMNS,
     activeDragItem,
     handleDragStart,
     handleDragEnd,
     handleGenerateApprovalLink,
     currentMonthYear,
     setCurrentMonthYear,
+    refetch, // Usar o refetch do hook
   } = hook;
 
   const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null); 
+  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null); // Estado para Lightbox
 
   // DND Sensors
   const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
@@ -108,8 +105,6 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
         <div className="flex items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : error ? (
-        <div className="p-4 text-red-500">Erro ao carregar tarefas.</div>
       ) : (
         <DndContext 
           sensors={sensors}
@@ -117,8 +112,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          {/* NOVO GRID RESPONSIVO: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 w-full flex-grow min-h-[50vh]">
+          <div className="flex flex-col sm:flex-row sm:overflow-x-auto sm:space-x-4 pb-4 custom-scrollbar w-full flex-grow min-h-[50vh] space-y-4 sm:space-y-0">
             {KANBAN_COLUMNS.map(column => (
               <KanbanColumn
                 key={column.id}
@@ -126,8 +120,8 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                 tasks={tasksByStatus.get(column.id) || []}
                 onAddTask={onAddTask}
                 onEditTask={onEditTask}
-                refetchTasks={refetch}
-                onImageClick={setLightboxUrl}
+                refetchTasks={refetch} // Usando o refetch do hook
+                onImageClick={setLightboxUrl} // Passando o setter do lightbox
               />
             ))}
           </div>
@@ -145,7 +139,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
         </DndContext>
       )}
 
-      {/* Modal de Link de Aprovação (mantido) */}
+      {/* Modal de Link de Aprovação */}
       <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
         <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
           <DialogHeader>
@@ -168,7 +162,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
         </DialogContent>
       </Dialog>
       
-      {/* Lightbox para Imagem (mantido) */}
+      {/* Lightbox para Imagem */}
       <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
         <DialogContent className="lightbox-fullscreen-override">
           <Button 
@@ -195,6 +189,6 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
       </Dialog>
     </div>
   );
-});
+};
 
 export default ClientKanbanBoard;

@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from "@/integrations/supabase/auth";
+import { useSession } from '@/integrations/supabase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, CheckCircle2, Repeat, Loader2, CalendarDays, ListTodo } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';

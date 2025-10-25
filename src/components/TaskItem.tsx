@@ -228,12 +228,7 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
             )}
             <div className="flex flex-wrap gap-1 mt-0.5">
               {getTaskStatusBadge(task.current_board, task)}
-              {task.time && (
-                <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 h-5 px-1.5 text-xs flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> {formatTime(task.time)}
-                </Badge>
-              )}
-              {task.tags && task.tags.map((tag) => (
+              {task.tags && task.tags.length > 0 && task.tags.map((tag) => (
                 <Badge key={tag.id} style={{ backgroundColor: tag.color, color: '#FFFFFF' }} className="text-xs flex-shrink-0 h-5 px-1.5">
                   {tag.name}
                 </Badge>

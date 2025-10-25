@@ -130,13 +130,12 @@
   }
   html {
     scroll-behavior: smooth;
-    overflow-x: hidden; /* Garante que o HTML não tenha overflow horizontal */
   }
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden; /* Garante que o body não tenha overflow horizontal */
+    overflow-x: hidden;
     min-height: 100vh;
     width: 100vw;
   }
@@ -148,7 +147,7 @@
     padding-left: var(--sal);
     padding-right: var(--sar);
     width: 100%;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Garante que o padding não cause overflow */
   }
 
   /* Para navegadores Webkit (Chrome, Safari) */
@@ -288,8 +287,7 @@
   
   /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
   .page-content-wrapper {
-    /* REMOVIDO PADDING LATERAL AQUI. O DashboardWrapper ou o componente de página deve aplicá-lo. */
-    @apply p-0; 
+    @apply p-3 md:p-4 lg:p-6;
     width: 100%;
     box-sizing: border-box;
   }
