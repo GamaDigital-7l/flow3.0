@@ -3,18 +3,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CalendarDays, Clock, MapPin, Link as LinkIcon, AlertCircle, Users, PlusCircle, Repeat } from "lucide-react";
+import { Edit, Trash2, CalendarDays, Clock, AlertCircle, Users, PlusCircle } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskCurrentBoard } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatTime, parseISO } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { isToday, isTomorrow, isBefore, startOfDay, subDays } from "date-fns";
+import { isToday, isTomorrow, isBefore, startOfDay } from "date-fns";
 
 interface TaskItemProps {
   task: Task;
@@ -23,8 +23,6 @@ interface TaskItemProps {
 }
 
 const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
-  const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !task.is_completed;
-
   if (task.is_completed) {
     // Cinza suave para concluído
     return <Badge className="bg-status-completed/20 text-status-completed h-5 px-1.5 text-xs">Concluída</Badge>;
@@ -51,18 +49,6 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
   return null;
 };
 
-const getTaskDueDateDisplay = (task: Task): string => {
-  if (task.due_date) {
-    const dueDate = parseISO(task.due_date);
-    let dateString = formatDateTime(dueDate, false);
-    if (task.time) {
-      dateString += ` às ${formatTime(task.time)}`;
-    }
-    return dateString;
-  }
-  return "Sem Vencimento";
-};
-
 const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, compactMode = false }) => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -70,11 +56,13 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
   const [isSubtaskFormOpen, setIsSubtaskFormOpen] = React.useState(false);
 
   const isClientTaskMirrored = task.current_board === "client_tasks";
-  // Lógica de recorrência removida
+  const shouldShowHabitWarning = false; 
+
+  // Nova lógica de atraso: data de vencimento existe E é anterior ao início do dia de hoje E não está concluída
+  const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !task.is_completed;
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      // Não precisamos mais buscar o tipo de recorrência, pois é sempre 'none'
       
       const { error: updateError } = await supabase
         .from("tasks")
@@ -180,12 +168,6 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
 
   const isCompleted = task.is_completed;
   
-  // Lógica de recorrência removida
-  const shouldShowHabitWarning = false; 
-
-  // Nova lógica de atraso: data de vencimento existe E é anterior ao início do dia de hoje E não está concluída
-  const isTrulyOverdue = task.due_date && isBefore(parseISO(task.due_date), startOfDay(new Date())) && !isCompleted;
-
   return (
     <>
       <Card className={cn(
@@ -226,6 +208,11 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
             )}
             <div className="flex flex-wrap gap-1 mt-0.5">
               {getTaskStatusBadge(task.current_board, task)}
+              {task.due_date && (
+                <Badge variant="secondary" className="bg-muted/50 text-muted-foreground h-5 px-1.5 text-xs flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" /> {formatDateTime(task.due_date, false)}
+                </Badge>
+              )}
               {task.time && (
                 <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 h-5 px-1.5 text-xs flex items-center gap-1">
                   <Clock className="h-3 w-3" /> {formatTime(task.time)}

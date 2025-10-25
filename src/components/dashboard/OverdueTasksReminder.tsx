@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2, Loader2, CalendarDays } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,31 +11,21 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { parseISO } from '@/lib/utils';
-import { differenceInDays, isBefore, startOfDay } from 'date-fns';
+import { differenceInDays, isBefore, startOfDay, format } from 'date-fns';
 import { Task } from '@/types/task'; // Importando o tipo Task completo
+import { ptBR } from 'date-fns/locale';
 
 interface OverdueTask {
   id: string;
   title: string;
   due_date: string;
-  is_priority: boolean; // Adicionado para exibir a prioridade
+  is_priority: boolean;
 }
 
 interface OverdueTasksReminderProps {
   tasks: OverdueTask[];
   onTaskUpdated: () => void;
 }
-
-// Função para buscar detalhes adicionais da tarefa (se necessário)
-const fetchTaskDetails = async (taskId: string) => {
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("is_priority")
-    .eq("id", taskId)
-    .single();
-  if (error) throw error;
-  return data;
-};
 
 const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTaskUpdated }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,7 +59,8 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
 
       if (updateError) throw updateError;
       
-      // Invalida as queries para atualizar o dashboard
+      // Atualização de pontos (simplificada, assumindo que a lógica de pontos está em outro lugar ou será reintroduzida)
+      // Apenas invalidando queries para forçar o recarregamento
     },
     onSuccess: () => {
       showSuccess("Tarefa concluída!");
@@ -85,8 +76,8 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
   return (
     <div className="mt-4">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-semibold flex items-center text-status-overdue">
-          <AlertCircle className="h-5 w-5 mr-2" />
+        <h2 className="text-lg font-semibold flex items-center text-primary">
+          <AlertCircle className="h-5 w-5 mr-2 text-primary" />
           {tasks.length} Tarefa(s) Atrasada(s)
         </h2>
         
@@ -110,14 +101,15 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {tasks.map((task) => {
-          // Calcula a diferença em dias entre a data de vencimento e hoje
           const dueDate = parseISO(task.due_date);
-          const daysOverdue = differenceInDays(startOfDay(new Date()), dueDate);
+          // Calcula a diferença em dias entre a data de vencimento e hoje
+          // Usamos Math.max(1, ...) para garantir que seja pelo menos 1 dia de atraso, como na imagem.
+          const daysOverdue = Math.max(1, differenceInDays(startOfDay(new Date()), dueDate));
           
           return (
             <Card 
               key={task.id} 
-              className="p-3 bg-card border border-status-overdue flex-shrink-0 shadow-lg card-hover-effect"
+              className="p-4 bg-card border border-status-overdue/50 flex-shrink-0 shadow-lg card-hover-effect"
               style={{ width: '240px' }} 
             >
               <div className="flex flex-col space-y-2">
@@ -127,18 +119,19 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
                   <Badge 
                     className={cn(
                       "h-5 px-1.5 text-xs flex-shrink-0",
+                      // Usando a cor primária para o badge de prioridade alta
                       task.is_priority ? "bg-primary text-white" : "bg-muted/50 text-muted-foreground"
                     )}
                   >
-                    {task.is_priority ? "Prioridade Alta" : "Atrasada"}
+                    Prioridade Alta
                   </Badge>
-                  <p className="text-xs text-status-overdue font-medium ml-2 flex-shrink-0">
-                    {daysOverdue} DIA(S) DE ATRASO
+                  <p className="text-xs text-primary font-medium ml-2 flex-shrink-0">
+                    {daysOverdue} DIA{daysOverdue > 1 ? 'S' : ''} DE ATRASO
                   </p>
                 </div>
                 
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> Vencimento: {format(dueDate, 'dd/MM/yyyy')}
+                  <CalendarDays className="h-3 w-3" /> Vencimento: {format(dueDate, 'dd/MM/yyyy', { locale: ptBR })}
                 </p>
                 
                 <Button 

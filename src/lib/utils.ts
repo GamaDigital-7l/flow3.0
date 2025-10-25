@@ -1,14 +1,14 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import dateFnsParseISO from 'date-fns/parseISO'; // FIX TS2305: Importando diretamente do submódulo
-import dateFnsFormat from 'date-fns/format';   // FIX TS2554: Importando diretamente do submódulo
+import dateFnsParseISO from 'date-fns/parseISO';
+import dateFnsFormat from 'date-fns/format';
 import * as dateFnsTz from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
 export function parseISO(dateString: string | Date): Date {
   if (dateString instanceof Date) return dateString;
-  // Usar date-fns parseISO para melhor compatibilidade com strings ISO
+  // dateFnsParseISO lida bem com strings ISO (YYYY-MM-DD)
   return dateFnsParseISO(dateString);
 }
 
@@ -25,7 +25,6 @@ const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 
 /**
  * Obtém a data local de hoje no formato YYYY-MM-DD, usando o fuso horário do navegador.
- * Isso é usado como fallback para a Edge Function.
  */
 export function getTodayLocalString(): string {
   const now = new Date();
@@ -38,12 +37,12 @@ export function getTodayLocalString(): string {
 /**
  * Converte uma data local (ou string) para uma data UTC pura (sem informação de tempo/fuso)
  * formatada como 'yyyy-MM-dd'. Isso é usado para salvar datas de vencimento no DB.
+ * Retorna a data como se fosse UTC, mas sem alterar o dia.
  */
 export function convertToUtc(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   const dateObj = date instanceof Date ? date : parseISO(date);
-  // Retorna a data como se fosse UTC, mas sem alterar o dia.
-  // Isso é um hack comum para armazenar datas puras no Supabase.
+  // Se for uma data pura (sem hora), retorna a data. Se tiver hora, retorna a data.
   return dateObj; 
 }
 
@@ -54,8 +53,13 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   if (!date) return "N/A";
   const dateObj = date instanceof Date ? date : parseISO(date);
   
+  // Se a data for uma string ISO pura (YYYY-MM-DD), parseISO a trata como UTC meia-noite.
+  // Para exibição, precisamos garantir que ela seja tratada como data local.
+  // Se for apenas data (sem hora), usamos 'dd/MM/yyyy'.
+  
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
-  // A chamada está correta para v2, o problema era a importação.
+  
+  // Usamos dateFnsFormat com locale ptBR
   return dateFnsFormat(dateObj, formatString, { locale: ptBR }); 
 }
 
@@ -65,7 +69,6 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
 export function formatTime(timeString: string | null | undefined): string {
   if (timeString === null || timeString === undefined) return "Sem horário";
   try {
-    // Garante que o formato 24h seja mantido
     const [hours, minutes] = timeString.split(':').map(Number);
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   } catch (e) {
