@@ -17,6 +17,25 @@ export interface Client {
   updated_at: string;
 }
 
+export interface ClientTask {
+  id: string;
+  title: string;
+  description: string | null;
+  status: ClientTaskStatus;
+  due_date: string | null;
+  time: string | null;
+  image_urls: string[] | null;
+  public_approval_enabled: boolean;
+  edit_reason: string | null;
+  client_id: string;
+  user_id: string;
+  is_completed: boolean;
+  order_index: number;
+  public_approval_link_id: string | null;
+  month_year_reference: string | null;
+  tags?: { id: string; name: string; color: string }[];
+}
+
 export interface ClientTaskGenerationPattern {
   week: 1 | 2 | 3 | 4 | 5; // Semana do mês (1 a 5)
   day_of_week: 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
