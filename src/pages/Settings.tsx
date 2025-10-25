@@ -13,7 +13,6 @@ import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import TriggerDailyResetButton from "@/components/TriggerDailyResetButton";
 import { useQuery } from "@tanstack/react-query";
 
 // Schema para as configurações, incluindo Telegram
@@ -135,17 +134,6 @@ const Settings: React.FC = () => {
               Para configurar o Telegram, você precisa adicionar o token e o chat ID no console do Supabase.
             </p>
           </form>
-        </CardContent>
-      </Card>
-      <Card className="w-full max-w-lg bg-card border border-border rounded-xl shadow-sm card-hover-effect">
-        <CardHeader>
-          <CardTitle className="text-foreground">Testar Integração Telegram</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Use este botão para testar o envio de mensagens para o Telegram.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TriggerDailyResetButton />
         </CardContent>
       </Card>
     </PageWrapper>
