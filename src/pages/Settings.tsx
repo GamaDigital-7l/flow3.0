@@ -131,14 +131,24 @@ const Settings: React.FC = () => {
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar Configurações"}
             </Button>
-            <Button
-              type="button"
-              onClick={() => sendDailyTelegramSummary(userId)}
-              disabled={isSubmitting}
-              className="w-full bg-green-500 text-white hover:bg-green-700"
-            >
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste Telegram"}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                onClick={() => sendDailyTelegramSummary(userId, 'morning')}
+                disabled={isSubmitting}
+                className="w-full bg-green-500 text-white hover:bg-green-700"
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste Telegram (Manhã)"}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => sendDailyTelegramSummary(userId, 'evening')}
+                disabled={isSubmitting}
+                className="w-full bg-green-500 text-white hover:bg-green-700"
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste Telegram (Noite)"}
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
               Para configurar o Telegram, você precisa adicionar o token e o chat ID no console do Supabase.
             </p>

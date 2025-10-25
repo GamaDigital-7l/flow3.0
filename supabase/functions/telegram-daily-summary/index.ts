@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { format, isToday } from "https://esm.sh/date-fns@2.29.1";
+import { format, isToday, isBefore, startOfDay, parseISO, differenceInDays } from "https://esm.sh/date-fns@2.29.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,10 +14,10 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json();
+    const { userId, timeOfDay } = await req.json();
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Missing userId" }), {
+    if (!userId || !timeOfDay) {
+      return new Response(JSON.stringify({ error: "Missing userId or timeOfDay" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -33,6 +33,10 @@ serve(async (req) => {
       }
     );
 
+    const today = new Date();
+    const todayStart = startOfDay(today);
+    const todayString = format(today, 'dd/MM/yyyy');
+
     // Fetch tasks for the user
     const { data: tasks, error: tasksError } = await supabaseClient
       .from('tasks')
@@ -47,15 +51,59 @@ serve(async (req) => {
       });
     }
 
-    // Filter tasks for today
-    const today = new Date();
-    const todaysTasks = tasks.filter(task => task.due_date && isToday(new Date(task.due_date)));
+    // Filter tasks for today and overdue tasks
+    const todaysTasks = tasks.filter(task => task.due_date && isToday(parseISO(task.due_date)));
+    const overdueTasks = tasks.filter(task => task.due_date && isBefore(parseISO(task.due_date), todayStart) && !task.is_completed);
 
-    // Format the summary message
-    let message = `Resumo Diário de Tarefas (${format(today, 'dd/MM/yyyy')}):\n`;
-    todaysTasks.forEach(task => {
-      message += `- ${task.title} (${task.is_completed ? 'Concluída' : 'Pendente'})\n`;
-    });
+    let message = '';
+
+    if (timeOfDay === 'morning') {
+      message += `Bom dia! Resumo de tarefas para hoje, ${todayString}:\n`;
+      if (todaysTasks.length > 0) {
+        todaysTasks.forEach(task => {
+          message += `- ${task.title} (${task.is_completed ? 'Concluída' : 'Pendente'})\n`;
+        });
+      } else {
+        message += "Nenhuma tarefa para hoje!\n";
+      }
+
+      if (overdueTasks.length > 0) {
+        message += `\nTarefas Atrasadas:\n`;
+        overdueTasks.forEach(task => {
+          const dueDate = parseISO(task.due_date);
+          const daysOverdue = differenceInDays(today, dueDate);
+          message += `- ${task.title} (Atrasada ${daysOverdue} dias)\n`;
+        });
+      } else {
+        message += "\nNenhuma tarefa atrasada!\n";
+      }
+    } else if (timeOfDay === 'evening') {
+      const incompleteTasks = todaysTasks.filter(task => !task.is_completed);
+      message += `Boa noite! Resumo de tarefas não concluídas hoje, ${todayString}:\n`;
+      if (incompleteTasks.length > 0) {
+        incompleteTasks.forEach(task => {
+          message += `- ${task.title}\n`;
+        });
+      } else {
+        message += "Todas as tarefas de hoje foram concluídas!\n";
+      }
+
+      if (overdueTasks.length > 0) {
+        message += `\nTarefas Atrasadas:\n`;
+        overdueTasks.forEach(task => {
+          const dueDate = parseISO(task.due_date);
+          const daysOverdue = differenceInDays(today, dueDate);
+          message += `- ${task.title} (Atrasada ${daysOverdue} dias)\n`;
+        });
+      } else {
+        message += "\nNenhuma tarefa atrasada!\n";
+      }
+    } else {
+      return new Response(JSON.stringify({ error: "Invalid timeOfDay parameter" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get Telegram config from user settings
     const { data: settings, error: settingsError } = await supabaseClient
