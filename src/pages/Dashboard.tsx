@@ -127,7 +127,7 @@ const Dashboard: React.FC = () => {
       <DashboardWrapper>
         <div className="space-y-6 py-6">
           
-          {/* 1. Title and Add Task Button */}
+          {/* 1. Title and Add Task Button (TOPO) */}
           <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
             </Dialog>
           </div>
 
-          {/* 2. Overdue Tasks Reminder */}
+          {/* 2. Overdue Tasks Reminder (Logo abaixo do cabeçalho) */}
           {overdueTasks.length > 0 && (
             <OverdueTasksReminder 
               tasks={overdueTasks.map(t => ({ 
@@ -169,22 +169,12 @@ const Dashboard: React.FC = () => {
             />
           )}
           
-          {/* 3. Seção de Resumos (Produtividade) */}
-          <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Métricas de Produtividade</h2>
-          <DashboardResultsSummary />
-
-          {/* 4. Seção de Listas de Tarefas (Grid 1x, 2x, 3x) */}
+          {/* 3. Seção de Listas de Tarefas (Grid 1x, 2x, 3x) */}
           <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
           {/* Ajuste do Grid: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {/* Quadro de Hábitos */}
-            <HabitListBoard 
-              habits={todayHabits || []} 
-              isLoading={isLoadingHabits} 
-              error={errorHabits} 
-              refetchHabits={handleHabitUpdated} 
-            />
             
+            {/* Tarefas (Primeiro) */}
             {BOARD_DEFINITIONS.map((board) => (
               <TaskListBoard
                 key={board.id}
@@ -205,7 +195,20 @@ const Dashboard: React.FC = () => {
                 originBoard={board.id}
               />
             ))}
+            
+            {/* Quadro de Hábitos (Último) */}
+            <HabitListBoard 
+              habits={todayHabits || []} 
+              isLoading={isLoadingHabits} 
+              error={errorHabits} 
+              refetchHabits={handleHabitUpdated} 
+            />
           </div>
+          
+          {/* 4. Seção de Resumos (Métricas de Produtividade - MOVIDA PARA O FINAL) */}
+          <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Métricas de Produtividade</h2>
+          <DashboardResultsSummary />
+          
         </div>
       </DashboardWrapper>
     </div>
