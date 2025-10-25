@@ -108,7 +108,7 @@ const FinanceSummary: React.FC = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <Card className="bg-card border-border shadow-sm">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total de Ganhos</CardTitle>
         </CardHeader>
         <CardContent>
@@ -116,7 +116,7 @@ const FinanceSummary: React.FC = () => {
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total de Gastos</CardTitle>
         </CardHeader>
         <CardContent>
@@ -124,7 +124,7 @@ const FinanceSummary: React.FC = () => {
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Resultado Líquido</CardTitle>
         </CardHeader>
         <CardContent>
@@ -132,7 +132,7 @@ const FinanceSummary: React.FC = () => {
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Previsão de Ganhos</CardTitle>
         </CardHeader>
         <CardContent>
@@ -140,15 +140,15 @@ const FinanceSummary: React.FC = () => {
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Previsão de Gastos</CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Previsão de Gastos</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(data.projectedExpenses)}</div>
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Previsão de Resultado</CardTitle>
         </CardHeader>
         <CardContent>
