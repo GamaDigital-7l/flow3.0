@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, FileText, Lock, Palette, Type, Download, Copy, Eye, EyeOff, Loader2, Link as LinkIcon } from 'lucide-react';
 import { VaultAsset, ASSET_TYPE_LABELS, AssetType } from '@/types/vault';
@@ -11,13 +11,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/integrations/supabase/auth';
 import { useVaultEncryption } from '@/hooks/useVaultEncryption';
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface VaultAssetCardProps {
   asset: VaultAsset;
   onEdit: (asset: VaultAsset) => void;
   refetchAssets: () => void;
-  onImageClick: (url: string) => void;
 }
 
 const getAssetIcon = (assetType: AssetType) => {
@@ -73,7 +72,6 @@ const VaultAssetCard: React.FC<VaultAssetCardProps> = ({ asset, onEdit, refetchA
       const result = await encryptDecrypt({ action: 'decrypt', encryptedSecret: asset.encrypted_secret! });
       setDecryptedSecret(result.secret || null);
       setShowSecret(true);
-      form.setValue('secret_input', result.secret || '', { shouldDirty: false });
     } catch (e) {
       showError("Falha ao descriptografar o segredo.");
     }

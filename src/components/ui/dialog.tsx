@@ -1,6 +1,6 @@
 import * as React from "react"
-
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+
 import { cn } from "@/lib/utils"
 
 const Dialog = DialogPrimitive.Root
@@ -9,6 +9,8 @@ const DialogTrigger = DialogPrimitive.Trigger
 
 const DialogPortal = DialogPrimitive.Portal
 
+const DialogClose = DialogPrimitive.Close
+
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -16,7 +18,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 fixed inset-0 z-50",
+      "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-top-[2%] data-[state=open]:slide-in-from-top-[2%]",
       className
     )}
     {...props}
@@ -28,34 +30,52 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
-  <DialogPrimitive.Content
-    ref={ref}
-    className={cn(
-      "bg-card text-card-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 fixed left-[50%] max-h-screen w-full max-w-md top-[50%] translate-x-[-50%] translate-y-[-50%] rounded-md border shadow-lg z-50",
-      className
-    )}
-    {...props}
-  >
-    {children}
-    <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 data-[state=open]:bg-secondary">
-    </DialogPrimitive.Close>
-  </DialogPrimitive.Content>
+  <DialogPortal>
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed left-[50%] max-h-[85vh] w-[90vw] max-w-[520px] translate-x-[-50%] translate-y-[-50%] top-[50%] z-50 grid w-full gap-4 border bg-card p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-top-[2%] data-[state=open]:slide-in-from-top-[2%] md:max-w-[520px]",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </DialogPortal>
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Header>) => (
+  <div
+    className={cn(
+      "flex flex-col space-y-1.5 text-center sm:text-left",
+      className
+    )}
+    {...props}
+  />
 )
 DialogHeader.displayName = "DialogHeader"
 
 const DialogFooter = ({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) => (
-  <div className={cn("flex flex-col sm:flex-row sm:justify-end sm:space-x-2 space-y-2 sm:space-y-0", className)} {...props} />
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Footer>) => (
+  <div
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      className
+    )}
+    {...props}
+  />
 )
 DialogFooter.displayName = "DialogFooter"
 
@@ -86,26 +106,8 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
-const DialogClose = DialogPrimitive.Close
-
-const DialogCancel = DialogPrimitive.Cancel
-
-const DialogAction = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Cancel>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Cancel>
->(({ className, ...props }, ref) => (
-  <Button
-    variant="primary"
-    ref={ref}
-    className={cn("", className)}
-    {...props}
-  />
-))
-DialogAction.displayName = "DialogAction"
-
 export {
   Dialog,
-  DialogPortal,
   DialogTrigger,
   DialogContent,
   DialogHeader,
@@ -113,6 +115,6 @@ export {
   DialogTitle,
   DialogDescription,
   DialogClose,
-  DialogCancel,
-  DialogAction,
+  DialogOverlay,
+  DialogPortal,
 }

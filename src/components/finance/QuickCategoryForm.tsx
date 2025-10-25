@@ -1,33 +1,27 @@
-"use client";
-
-import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toast";
-import { useSession } from "@/integrations/supabase/auth";
-import { FinancialCategory, FinancialScope, FinancialTransactionType } from "@/types/finance";
-import { useQueryClient } from "@tanstack/react-query";
+} from '@/components/ui/select';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FinancialTransactionType, FinancialScope } from '@/types/finance';
 
-const categorySchema = z.object({
+const quickCategorySchema = z.object({
   name: z.string().min(1, "O nome da categoria é obrigatório."),
   type: z.enum(["income", "expense"]),
   scope: z.enum(["company", "personal"]),
 });
 
-export type QuickCategoryFormValues = z.infer<typeof categorySchema>;
+type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
 
 interface QuickCategoryFormProps {
   onCategorySaved: () => void;
@@ -36,7 +30,7 @@ interface QuickCategoryFormProps {
 
 const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, onClose }) => {
   const form = useForm<QuickCategoryFormValues>({
-    resolver: zodResolver(categorySchema),
+    resolver: zodResolver(quickCategorySchema),
     defaultValues: {
       name: "",
       type: "expense",
@@ -82,33 +76,33 @@ const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, 
                   <SelectItem value="income">Receita</SelectItem>
                   <SelectItem value="expense">Despesa</SelectItem>
                 </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="scope"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Escopo</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o escopo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="company">Empresa</SelectItem>
-                  <SelectItem value="personal">Pessoal</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          <FormField
+            control={form.control}
+            name="scope"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Escopo</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o escopo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="company">Empresa</SelectItem>
+                    <SelectItem value="personal">Pessoal</SelectItem>
+                  </SelectContent>
+                  <FormMessage />
+                </FormItem>
+              )}
+            )}
         />
+        </div>
       </div>
 
       <Button type="submit">Salvar Categoria</Button>
