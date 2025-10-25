@@ -444,5 +444,3 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
     </Tabs>
   );
 };
-
-export default ClientForm;
