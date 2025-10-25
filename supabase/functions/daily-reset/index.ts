@@ -29,14 +29,10 @@ serve(async (req) => {
       const userTimezone = user.timezone || 'America/Sao_Paulo';
 
       try {
-        // Set the TZ environment variable for the user's timezone
-        Deno.env.set('TZ', userTimezone);
-
         const nowUtc = new Date();
-        // Format the date using the user's timezone
-        const todayInUserTimezoneString = format(nowUtc, "yyyy-MM-dd", { timeZone: userTimezone });
+        const todayUtcString = format(nowUtc, "yyyy-MM-dd");
 
-        console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString} no fuso horário ${userTimezone}.`);
+        console.log(`[User ${userId}] Executando daily-reset. Hoje (UTC): ${todayUtcString}.`);
 
         // 1. Processar Tarefas Atrasadas (Overdue)
         // Busca tarefas não concluídas cuja data de vencimento é anterior a HOJE.
@@ -45,7 +41,7 @@ serve(async (req) => {
           .select('id, due_date, current_board, is_completed, recurrence_type')
           .eq('user_id', userId)
           .eq('is_completed', false)
-          .lt('due_date', todayInUserTimezoneString); // due_date < HOJE
+          .lt('due_date', todayUtcString); // due_date < HOJE
 
         if (pendingTasksError) {
           console.error(`[User ${userId}] Erro ao buscar tarefas pendentes:`, pendingTasksError);
@@ -75,9 +71,6 @@ serve(async (req) => {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-      } finally {
-        // Clear the TZ environment variable after processing the user
-        Deno.env.delete('TZ');
       }
     }
 
