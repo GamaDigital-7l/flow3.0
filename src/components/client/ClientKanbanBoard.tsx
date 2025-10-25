@@ -1,7 +1,7 @@
 // src/components/client/ClientKanbanBoard.tsx
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { DndContext, closestCorners, DragOverlay, useSensor, useSensors, MouseSensor, TouchSensor, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,8 +53,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const kanbanContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
+  const [showLeftArrow, setShowRightArrow] = useState(false);
 
   // DND Sensors
   const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
@@ -89,7 +88,6 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const handleScroll = () => {
     if (kanbanContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = kanbanContainerRef.current;
-      setShowLeftArrow(scrollLeft > 0);
       setShowRightArrow(scrollLeft < scrollWidth - clientWidth);
     }
   };
@@ -199,7 +197,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
               <Button variant="outline" onClick={() => handleCopyLink(generatedLink || '')} className="w-1/2 mr-2">
                 <Copy className="mr-2 h-4 w-4" /> Copiar Link
               </Button>
-              <Button onClick={() => {}} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+              <Button onClick={() => handleCopyLink(generatedLink || '', true)} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
                 <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
               </Button>
             </div>

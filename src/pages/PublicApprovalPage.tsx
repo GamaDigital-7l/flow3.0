@@ -6,33 +6,32 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, Edit, ArrowLeft, Send, Users, Clock, MessageSquare, Info, X } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, CheckCircle2, XCircle, Edit, ArrowLeft, Send, Users, Clock, AlertTriangle, Info, X } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
-import { format, isPast, parseISO } from 'date-fns';
+import { format, addDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
-import { cn, formatDateTime, getInitials } from '@/lib/utils';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { motion } from 'framer-motion'; // Importar motion
+import { cn, formatCurrency, formatDateTime } from '@/lib/utils';
+import { Proposal, ProposalItem, PROPOSAL_STATUS_LABELS } from '@/types/proposal';
+import { Separator } from '@/components/ui/separator';
+import ProposalPortfolioGallery from '@/components/proposal/ProposalPortfolioGallery'; // Importando a galeria
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
-// Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
 interface ClientTask {
   id: string;
   title: string;
   description: string | null;
   status: ClientTaskStatus;
-  due_date: string | null;
-  time: string | null;
   image_urls: string[] | null;
-  public_approval_enabled: boolean;
-  edit_reason: string | null;
   client_id: string;
-  user_id: string;
-  is_completed: boolean;
+  edit_reason: string | null;
+  clients: {
+    name: string;
+    logo_url: string | null;
+  } | null;
 }
 
 interface PublicApprovalLink {
@@ -46,78 +45,164 @@ interface PublicApprovalLink {
 }
 
 interface ApprovalData {
-  link: PublicApprovalLink;
-  client: { name: string; logo_url: string | null };
   tasks: ClientTask[];
+  clientName: string;
+  clientLogoUrl: string | null;
+  isExpired: boolean;
+  expirationDate: string | null;
 }
 
+// Função para buscar os dados no lado do cliente
 const fetchApprovalData = async (uniqueId: string): Promise<ApprovalData | null> => {
-  // 1. Fetch the active link
+  // 1. Buscar o link
   const { data: linkData, error: linkError } = await supabase
     .from('public_approval_links')
-    .select('*')
+    .select('client_id, created_at')
     .eq('unique_id', uniqueId)
     .eq('is_active', true)
     .single();
 
   if (linkError || !linkData) {
-    if (linkError && linkError.code !== 'PGRST116') console.error("Link fetch error:", linkError);
-    return null;
-  }
-  
-  const link = linkData as PublicApprovalLink;
-  
-  if (isPast(parseISO(link.expires_at))) {
-    // Mark link as inactive if expired (optional, but good practice)
-    await supabase.from('public_approval_links').update({ is_active: false }).eq('id', link.id);
+    console.error("Erro ao buscar link de aprovação ou link não encontrado:", linkError);
     return null;
   }
 
-  // 2. Fetch client details
-  const { data: clientData, error: clientError } = await supabase
-    .from('clients')
-    .select('name, logo_url')
-    .eq('id', link.client_id)
-    .single();
+  // 2. Verificar se o link expirou (7 dias)
+  const createdAt = new Date(linkData.created_at);
+  const expirationDate = addDays(createdAt, 7);
+  const isExpired = new Date() > expirationDate;
 
-  if (clientError || !clientData) {
-    console.error("Client fetch error:", clientError);
-    return null;
+  if (isExpired) {
+    return {
+      tasks: [],
+      clientName: '',
+      clientLogoUrl: null,
+      isExpired: true,
+      expirationDate: null,
+    };
   }
 
-  // 3. Fetch tasks for this client/month that are 'under_review' and enabled for public approval
+  // 3. Buscar as tarefas associadas se o link for válido
   const { data: tasksData, error: tasksError } = await supabase
     .from('client_tasks')
-    .select('*')
-    .eq('client_id', link.client_id)
-    .eq('user_id', link.user_id)
-    .eq('month_year_reference', link.month_year_reference)
-    .eq('public_approval_enabled', true)
+    .select(`
+      id, title, description, status, image_urls, client_id, edit_reason,
+      clients (name, logo_url)
+    `)
+    .eq('public_approval_link_id', uniqueId)
     .in('status', ['under_review', 'edit_requested', 'approved', 'posted']) // Incluir aprovadas/postadas para mostrar o histórico
     .order('order_index', { ascending: true });
 
   if (tasksError) {
-    console.error("Tasks fetch error:", tasksError);
+    console.error("Erro ao buscar tarefas para aprovação:", tasksError);
     return null;
   }
 
+  const client = tasksData?.[0]?.clients;
+
   return {
-    link,
-    client: clientData,
-    tasks: tasksData as ClientTask[],
+    tasks: tasksData || [],
+    clientName: client?.name || 'Cliente',
+    clientLogoUrl: client?.logo_url || null,
+    isExpired: false,
+    expirationDate: format(expirationDate, "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR }),
   };
 };
 
+// Componente para uma única tarefa
+const ApprovalTaskCard = ({ task, onApprove, onEditRequest, isProcessing, onImageClick }: {
+  task: ClientTask;
+  onApprove: (taskId: string) => void;
+  onEditRequest: (taskId: string, reason: string) => void;
+  isProcessing: boolean;
+  onImageClick: (url: string) => void;
+}) => {
+  const [editReason, setEditReason] = useState(task.edit_reason || '');
+  const [showEditForm, setShowEditForm] = useState(task.status === 'edit_requested');
+
+  const handleEditRequest = () => {
+    if (!editReason.trim()) {
+      showError('Por favor, descreva a alteração necessária.');
+      return;
+    }
+    onEditRequest(task.id, editReason);
+  };
+
+  return (
+    <Card className="w-full overflow-hidden shadow-lg bg-card border-border transition-all duration-300">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-foreground">{task.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {task.image_urls && task.image_urls.length > 0 && (
+          <div className="grid grid-cols-1 gap-2">
+            {task.image_urls.map((url, index) => (
+              <button key={index} onClick={() => onImageClick(url)} className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg">
+                <AspectRatio ratio={4 / 5} className="rounded-md overflow-hidden border border-border bg-secondary">
+                  <img
+                    src={url}
+                    alt={`Imagem ${index + 1} de ${task.title}`}
+                    className="h-full w-full object-cover cursor-pointer"
+                  />
+                </AspectRatio>
+              </button>
+            ))}
+          </div>
+        )}
+        {task.description && (
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{task.description}</p>
+        )}
+      </CardContent>
+      <CardFooter className="flex flex-col items-start space-y-4 bg-muted/50 p-4">
+        {task.status === 'under_review' && !showEditForm && (
+          <div className="flex w-full gap-2">
+            <Button onClick={() => onApprove(task.id)} disabled={isProcessing} className="w-full bg-green-600 hover:bg-green-700 text-white">
+              <ThumbsUp className="mr-2 h-4 w-4" /> Aprovar
+            </Button>
+            <Button variant="outline" onClick={() => setShowEditForm(true)} disabled={isProcessing} className="w-full">
+              <MessageSquare className="mr-2 h-4 w-4" /> Solicitar Edição
+            </Button>
+          </div>
+        )}
+        {showEditForm && (
+          <div className="w-full space-y-2">
+            <Textarea
+              placeholder="Descreva as alterações necessárias..."
+              value={editReason}
+              onChange={(e) => setEditReason(e.target.value)}
+              className="bg-background"
+            />
+            <div className="flex w-full gap-2">
+              <Button onClick={handleEditRequest} disabled={isProcessing} className="w-full bg-primary text-primary-foreground">
+                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Enviar Solicitação'}
+              </Button>
+              {task.status === 'under_review' && (
+                 <Button variant="ghost" onClick={() => setShowEditForm(false)} disabled={isProcessing}>Cancelar</Button>
+              )}
+            </div>
+          </div>
+        )}
+        {task.status === 'edit_requested' && !showEditForm && (
+          <div className="w-full p-3 rounded-md bg-yellow-100 border border-yellow-200 text-yellow-800 text-sm">
+            <p className="font-semibold">Edição solicitada:</p>
+            <p className="whitespace-pre-wrap mt-1">{task.edit_reason}</p>
+          </div>
+        )}
+      </CardFooter>
+    </Card>
+  );
+};
+
+// Componente principal da página
 const PublicApprovalPage: React.FC = () => {
   const { uniqueId } = useParams<{ uniqueId: string }>();
   const navigate = useNavigate();
-  
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [actionType, setActionType] = useState<'edit' | 'reject' | null>(null);
   const [editReason, setEditReason] = useState('');
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null); // Estado para Lightbox
 
   const { data: approvalData, isLoading, error, refetch } = useQuery<ApprovalData | null, Error>({
     queryKey: ["publicApproval", uniqueId],
@@ -126,9 +211,12 @@ const PublicApprovalPage: React.FC = () => {
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
-  
+
   const handleAction = async (taskId: string, newStatus: ClientTaskStatus) => {
-    if (!uniqueId || !approvalData) return;
+    if (!uniqueId || !approvalData) {
+      showError("Dados da aprovação incompletos.");
+      return;
+    }
     
     const reason = (newStatus === 'edit_requested' || newStatus === 'rejected') ? editReason : null;
     
@@ -152,14 +240,13 @@ const PublicApprovalPage: React.FC = () => {
 
       if (fnError) throw fnError;
       
-      showSuccess(`Tarefa ${newStatus === 'approved' ? 'Aprovada' : newStatus === 'rejected' ? 'Rejeitada' : 'Edição Solicitada'} com sucesso!`);
+      showSuccess(`Tarefa ${newStatus === 'approved' ? 'Aprovada' : newStatus === 'Rejeitada' ? 'Rejeitada' : 'Edição Solicitada'} com sucesso!`);
       refetch();
       setIsModalOpen(false);
       setEditReason('');
       setCurrentTaskId(null);
     } catch (err: any) {
       showError("Erro ao processar ação: " + err.message);
-      console.error("Erro ao processar ação:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -171,6 +258,15 @@ const PublicApprovalPage: React.FC = () => {
     setEditReason('');
     setIsModalOpen(true);
   };
+
+  if (!uniqueId) {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
+        <h1 className="text-2xl font-bold text-foreground">Link Inválido</h1>
+        <p className="text-muted-foreground">O link da aprovação é inválido.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -200,7 +296,7 @@ const PublicApprovalPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Header do Cliente */}
         <Card className="bg-card border border-border rounded-xl shadow-lg">
@@ -230,7 +326,7 @@ const PublicApprovalPage: React.FC = () => {
         
         {tasksPendingAction.length === 0 && approvedTasks.length > 0 && (
           <Card className="bg-card border-dashed border-border shadow-sm p-8 text-center">
-            <CheckCircle2 className="h-10 w-10 mx-auto mb-4 text-green-500" />
+            <CheckCircle className="h-10 w-10 mx-auto mb-4 text-green-500" />
             <CardTitle className="text-xl font-semibold text-foreground">Tudo Aprovado!</CardTitle>
             <CardDescription className="mt-2">Não há mais itens para sua revisão neste período.</CardDescription>
           </Card>
@@ -254,7 +350,7 @@ const PublicApprovalPage: React.FC = () => {
                   <AspectRatio ratio={4 / 5} className="rounded-md overflow-hidden border border-border bg-secondary">
                     <img 
                       src={task.image_urls[0]} 
-                      alt={task.title} 
+                      alt={`Imagem de ${task.title}`} 
                       className="h-full w-full object-cover cursor-pointer" 
                       onClick={() => setLightboxUrl(task.image_urls![0])}
                     />
@@ -286,7 +382,7 @@ const PublicApprovalPage: React.FC = () => {
                     className="flex-1 bg-green-600 text-white hover:bg-green-700" // Mantido verde para aprovação final
                     disabled={isSubmitting}
                   >
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar
+                    <ThumbsUp className="mr-2 h-4 w-4" /> Aprovar
                   </Button>
                   <Button 
                     onClick={() => openActionModal(task.id, 'edit')} 
@@ -294,7 +390,7 @@ const PublicApprovalPage: React.FC = () => {
                     className="flex-1 text-foreground hover:bg-secondary-hover"
                     disabled={isSubmitting}
                   >
-                    <Edit className="mr-2 h-4 w-4" /> Solicitar Edição
+                    <MessageSquare className="mr-2 h-4 w-4" /> Solicitar Edição
                   </Button>
                 </div>
               </CardContent>
@@ -316,7 +412,7 @@ const PublicApprovalPage: React.FC = () => {
                       <AspectRatio ratio={4 / 5} className="rounded-md overflow-hidden border border-border bg-secondary">
                         <img 
                           src={task.image_urls[0]} 
-                          alt={task.title} 
+                          alt={`Imagem de ${task.title}`} 
                           className="h-full w-full object-cover cursor-pointer" 
                           onClick={() => setLightboxUrl(task.image_urls![0])}
                         />
@@ -325,7 +421,7 @@ const PublicApprovalPage: React.FC = () => {
                   </CardContent>
                   <CardFooter className="bg-green-100 p-3">
                     <div className="flex items-center text-green-700">
-                      <CheckCircle2 className="mr-2 h-5 w-5" />
+                      <CheckCircle className="mr-2 h-5 w-5" />
                       <span className="font-medium text-sm">Aprovado</span>
                     </div>
                   </CardFooter>
@@ -336,7 +432,7 @@ const PublicApprovalPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal para Solicitar Edição */}
+      {/* Modal para solicitar edição */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
           <DialogHeader>
@@ -357,7 +453,7 @@ const PublicApprovalPage: React.FC = () => {
                 Cancelar
               </Button>
               <Button 
-                onClick={() => handleAction(currentTaskId!, actionType === 'edit' ? 'edit_requested' : 'rejected')} 
+                onClick={() => handleAction(currentTaskId!, 'edit_requested')} 
                 className="bg-primary text-white hover:bg-primary/90" 
                 disabled={!editReason || isSubmitting}
               >
