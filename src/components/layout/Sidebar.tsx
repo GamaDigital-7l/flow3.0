@@ -26,10 +26,10 @@ const navItems = [
   { name: "Portfólio", href: "/portfolio", icon: Image },
   { name: "Financeiro", href: "/finance", icon: DollarSign },
   { name: "Metas", href: "/goals", icon: Target },
-  { name: "Saúde", href="/health", icon: Dumbbell },
+  { name: "Saúde", href: "/health", icon: Dumbbell },
   { name: "Livros", href: "/books", icon: BookOpen },
-  { name: "Notas", href="/notes", icon: Notebook },
-  { name: "Resultados", href="/results", icon: BarChart3 },
+  { name: "Notas", href: "/notes", icon: Notebook },
+  { name: "Resultados", href: "/results", icon: BarChart3 },
 ];
 
 const SidebarContent: React.FC<Omit<SidebarProps, 'isOpen' | 'onClose'> & { onClose: () => void }> = ({ onClose }) => {

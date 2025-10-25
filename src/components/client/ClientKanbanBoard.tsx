@@ -45,25 +45,16 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
     currentMonthYear,
   } = hook;
 
-  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false);
+  const [generatedLink, setGeneratedLink] = React.useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
   const kanbanContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
   // DND Sensors
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 5
-    }
-  });
-  const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: {
-      delay: 100,
-      tolerance: 5
-    }
-  });
+  const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } });
   const sensors = useSensors(mouseSensor, touchSensor);
   
   const tasksUnderReview = tasksByStatus.get('under_review') || [];
@@ -123,7 +114,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
         <div className="mb-4 flex-shrink-0 mt-4">
           <Button 
             onClick={handleGenerateLinkClick} 
-            disabled={handleGenerateApprovalLink.isPending || !tasksByStatus.get('under_review')?.filter(function(t) { return t.public_approval_enabled; }).length}
+            disabled={handleGenerateApprovalLink.isPending || !tasksByStatus.get('under_review')?.filter(t => t.public_approval_enabled).length}
             className="w-full bg-primary text-white hover:bg-primary/90"
           >
             {handleGenerateApprovalLink.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
@@ -181,7 +172,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                 task={activeDragItem as ClientTask} 
                 onEdit={onEditTask} 
                 refetchTasks={refetch}
-                onImageClick={() => {}}
+                onImageClick={setLightboxUrl}
               />
             ) : null}
           </DragOverlay>
