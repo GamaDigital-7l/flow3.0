@@ -371,7 +371,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={member.profile?.avatar_url || undefined} alt={member.profile?.first_name || 'Avatar'} />
                     <AvatarFallback className="text-sm bg-primary/20 text-primary">{getInitials(member.profile?.first_name || 'Membro')}</AvatarFallback>
-                  </Avatar>
+                  </div>
                   <div>
                     <p className="font-semibold text-foreground">{member.profile?.first_name} {member.profile?.last_name}</p>
                     <p className="text-xs text-muted-foreground">{member.role}</p>
