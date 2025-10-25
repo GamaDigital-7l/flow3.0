@@ -120,6 +120,24 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
         .eq("id", taskId);
 
       if (updateError) throw updateError;
+
+      // Atualização de pontos (mantida)
+      const { data: profileData, error: fetchProfileError } = await supabase
+        .from("profiles")
+        .select("points")
+        .eq("id", task.user_id)
+        .single();
+
+      let currentPoints = 0;
+      if (profileData) {
+        currentPoints = profileData.points || 0;
+      }
+
+      const newPoints = currentPoints + 10;
+      await supabase
+        .from("profiles")
+        .update({ points: newPoints, updated_at: new Date().toISOString() })
+        .eq("id", task.user_id);
     },
     onSuccess: () => {
       showSuccess("Tarefa marcada como pendente.");

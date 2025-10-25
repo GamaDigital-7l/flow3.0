@@ -165,7 +165,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                   onAddTask={onAddTask}
                   onEditTask={onEditTask}
                   refetchTasks={refetch}
-                  onImageClick={setLightboxUrl}
+                  onImageClick={onImageClick}
                 />
               ))}
             </div>
@@ -177,7 +177,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                 task={activeDragItem as ClientTask} 
                 onEdit={onEditTask} 
                 refetchTasks={refetch}
-                onImageClick={setLightboxUrl}
+                onImageClick={onImageClick}
               />
             ) : null}
           </DragOverlay>
