@@ -1,20 +1,19 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from "@/integrations/supabase/auth";
+import { useSession } from '@/integrations/supabase/auth';
 import { Task, TaskCurrentBoard } from '@/types/task';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, CalendarDays, ListTodo } from "lucide-react";
 import { format, isBefore, startOfDay, parseISO, differenceInDays } from "date-fns";
-import { cn, formatDateTime } from '@/lib/utils';
+import { cn, formatDateTime } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { showError, showSuccess } from "@/utils/toast";
-import useEmblaCarousel, { EmblaCarouselType } from 'embla-carousel-react';
+import { showError, showSuccess } from '@/utils/toast';
 
 interface OverdueTasksReminderProps {
   onTaskUpdated: () => void;
@@ -60,32 +59,6 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
     enabled: !!userId,
     staleTime: 1000 * 60 * 1, // 1 minute
   });
-  
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
-    align: 'start', 
-    loop: false, 
-    dragFree: true, // Permite arrastar livremente no mobile
-    containScroll: 'trimSnaps',
-  });
-  
-  const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
-  const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
-
-  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
-  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
-
-  const onSelect = useCallback((emblaApi: EmblaCarouselType) => {
-    setPrevBtnDisabled(!emblaApi.canScrollPrev());
-    setNextBtnDisabled(!emblaApi.canScrollNext());
-  }, []);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect(emblaApi);
-    emblaApi.on('reInit', onSelect);
-    emblaApi.on('select', onSelect);
-  }, [emblaApi, onSelect]);
-
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
@@ -126,11 +99,12 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
     onSuccess: () => {
       showSuccess("Tarefa concluída com sucesso!");
       onTaskUpdated();
+      // Invalidate queries to remove the task from the list immediately
       queryClient.invalidateQueries({ queryKey: ["overdueTasks", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboardTasks"] });
       queryClient.invalidateQueries({ queryKey: ["allTasks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["profileDashboardSummary", userId] });
+      queryClient.invalidateQueries({ queryKey: ["profileDashboardSummary", userId] }); // Invalidate points summary
     },
     onError: (err: any) => {
       showError("Erro ao concluir tarefa: " + err.message);
@@ -138,7 +112,7 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
   });
 
   if (isLoading || !overdueTasks) {
-    return null;
+    return null; // Hide while loading
   }
   
   if (overdueTasks.length === 0) {
@@ -146,106 +120,79 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
   }
 
   return (
-    // Main container spanning full width (no horizontal padding here)
-    <div className="w-full bg-card border-b border-border shadow-lg py-4">
-      <div className="max-w-7xl mx-auto px-3 md:px-4 lg:px-6">
-        <h2 className="text-lg font-bold text-primary flex items-center mb-3">
-          {/* Animated Alert Icon */}
-          <AlertCircle className="inline-block mr-2 h-5 w-5 text-primary animate-pulse" />
-          {overdueTasks.length} Tarefa(s) Atrasada(s)
-        </h2>
-      </div>
+    // Main container with fixed styling (using dark theme colors)
+    <div className="bg-card border border-border p-4 rounded-xl mb-4 shadow-lg w-full">
+      <h2 className="text-lg font-bold text-primary flex items-center mb-3">
+        {/* Animated Alert Icon */}
+        <AlertCircle className="inline-block mr-2 h-5 w-5 text-primary animate-pulse" />
+        {overdueTasks.length} Tarefa(s) Atrasada(s)
+      </h2>
       
-      {/* Embla Carousel Container */}
-      <div className="relative">
-        <div className="embla overflow-hidden" ref={emblaRef}>
-          <div className="embla__container flex pl-3 md:pl-4 lg:pl-6"> {/* Added padding-left */}
-            <AnimatePresence initial={false}>
-              {overdueTasks.map(task => {
-                const dueDate = task.due_date ? parseISO(task.due_date) : null;
-                const daysOverdue = dueDate ? differenceInDays(startOfDay(new Date()), startOfDay(dueDate)) : 0;
-                const isUrgent = daysOverdue >= 3;
+      {/* Horizontal Scroll Container (Carrossel style) */}
+      <div className="overflow-x-auto whitespace-nowrap custom-scrollbar pb-2">
+        <AnimatePresence initial={false}>
+          {overdueTasks.map(task => {
+            const dueDate = task.due_date ? parseISO(task.due_date) : null;
+            // Calculate days overdue relative to today
+            const daysOverdue = dueDate ? differenceInDays(startOfDay(new Date()), startOfDay(dueDate)) : 0;
+            const isUrgent = daysOverdue >= 3; // Consider urgent if 3+ days overdue
 
-                return (
-                  <motion.div
-                    key={task.id}
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
-                    transition={{ duration: 0.3 }}
-                    className="embla__slide flex-shrink-0 w-[85vw] sm:w-[320px] mr-3" // Ajuste de largura
-                  >
-                    <Tooltip delayDuration={200}>
-                      <TooltipTrigger asChild>
-                        <Card className={cn(
-                          "w-full bg-secondary border border-border rounded-xl shadow-minimal p-3 flex flex-col justify-between h-full",
-                          isUrgent && "border-primary ring-1 ring-primary/50"
-                        )}>
-                          <CardHeader className="p-0 pb-1">
-                            <CardTitle className="text-sm font-semibold text-foreground truncate">{task.title}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="p-0 text-sm text-muted-foreground space-y-1">
-                            <div className="flex items-center justify-between">
-                                <Badge variant="secondary" className="bg-primary/10 text-primary h-5 px-1.5 text-xs">
-                                    {getBoardDisplayName(task.origin_board)}
-                                </Badge>
-                                <p className={cn("text-xs font-bold flex-shrink-0", isUrgent ? "text-primary" : "text-muted-foreground")}>
-                                  {daysOverdue} DIAS DE ATRASO
-                                </p>
-                            </div>
-                            {dueDate && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                <CalendarDays className="h-3 w-3" /> Vencimento: {formatDateTime(dueDate, false)}
-                              </p>
-                            )}
-                          </CardContent>
-                          <CardFooter className="p-0 mt-2 flex items-center justify-end">
-                            <Button 
-                              size="sm" 
-                              className="bg-green-600 text-white hover:bg-green-700 h-7 text-xs"
-                              onClick={() => completeTaskMutation.mutate(task.id)}
-                              disabled={completeTaskMutation.isPending}
-                            >
-                              <CheckCircle2 className="mr-2 h-3 w-3" /> Concluir
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="space-y-1 max-w-xs">
-                          <p className="text-sm font-semibold">{task.title}</p>
-                          <p className="text-xs">Descrição: {task.description || 'Nenhuma descrição'}</p>
+            return (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
+                transition={{ duration: 0.3 }}
+                className="inline-block w-72 sm:w-80 mr-3 last:mr-0"
+              >
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <Card className={cn(
+                      "w-full bg-secondary border border-border rounded-xl shadow-minimal p-3 flex flex-col justify-between h-full",
+                      isUrgent && "border-primary ring-1 ring-primary/50" // Highlight urgent tasks
+                    )}>
+                      <CardHeader className="p-0 pb-1">
+                        <CardTitle className="text-sm font-semibold text-foreground truncate">{task.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0 text-sm text-muted-foreground space-y-1">
+                        <div className="flex items-center justify-between">
+                            <Badge variant="secondary" className="bg-primary/10 text-primary h-5 px-1.5 text-xs">
+                                {getBoardDisplayName(task.origin_board)}
+                            </Badge>
+                            <p className={cn("text-xs font-bold flex-shrink-0", isUrgent ? "text-primary" : "text-muted-foreground")}>
+                              {daysOverdue} DIAS DE ATRASO
+                            </p>
                         </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        </div>
-        
-        {/* Navigation Buttons (Desktop Only) */}
-        <div className="hidden md:block absolute top-1/2 transform -translate-y-1/2 w-full px-3 md:px-4 lg:px-6 pointer-events-none">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={scrollPrev}
-            disabled={prevBtnDisabled}
-            className="absolute left-0 top-0 transform -translate-x-1/2 pointer-events-auto bg-card/80 hover:bg-card/90 backdrop-blur-sm border border-border h-8 w-8 z-10"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={scrollNext}
-            disabled={nextBtnDisabled}
-            className="absolute right-0 top-0 transform translate-x-1/2 pointer-events-auto bg-card/80 hover:bg-card/90 backdrop-blur-sm border border-border h-8 w-8 z-10"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+                        {dueDate && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3" /> Vencimento: {formatDateTime(dueDate, false)}
+                          </p>
+                        )}
+                      </CardContent>
+                      <CardFooter className="p-0 mt-2 flex items-center justify-end">
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 text-white hover:bg-green-700 h-7 text-xs"
+                          onClick={() => completeTaskMutation.mutate(task.id)}
+                          disabled={completeTaskMutation.isPending}
+                        >
+                          <CheckCircle2 className="mr-2 h-3 w-3" /> Concluir
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="space-y-1 max-w-xs">
+                      <p className="text-sm font-semibold">{task.title}</p>
+                      <p className="text-xs">Descrição: {task.description || 'Nenhuma descrição'}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );
