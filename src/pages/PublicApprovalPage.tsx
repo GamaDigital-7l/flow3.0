@@ -146,6 +146,10 @@ const PublicApprovalPage: React.FC = () => {
     }
   };
 
+  const handleImageClick = (url: string) => {
+    setLightboxUrl(url);
+  };
+
   const renderTaskCard = (task: ClientTask) => (
     <Card className="w-full overflow-hidden shadow-lg bg-card border-border transition-all duration-300">
       <CardHeader>
@@ -155,7 +159,7 @@ const PublicApprovalPage: React.FC = () => {
         {task.image_urls && task.image_urls.length > 0 && (
           <div className="grid grid-cols-1 gap-2">
             {task.image_urls.map((url, index) => (
-              <button key={index} onClick={() => setLightboxUrl(url)} className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg">
+              <button key={index} onClick={() => handleImageClick(url)} className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg">
                 <img
                   src={url}
                   alt={`Imagem ${index + 1} de ${task.title}`}
@@ -243,7 +247,7 @@ const PublicApprovalPage: React.FC = () => {
                     onApprove={handleAction}
                     onEditRequest={handleAction}
                     isProcessing={updateTaskStatus.isPending}
-                    onImageClick={setLightboxUrl}
+                    onImageClick={handleImageClick}
                   />
                 ))}
               </>
@@ -283,6 +287,31 @@ const PublicApprovalPage: React.FC = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Lightbox Dialog (Corrigido com classe customizada) */}
+      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
+        <DialogContent 
+          // Usando a classe customizada para sobrescrever o layout
+          className="lightbox-fullscreen-override"
+        >
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setLightboxUrl(null)} 
+            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Visualização em Tela Cheia"
+              // Garantindo que a imagem se ajuste ao contêiner
+              className="max-w-[95%] max-h-[95%] object-contain"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
