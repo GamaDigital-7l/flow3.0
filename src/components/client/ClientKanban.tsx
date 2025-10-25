@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Loader2, Repeat, CalendarDays, Lock, X, ArrowLeft } from 'lucide-react';
+import { Loader2, Repeat, CalendarDays, Lock, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskForm from './ClientTaskForm';
@@ -14,7 +14,7 @@ import ClientKanbanBoard from './ClientKanbanBoard';
 import { useClientKanban } from '@/hooks/useClientKanban';
 import { ClientTaskStatus, ClientTask } from '@/types/client';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
 type TabValue = "kanban" | "templates" | "vault";
@@ -76,7 +76,6 @@ const ClientKanban: React.FC = () => {
           onAddTask={handleAddTask}
           onEditTask={handleEditTask}
           refetchTasks={handleRefetchAll}
-          onImageClick={(url) => { /* Lightbox logic handled in board component */ }}
         />;
       case "templates":
         return <ClientTaskTemplates clientId={clientId} clientName={client?.name || 'Cliente'} />;

@@ -3,8 +3,9 @@
 
 import React, { useMemo } from 'react';
 import { DndContext, closestCorners, DragOverlay, useSensor, useSensors } from '@dnd-kit/core';
-import { Loader2, Send, Copy, MessageSquare, X } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
+import { PlusCircle, Loader2, Send, Copy, MessageSquare, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskCard from './ClientTaskCard';
@@ -13,7 +14,6 @@ import ClientMonthSelector from './ClientMonthSelector';
 import { useClientKanban } from '@/hooks/useClientKanban';
 import { ClientTaskStatus, ClientTask } from '@/types/client';
 import { motion } from 'framer-motion';
-import copy from 'copy-to-clipboard';
 import { Input } from "@/components/ui/input";
 import { showSuccess } from '@/utils/toast';
 import { MouseSensor, TouchSensor } from '@dnd-kit/core';
@@ -27,7 +27,6 @@ interface ClientKanbanBoardProps {
   onAddTask: (status: ClientTaskStatus) => void;
   onEditTask: (task: ClientTask) => void;
   refetchTasks: () => void;
-  onImageClick: (url: string) => void; 
 }
 
 const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
@@ -47,12 +46,11 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
     handleDragEnd,
     handleGenerateApprovalLink,
     currentMonthYear,
-    setCurrentMonthYear,
   } = hook;
 
   const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null); 
+  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
 
   // DND Sensors
   const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
@@ -88,14 +86,14 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
     <div className="flex-grow flex flex-col min-h-0">
       
       {/* Seletor de Mês */}
-      <ClientMonthSelector currentMonthYear={currentMonthYear} onMonthChange={setCurrentMonthYear} />
+      <ClientMonthSelector currentMonthYear={currentMonthYear} onMonthChange={hook.setCurrentMonthYear} />
       
       {/* Botão de Link de Aprovação */}
       {tasksUnderReview.length > 0 && (
         <div className="mb-4 flex-shrink-0 mt-4">
           <Button 
             onClick={handleGenerateLinkClick} 
-            disabled={handleGenerateApprovalLink.isPending}
+            disabled={handleGenerateApprovalLink.isPending || !tasksByStatus.get('under_review')?.filter(t => t.public_approval_enabled).length}
             className="w-full bg-primary text-white hover:bg-primary/90"
           >
             {handleGenerateApprovalLink.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
@@ -118,7 +116,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
           onDragEnd={handleDragEnd}
         >
           {/* NOVO GRID RESPONSIVO: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 w-full flex-grow min-h-[50vh]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 w-full flex-grow min-h-[50vh] overflow-x-auto">
             {KANBAN_COLUMNS.map(column => (
               <KanbanColumn
                 key={column.id}
@@ -127,7 +125,6 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                 onAddTask={onAddTask}
                 onEditTask={onEditTask}
                 refetchTasks={refetch}
-                onImageClick={setLightboxUrl}
               />
             ))}
           </div>
@@ -165,32 +162,6 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Lightbox para Imagem (mantido) */}
-      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
-        <DialogContent className="lightbox-fullscreen-override">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setLightboxUrl(null)} 
-            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          {lightboxUrl && (
-            <motion.img
-              key={lightboxUrl}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              src={lightboxUrl}
-              alt="Visualização em Tela Cheia"
-              className="max-w-[95%] max-h-[95%] object-contain"
-            />
-          )}
         </DialogContent>
       </Dialog>
     </div>

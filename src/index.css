@@ -130,12 +130,13 @@
   }
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden; /* Garante que o HTML não tenha overflow horizontal */
   }
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    overflow-x: hidden; /* Garante que o body não tenha overflow horizontal */
     min-height: 100vh;
     width: 100vw;
   }
@@ -147,7 +148,7 @@
     padding-left: var(--sal);
     padding-right: var(--sar);
     width: 100%;
-    box-sizing: border-box; /* Garante que o padding não cause overflow */
+    box-sizing: border-box;
   }
 
   /* Para navegadores Webkit (Chrome, Safari) */
@@ -240,22 +241,22 @@
     }
   }
 
-  /* Custom Scrollbar Utility Class */
+  /* Custom Scrollbar Utility Class (Para o carrossel horizontal) */
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    background: transparent; /* Fundo transparente para não poluir a faixa */
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted));
+    background-color: hsl(var(--muted-foreground) / 0.5); /* Cinza semi-transparente */
     border-radius: 4px;
-    border: 2px solid hsl(var(--background));
+    border: 2px solid transparent; /* Borda transparente */
   }
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+    scrollbar-color: hsl(var(--muted-foreground) / 0.5) transparent;
   }
 
   /* Ajustes para o Quill Editor */
@@ -283,13 +284,6 @@
     /* Ajustado para usar a altura do header como margem superior */
     @apply flex flex-1 flex-col relative p-0;
     margin-top: calc(3.5rem + var(--sat)); /* Altura do Header */
-  }
-  
-  /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
-  .page-content-wrapper {
-    @apply p-3 md:p-4 lg:p-6;
-    width: 100%;
-    box-sizing: border-box;
   }
   
   /* ESTILO AGRESSIVO PARA LIGHTBOX (SOBRESCRITA DO SHADCN/UI) */
