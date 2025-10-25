@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
+import { parseISO } from '@/lib/utils';
+import { differenceInDays } from 'date-fns'; // Importando differenceInDays
 
 interface OverdueTask {
   id: string;
@@ -68,7 +70,7 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
   });
 
   return (
-    <div className="py-4">
+    <div className="mt-4">
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-semibold flex items-center text-status-overdue">
           <AlertCircle className="h-5 w-5 mr-2" />
@@ -94,33 +96,40 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
         className="flex overflow-x-auto space-x-3 pb-2 custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        {tasks.map((task) => (
-          <Card 
-            key={task.id} 
-            // Estilo visual padrão do app, compacto
-            className="p-3 bg-card border border-border flex-shrink-0 shadow-sm card-hover-effect"
-            style={{ width: '240px' }} 
-          >
-            <div className="flex flex-col space-y-1">
-              <p className="font-medium text-sm truncate text-foreground">{task.title}</p>
-              <div className="flex items-center justify-between">
-                <Badge className="bg-status-overdue text-white h-5 px-1.5 text-xs flex-shrink-0">
-                  Atrasada
-                </Badge>
-                <p className="text-xs text-muted-foreground ml-2 flex-shrink-0">Venc.: {task.due_date}</p>
+        {tasks.map((task) => {
+          // Calcula a diferença em dias entre a data de vencimento e hoje
+          const daysOverdue = task.due_date ? Math.abs(differenceInDays(parseISO(task.due_date), new Date())) : 0;
+          
+          return (
+            <Card 
+              key={task.id} 
+              // Estilo visual padrão do app, compacto
+              className="p-3 bg-card border border-border flex-shrink-0 shadow-sm card-hover-effect"
+              style={{ width: '240px' }} 
+            >
+              <div className="flex flex-col space-y-1">
+                <p className="font-medium text-sm truncate text-foreground">{task.title}</p>
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-status-overdue text-white h-5 px-1.5 text-xs flex-shrink-0">
+                    Atrasada
+                  </Badge>
+                  <p className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                    {daysOverdue} dias
+                  </p>
+                </div>
+                <Button 
+                  size="sm" 
+                  onClick={() => completeTaskMutation.mutate(task.id)} 
+                  className="w-full bg-primary text-white hover:bg-primary/90 h-8 text-xs mt-2"
+                  disabled={completeTaskMutation.isPending}
+                >
+                  {completeTaskMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                  Concluir
+                </Button>
               </div>
-              <Button 
-                size="sm" 
-                onClick={() => completeTaskMutation.mutate(task.id)} 
-                className="w-full bg-green-600 text-white hover:bg-green-700 h-8 text-xs mt-2"
-                disabled={completeTaskMutation.isPending}
-              >
-                {completeTaskMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
-                Concluir
-              </Button>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

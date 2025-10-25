@@ -123,23 +123,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full">
-      {/* Faixa de Alertas (Fora do Wrapper para ocupar 100% da largura da tela, mas com padding interno) */}
-      {overdueTasks.length > 0 && (
-        <DashboardWrapper>
-          <OverdueTasksReminder 
-            tasks={overdueTasks.map(t => ({ 
-              id: t.id, 
-              title: t.title, 
-              due_date: t.due_date ? format(new Date(t.due_date), 'dd/MM') : 'N/A' 
-            }))} 
-            onTaskUpdated={handleTaskUpdated}
-          />
-        </DashboardWrapper>
-      )}
-
       {/* Conteúdo Principal (Dentro do Wrapper) */}
       <DashboardWrapper>
         <div className="space-y-6 py-6">
+          
+          {/* 1. Title and Add Task Button */}
           <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
@@ -169,7 +157,23 @@ const Dashboard: React.FC = () => {
             </Dialog>
           </div>
 
-          {/* Seção de Listas de Tarefas (Grid 1x, 2x, 3x) */}
+          {/* 2. Overdue Tasks Reminder (Moved here) */}
+          {overdueTasks.length > 0 && (
+            <OverdueTasksReminder 
+              tasks={overdueTasks.map(t => ({ 
+                id: t.id, 
+                title: t.title, 
+                due_date: t.due_date // Passando a data completa para cálculo
+              }))} 
+              onTaskUpdated={handleTaskUpdated}
+            />
+          )}
+          
+          {/* 3. Seção de Resumos (Produtividade) */}
+          <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Métricas de Produtividade</h2>
+          <DashboardResultsSummary />
+
+          {/* 4. Seção de Listas de Tarefas (Grid 1x, 2x, 3x) */}
           <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
           {/* Ajuste do Grid: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -202,10 +206,6 @@ const Dashboard: React.FC = () => {
               />
             ))}
           </div>
-          
-          {/* Seção de Resumos (Produtividade) */}
-          <h2 className="text-xl font-bold text-foreground pt-4">Métricas de Produtividade</h2>
-          <DashboardResultsSummary />
         </div>
       </DashboardWrapper>
     </div>
