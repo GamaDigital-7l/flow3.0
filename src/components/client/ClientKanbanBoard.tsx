@@ -10,7 +10,7 @@ import { PlusCircle, Loader2, Send, Copy, MessageSquare, X, ChevronLeft, Chevron
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskCard from './ClientTaskCard';
-import KanbanColumn from './KanbanColumn';
+import KanbanColumn from './KanbanColumn.tsx';
 import ClientMonthSelector from './ClientMonthSelector';
 import { useClientKanban, ClientKanbanHook } from '@/hooks/useClientKanban';
 import { ClientTaskStatus, ClientTask } from '@/types/client';
