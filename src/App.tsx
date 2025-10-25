@@ -9,8 +9,8 @@ import Login from "./pages/Login";
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient, persister } from '@/integrations/query/client';
 import DeepLinkHandler from "./components/DeepLinkHandler";
-import LoadingScreen from "./components/layout/LoadingScreen";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import LoadingScreen from "./components/layout/LoadingScreen"; // Importar LoadingScreen
+import { TooltipProvider } from "@/components/ui/tooltip"; // Import TooltipProvider
 
 // Lazy Loaded Pages
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -31,8 +31,27 @@ const ProposalViewerPage = lazy(() => import("./pages/PublicProposalPage"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const PortfolioProjectPage = lazy(() => import("./pages/PortfolioProjectPage"));
 const Clients = lazy(() => import("./pages/Clients"));
-import ClientKanban from "./components/client/ClientKanban";
-const PublicApprovalPage = lazy(() => import("./pages/PublicApprovalPage"));
+import ClientKanban from "./components/client/ClientKanban"; // Importing directly
+const PublicApprovalPage = lazy(() => import("./pages/PublicApprovalPage")); // NOVO: PublicApprovalPage
+
+// Main App component wrapper for context providers
+function App() {
+  return (
+    <SessionContextProvider>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister }}
+      >
+        <Toaster position="top-right" richColors />
+        <ErrorBoundary>
+          <TooltipProvider> {/* Global Tooltip Provider */}
+            <AppContent />
+          </TooltipProvider>
+        </ErrorBoundary>
+      </PersistQueryClientProvider>
+    </SessionContextProvider>
+  );
+}
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -51,16 +70,19 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Update state so the next render will show the fallback UI.
     return { hasError: true, error: error, errorInfo: null };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // You can also log the error to an error reporting service
     console.error("Caught an error: ", error, errorInfo);
     this.setState({ errorInfo: errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
+      // You could render any custom fallback UI
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
           <div className="text-center">
@@ -83,7 +105,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-function App() { // Renamed from AppContent to App
+// Component handling routing and PWA state
+function AppContent() {
   const { session, isLoading } = useSession();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
@@ -110,7 +133,7 @@ function App() { // Renamed from AppContent to App
         <Routes>
           {/* Rotas Públicas */}
           <Route path="/login" element={<Login />} />
-          <Route path="/approval/:uniqueId" element={<PublicApprovalPage />} />
+          <Route path="/approval/:uniqueId" element={<PublicApprovalPage />} /> {/* CORRIGIDO */}
           <Route path="/books/:id/read" element={<BookReaderFullScreen />} />
           <Route path="/proposal/:uniqueId" element={<ProposalViewerPage />} />
           <Route path="/portfolio/:slug" element={<PortfolioProjectPage />} />

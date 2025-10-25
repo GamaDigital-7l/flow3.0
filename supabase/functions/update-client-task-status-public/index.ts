@@ -4,7 +4,7 @@ import { format, parseISO } from "https://esm.sh/date-fns@3.6.0";
 import { utcToZonedTime } from "https://esm.sh/date-fns-tz@3.0.1";
 import { ptBR } from "https://esm.sh/date-fns@3.6.0/locale/pt-BR";
 
-const allowedOrigins = ['http://localhost:32100', 'https://nexusflow.vercel.app', 'http://localhost:8080'];
+const allowedOrigins = ['http://localhost:32100', 'https://nexusflow.vercel.app'];
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
