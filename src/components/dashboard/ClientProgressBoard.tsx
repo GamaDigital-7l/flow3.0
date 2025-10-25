@@ -21,15 +21,13 @@ interface ClientProgress {
 }
 
 const fetchClientProgress = async (userId: string): Promise<ClientProgress[]> => {
-  const today = new Date();
-  const monthYear = format(today, 'yyyy-MM');
-
   const { data, error } = await supabase.from('clients')
     .select(`
       id, name, logo_url,
       tasks(
         count,
-        is_completed
+        is_completed,
+        status
       )
     `)
     .eq('user_id', userId);
@@ -40,7 +38,9 @@ const fetchClientProgress = async (userId: string): Promise<ClientProgress[]> =>
 
   const clientProgress = data?.map(client => {
     const totalTasks = client.tasks.length;
-    const completedTasks = client.tasks.filter(task => task.is_completed).length;
+    const completedTasks = client.tasks.filter(task => 
+      task.status === 'approved' || task.status === 'posted'
+    ).length;
 
     return {
       client_id: client.id,
