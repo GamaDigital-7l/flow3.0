@@ -5,10 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { formatCurrency } from '@/utils/formatters';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { startOfMonth, endOfMonth, format, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface MonthlyData {
   month: string;
@@ -33,7 +34,12 @@ const fetchMonthlyData = async (userId: string): Promise<MonthlyData[]> => {
         .gte("date", start)
         .lte("date", end);
 
-      if (transactionsError) throw transactionsError;
+      if (transactionsError) {
+        console.error("Erro ao buscar transações:", transactionsError);
+        throw transactionsError;
+      }
+
+      console.log(`Transações para ${format(month, "MMM yyyy")}:`, transactions);
 
       const income = transactions
         .filter(t => t.type === 'income')
@@ -43,11 +49,15 @@ const fetchMonthlyData = async (userId: string): Promise<MonthlyData[]> => {
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
 
+      const difference = income - expenses;
+
+      console.log(`Resultado para ${format(month, "MMM yyyy")}: Ganhos=${income}, Gastos=${expenses}, Diferença=${difference}`);
+
       return {
         month: format(month, "MMM", { locale: ptBR }),
         income,
         expenses,
-        difference: income - expenses,
+        difference,
       };
     })
   );
