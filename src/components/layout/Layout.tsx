@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition, lazy, Suspense } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import OfflineIndicator from "../OfflineIndicator";
 import QuickAddButton from "../QuickAddButton";
+import { ThemeToggle } from "../ThemeToggle"; // Importar ThemeToggle
 
 interface LayoutProps {
   isOnline: boolean;
@@ -42,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClic
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('online', handleKeyDown);
     };
   }, [handleKeyDown]);
 

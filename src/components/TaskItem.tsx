@@ -63,7 +63,6 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      
       const { error: updateError } = await supabase
         .from("tasks")
         .update({
@@ -208,7 +207,7 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
               <p className={cn("text-muted-foreground break-words line-clamp-1", compactMode ? "text-[0.65rem]" : "text-xs")}>{task.description}</p>
             )}
             <div className="flex flex-wrap gap-1 mt-0.5">
-              {getTaskStatusBadge(task.current_board, task)}
+              {/*{getTaskStatusBadge(task.current_board, task)}*/}
               {task.due_date && (
                 <Badge variant="secondary" className="bg-muted/50 text-muted-foreground h-5 px-1.5 text-xs flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" /> {formatDateTime(task.due_date, false)}
@@ -241,7 +240,7 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
               <Edit className="h-3.5 w-3.5" />
               <span className="sr-only">Editar Tarefa</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleAddSubtask} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <Button variant="ghost" size="icon" onClick={() => handleAddSubtask()} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
               <PlusCircle className="h-3.5 w-3.5" />
               <span className="sr-only">Adicionar Subtarefa</span>
             </Button>
@@ -316,3 +315,110 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
 });
 
 export default TaskItem;
+</dyad-file>
+
+<dyad-write path="src/components/layout/Sidebar.tsx" description="Updating Sidebar component to import and use ThemeToggle.">
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Home, ListTodo, Target, BookOpen, Dumbbell, Notebook, CalendarDays, Users, BarChart3, Settings, DollarSign, Repeat, Download, GraduationCap, Wallet, FileText, Image } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useSession } from "@/integrations/supabase/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { showSuccess, showError } from "@/utils/toast";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { ThemeToggle } from "../ThemeToggle"; // Importar ThemeToggle
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  deferredPrompt: Event | null;
+  onInstallClick: () => void;
+  isDesktop?: boolean; // Mantido para compatibilidade, mas não usado na lógica de renderização
+}
+
+const navItems = [
+  { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "Tarefas", href: "/tasks", icon: ListTodo },
+  { name: "Recorrência", href: "/recurrence", icon: Repeat },
+  { name: "Clientes", href: "/clients", icon: Users },
+  { name: "Orçamentos", href: "/proposals", icon: FileText },
+  { name: "Portfólio", href: "/portfolio", icon: Image },
+  { name: "Financeiro", href: "/finance", icon: DollarSign },
+  { name: "Metas", href: "/goals", icon: Target },
+  { name: "Saúde", href: "/health", icon: Dumbbell },
+  { name: "Livros", href: "/books", icon: BookOpen },
+  { name: "Notas", href: "/notes", icon: Notebook },
+  { name: "Resultados", href: "/results", icon: BarChart3 },
+];
+
+const SidebarContent: React.FC<Omit<SidebarProps, 'isOpen' | 'onClose'> & { onClose: () => void }> = ({ onClose }) => {
+  const location = useLocation();
+  const { session } = useSession();
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      showSuccess("Desconectado com sucesso!");
+    } catch (error: any) {
+      showError("Erro ao desconectar: " + error.message);
+    }
+  };
+
+  return (
+    <>
+      <ScrollArea className="flex-1 overflow-y-auto p-3">
+        <nav className="grid gap-1.5 text-sm font-medium">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={onClose}
+                className={cn(
+                  "nav-link-base",
+                  isActive ? "nav-link-active" : "nav-link-inactive"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      </ScrollArea>
+      <div className="p-3 border-t border-sidebar-border space-y-1.5 flex-shrink-0">
+        <Link to="/settings" onClick={onClose}>
+          <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent h-9 px-3 text-sm">
+            <Settings className="mr-2 h-4 w-4" />
+            Configurações
+          </Button>
+        </Link>
+        <Button onClick={handleLogout} variant="destructive" className="w-full h-9 px-3 text-sm">
+          Sair
+        </Button>
+      </div>
+    </>
+  );
+};
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
+  // Sempre renderiza o Sheet, independentemente do modo desktop
+  return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent 
+        side="left" 
+        className="flex flex-col w-60 bg-sidebar-background border-r border-sidebar-border p-0"
+      >
+        <div className="flex h-[calc(3.5rem+var(--sat))] items-center border-b border-sidebar-border px-3 pt-[var(--sat)] flex-shrink-0">
+          <h1 className="text-lg font-bold text-sidebar-primary">Gama Flow</h1>
+        </div>
+        <SidebarContent onClose={onClose} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
+      </SheetContent>
+    </Sheet>
+  );
+};

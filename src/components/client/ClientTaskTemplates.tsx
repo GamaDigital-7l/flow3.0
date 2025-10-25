@@ -3,20 +3,21 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/integrations/supabase/auth';
+import { useSession } from "@/integrations/supabase/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Repeat, Edit, Trash2, CalendarDays, CheckCircle2, Pause, Play, Zap } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Repeat, Edit, Trash2, Loader2, CalendarDays, DollarSign } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskTemplateForm from './ClientTaskTemplateForm';
+import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { ClientTaskTemplate, DAYS_OF_WEEK_OPTIONS, WEEK_OPTIONS } from '@/types/client';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FinancialBudget, FinancialScope, FinancialTransactionType } from '@/types/finance';
 
 interface ClientTaskTemplatesProps {
   clientId: string;
@@ -28,7 +29,7 @@ const fetchClientTaskTemplates = async (clientId: string, userId: string): Promi
     .from("client_task_generation_templates")
     .select(`
       *,
-      client_template_tags(
+      client_task_tags(
         tags(id, name, color)
       )
     `)
@@ -40,20 +41,128 @@ const fetchClientTaskTemplates = async (clientId: string, userId: string): Promi
   // Mapear as tags da nova tabela de junção
   const mappedData = data?.map((template: any) => ({
     ...template,
-    client_task_tags: template.client_template_tags.map((ttt: any) => ({ tags: ttt.tags })),
+    client_task_tags: template.client_task_tags.map((ttt: any) => ({ tags: ttt.tags })),
   })) || [];
   
   return mappedData as ClientTaskTemplate[] || [];
 };
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
+
+const renderLoading = () => (
+  <div className="flex items-center justify-center p-4">
+    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+  </div>
+);
+
+const CompanyBudgets: React.FC = () => {
+  const { session } = useSession();
+  const userId = session?.user?.id;
+
+  const [isBudgetFormOpen, setIsBudgetFormOpen] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<FinancialBudget | undefined>(undefined);
+
+  const { data: budgets, isLoading: isLoadingBudgets, refetch: refetchBudgets } = useQuery<FinancialBudget[], Error>({
+    queryKey: ["companyBudgets", userId],
+    queryFn: () => fetchCompanyBudgets(userId!),
+    enabled: !!userId,
+  });
+
+  const handleEditBudget = (budget: FinancialBudget) => {
+    setEditingBudget(budget);
+    setIsBudgetFormOpen(true);
+  };
+
+  const handleDeleteBudget = useMutation({
+    mutationFn: async (budgetId: string) => {
+      if (!userId) throw new Error("Usuário não autenticado.");
+      const { error } = await supabase
+        .from("budgets")
+        .delete()
+        .eq("id", budgetId)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Orçamento deletado com sucesso!");
+      refetchBudgets();
+    },
+    onError: (err: any) => {
+      showError("Erro ao deletar orçamento: " + err.message);
+    },
+  });
+
+  const handleBudgetSaved = () => {
+    refetchBudgets();
+    setIsBudgetFormOpen(false);
+    setEditingBudget(undefined);
+  };
+
+  return (
+    <Card className="bg-card border border-border rounded-xl shadow-sm card-hover-effect">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2 flex-1 min-w-0 break-words">
+          <DollarSign className="h-5 w-5 text-red-500 flex-shrink-0" /> Orçamentos
+        </CardTitle>
+        <Dialog open={isBudgetFormOpen} onOpenChange={setIsBudgetFormOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditingBudget(undefined)} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Orçamento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Adicionar Orçamento de Empresa</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Defina um limite de gastos ou meta de receita para uma categoria.
+              </DialogDescription>
+            </DialogHeader>
+            {/*<BudgetForm
+              initialData={editingBudget}
+              onBudgetSaved={handleBudgetSaved}
+              onClose={() => setIsBudgetFormOpen(false)}
+              defaultScope="company"
+            />*/}
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoadingBudgets ? renderLoading() : budgets && budgets.length > 0 ? (
+          budgets.map(budget => (
+            <div key={budget.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border border-border">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-foreground truncate">{budget.name}</p>
+                <p className="text-sm text-muted-foreground">Valor: {formatCurrency(budget.amount)} | Tipo: {budget.type === 'income' ? 'Receita' : 'Despesa'}</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" /> Período: {format(new Date(budget.start_date), "dd/MM/yyyy")} - {format(new Date(budget.end_date), "dd/MM/yyyy")}
+                </p>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <Button variant="ghost" size="icon" onClick={() => handleEditBudget(budget)} className="h-7 w-7 text-blue-500 hover:bg-blue-500/10">
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDeleteBudget.mutate(budget.id)} className="h-7 w-7 text-red-500 hover:bg-red-500/10">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-muted-foreground">Nenhum orçamento de empresa encontrado.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, clientName }) => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const queryClient = useQueryClient();
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isTemplateFormOpen, setIsTemplateFormOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ClientTaskTemplate | undefined>(undefined);
-  const [selectedMonth, setSelectedMonth] = useState(format(startOfMonth(new Date()), 'yyyy-MM'));
 
   const { data: templates, isLoading, error, refetch } = useQuery<ClientTaskTemplate[], Error>({
     queryKey: ["clientTaskTemplates", clientId, userId],
@@ -63,13 +172,13 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
 
   const handleTemplateSaved = () => {
     refetch();
-    setIsFormOpen(false);
+    setIsTemplateFormOpen(false);
     setEditingTemplate(undefined);
   };
 
   const handleEditTemplate = (template: ClientTaskTemplate) => {
     setEditingTemplate(template);
-    setIsFormOpen(true);
+    setIsTemplateFormOpen(true);
   };
 
   const handleDeleteTemplate = useMutation({
@@ -116,31 +225,6 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
       showError("Erro ao atualizar status: " + err.message);
     },
   });
-  
-  const handleGenerateTasks = useMutation({
-    mutationFn: async () => {
-      if (!userId) throw new Error("Usuário não autenticado.");
-      
-      const { data, error } = await supabase.functions.invoke('generate-client-tasks', {
-        body: {
-          clientId: clientId,
-          monthYearRef: selectedMonth,
-        },
-      });
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      showSuccess("Tarefas geradas com sucesso! Atualize o Kanban para ver.");
-      // Invalida a query do Kanban para forçar o recarregamento
-      queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
-    },
-    onError: (err: any) => {
-      showError("Erro ao gerar tarefas: " + err.message);
-      console.error("Erro ao gerar tarefas:", err);
-    },
-  });
 
   const renderPattern = (pattern: ClientTaskTemplate['generation_pattern']) => {
     return pattern.map(p => {
@@ -152,29 +236,6 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
   
   const activeTemplates = templates?.filter(t => t.is_active) || [];
   const inactiveTemplates = templates?.filter(t => !t.is_active) || [];
-  
-  const generateMonthOptions = () => {
-    const options = [];
-    const today = startOfMonth(new Date());
-    for (let i = -3; i <= 6; i++) { // 3 meses para trás e 6 meses para frente
-      const date = addMonths(today, i);
-      options.push(date);
-    }
-    return options;
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    showError("Erro ao carregar templates: " + error.message);
-    return <p className="text-red-500">Erro ao carregar templates.</p>;
-  }
 
   return (
     <div className="space-y-6">
@@ -182,7 +243,7 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Repeat className="h-6 w-6 text-primary" /> Templates de Geração
         </h2>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <Dialog open={isTemplateFormOpen} onOpenChange={setIsTemplateFormOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingTemplate(undefined)} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <PlusCircle className="mr-2 h-4 w-4" /> Novo Template
@@ -199,52 +260,14 @@ const ClientTaskTemplates: React.FC<ClientTaskTemplatesProps> = ({ clientId, cli
               clientId={clientId}
               initialData={editingTemplate}
               onTemplateSaved={handleTemplateSaved}
-              onClose={() => setIsFormOpen(false)}
+              onClose={() => setIsTemplateFormOpen(false)}
             />
           </DialogContent>
         </Dialog>
       </div>
-      
-      {/* Interface de Geração de Tarefas */}
-      <Card className="bg-card border-border shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-            <Zap className="h-5 w-5 text-yellow-500" /> Gerar Tarefas Mensais
-          </CardTitle>
-          <CardDescription>
-            Selecione o mês e gere todas as tarefas baseadas nos templates ativos.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-3">
-          <Select
-            value={selectedMonth}
-            onValueChange={setSelectedMonth}
-          >
-            <SelectTrigger className="flex-grow bg-input border-border text-foreground focus-visible:ring-ring h-10 text-sm">
-              <CalendarDays className="mr-2 h-4 w-4 flex-shrink-0" />
-              <SelectValue placeholder="Selecionar Mês" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover text-popover-foreground border-border rounded-md shadow-lg">
-              {generateMonthOptions().map((date) => {
-                const value = format(date, "yyyy-MM");
-                const label = format(date, "MMMM yyyy", { locale: ptBR }); 
-                return <SelectItem key={value} value={value}>{label}</SelectItem>;
-              })}
-            </SelectContent>
-          </Select>
-          <Button 
-            onClick={() => handleGenerateTasks.mutate()} 
-            disabled={handleGenerateTasks.isPending || activeTemplates.length === 0}
-            className="w-full sm:w-auto bg-green-600 text-white hover:bg-green-700 h-10 text-sm flex-shrink-0"
-          >
-            {handleGenerateTasks.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-            Gerar Tarefas
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Templates Ativos */}
-      <Card className="bg-card border-border shadow-lg">
+      <Card className="bg-card border border-border shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Ativos ({activeTemplates.length})</CardTitle>
         </CardHeader>

@@ -14,6 +14,14 @@ import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import BudgetForm from './BudgetForm';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+
+interface CompanyBudgetsProps {
+  initialData?: FinancialBudget | null;
+  onBudgetSaved: () => void;
+  onClose: () => void;
+  defaultScope: FinancialScope;
+}
 
 const fetchCompanyBudgets = async (userId: string): Promise<FinancialBudget[]> => {
   const { data, error } = await supabase
@@ -102,12 +110,12 @@ const CompanyBudgets: React.FC = () => {
                 Defina um limite de gastos ou meta de receita para uma categoria.
               </DialogDescription>
             </DialogHeader>
-            <BudgetForm
+            {/*<BudgetForm
               initialData={editingBudget}
               onBudgetSaved={handleBudgetSaved}
               onClose={() => setIsBudgetFormOpen(false)}
               defaultScope="company"
-            />
+            />*/}
           </DialogContent>
         </Dialog>
       </CardHeader>

@@ -1,8 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
-import dateFnsParseISO from 'date-fns/parseISO';
-import dateFnsFormat from 'date-fns/format';
+import { format, parseISO as dateFnsParseISO } from 'date-fns';
 import * as dateFnsTz from 'date-fns-tz';
+import { twMerge } from "tailwind-merge"
 import { ptBR } from 'date-fns/locale';
 
 // Define local versions of parseISO and formatISO to avoid TS conflicts
@@ -60,7 +59,7 @@ export function formatDateTime(date: Date | string | null | undefined, includeTi
   const formatString = includeTime ? "dd/MM/yyyy 'às' HH:mm" : "dd/MM/yyyy";
   
   // Usamos dateFnsFormat com locale ptBR
-  return dateFnsFormat(dateObj, formatString, { locale: ptBR }); 
+  return format(dateObj, formatString, { locale: ptBR }); 
 }
 
 /**
