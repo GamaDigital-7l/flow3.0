@@ -1,82 +1,49 @@
+// src/components/dashboard/OverdueTasksReminder.tsx
 "use client";
 
 import React, { useRef } from 'react';
-import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Badge } from '@/components/ui/badge';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
 
 interface OverdueTask {
   id: string;
   title: string;
-  due_date: string;
+  dueDate: string;
 }
 
 interface OverdueTasksReminderProps {
   tasks: OverdueTask[];
-  onTaskUpdated: () => void;
+  onTaskUpdated: () => void; // Mantido para compatibilidade, mas não usado diretamente aqui
 }
 
-const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTaskUpdated }) => {
+const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const queryClient = useQueryClient();
-
+  
   if (tasks.length === 0) return null;
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = 300;
+      const scrollAmount = 300; // Scroll 300px
       scrollRef.current.scrollBy({
         left: direction === 'right' ? scrollAmount : -scrollAmount,
         behavior: 'smooth',
       });
     }
   };
-  
-  const completeTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      const { error: updateError } = await supabase
-        .from("tasks")
-        .update({
-          is_completed: true,
-          updated_at: new Date().toISOString(),
-          completed_at: new Date().toISOString(),
-          current_board: "completed",
-          overdue: false,
-        })
-        .eq("id", taskId);
-
-      if (updateError) throw updateError;
-    },
-    onSuccess: () => {
-      showSuccess("Tarefa concluída!");
-      onTaskUpdated();
-      queryClient.invalidateQueries({ queryKey: ["dashboardTasks"] });
-      queryClient.invalidateQueries({ queryKey: ["allTasks"] });
-      queryClient.invalidateQueries({ queryKey: ["overdueTasks"] });
-    },
-    onError: (err: any) => {
-      showError("Erro ao concluir tarefa: " + err.message);
-    },
-  });
-
-  // Verifica se há mais tarefas do que cabem na tela para mostrar os botões
-  const canScroll = tasks.length > 4; // Ajuste este número conforme necessário
 
   return (
-    <div className="w-full"> {/* Container principal que ocupa a largura do seu pai (DashboardWrapper) */}
+    <div className="py-4">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-semibold flex items-center text-status-overdue">
+        <h2 className="text-lg font-semibold flex items-center text-red-600">
           <AlertCircle className="h-5 w-5 mr-2" />
           Tarefas Atrasadas ({tasks.length})
         </h2>
         
-        {!isMobile && canScroll && (
+        {/* Botões de Navegação (Apenas Desktop) */}
+        {!isMobile && (
           <div className="flex gap-2">
             <Button variant="outline" size="icon" onClick={() => scroll('left')} className="h-8 w-8 text-muted-foreground hover:bg-accent">
               <ChevronLeft className="h-4 w-4" />
@@ -88,38 +55,20 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
         )}
       </div>
       
-      {/* Container de Scroll: A mágica acontece aqui. */}
+      {/* Container de Scroll Isolado */}
       <div 
         ref={scrollRef}
-        className="flex overflow-x-auto space-x-3 pb-2 custom-scrollbar"
+        className="flex overflow-x-auto space-x-4 pb-2 custom-scrollbar"
+        style={{ WebkitOverflowScrolling: 'touch' }} // Melhorar a rolagem em iOS
       >
         {tasks.map((task) => (
           <Card 
             key={task.id} 
-            // flex-shrink-0 é crucial para impedir que os cards se espremam.
-            className="p-3 bg-card border border-border flex-shrink-0 shadow-sm"
-            style={{ width: '260px' }} // Largura fixa para cada card.
+            className="p-4 bg-red-50 border-red-300 flex-shrink-0 dark:bg-red-900/20 dark:border-red-700/50"
+            style={{ width: '260px' }} // Largura fixa razoável
           >
-            <div className="flex flex-col justify-between h-full">
-              <div>
-                <p className="font-medium text-sm truncate text-foreground">{task.title}</p>
-                <div className="flex items-center justify-between mt-1">
-                  <Badge className="bg-status-overdue text-white h-5 px-1.5 text-xs flex-shrink-0">
-                    Atrasada
-                  </Badge>
-                  <p className="text-xs text-muted-foreground ml-2 flex-shrink-0">Venc.: {task.due_date}</p>
-                </div>
-              </div>
-              <Button 
-                size="sm" 
-                onClick={() => completeTaskMutation.mutate(task.id)} 
-                className="w-full bg-green-600 text-white hover:bg-green-700 h-8 text-xs mt-2"
-                disabled={completeTaskMutation.isPending}
-              >
-                {completeTaskMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
-                Concluir
-              </Button>
-            </div>
+            <p className="font-medium text-sm truncate text-foreground">{task.title}</p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1">Vencimento: {task.dueDate}</p>
           </Card>
         ))}
       </div>
