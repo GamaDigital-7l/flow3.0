@@ -1,11 +1,11 @@
 // src/components/client/ClientKanbanBoard.tsx
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { DndContext, closestCorners, DragOverlay, useSensor, useSensors } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Send, Copy, MessageSquare, X } from 'lucide-react';
+import { PlusCircle, Loader2, Send, Copy, MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskCard from './ClientTaskCard';
@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 import { Input } from "@/components/ui/input";
 import { showSuccess } from '@/utils/toast';
 import { MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { cn } from '@/lib/utils';
 
 // Define custom sensors locally
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -51,6 +52,9 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
+  const kanbanContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
 
   // DND Sensors
   const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
@@ -80,6 +84,27 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
       copy(link);
       showSuccess("Link copiado!");
     }
+  };
+
+  const handleScroll = () => {
+    if (kanbanContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = kanbanContainerRef.current;
+      setShowLeftArrow(scrollLeft > 0);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth);
+    }
+  };
+
+  useEffect(() => {
+    handleScroll(); // Initial check
+    const container = kanbanContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  const scroll = (scrollOffset: number) => {
+    kanbanContainerRef.current?.scrollBy({ left: scrollOffset, behavior: 'smooth' });
   };
 
   return (
@@ -115,18 +140,34 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          {/* NOVO GRID RESPONSIVO: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 w-full flex-grow min-h-[50vh] overflow-x-auto">
-            {KANBAN_COLUMNS.map(column => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                tasks={tasksByStatus.get(column.id) || []}
-                onAddTask={onAddTask}
-                onEditTask={onEditTask}
-                refetchTasks={refetch}
-              />
-            ))}
+          {/* Container de Scroll Horizontal */}
+          <div className="relative">
+            {showLeftArrow && (
+              <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(-200)}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+            {showRightArrow && (
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(200)}>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            )}
+            <div
+              ref={kanbanContainerRef}
+              className="flex gap-4 pb-4 w-full flex-grow min-h-[50vh] overflow-x-auto scroll-smooth snap-mandatory snap-x"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {KANBAN_COLUMNS.map(column => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  tasks={tasksByStatus.get(column.id) || []}
+                  onAddTask={onAddTask}
+                  onEditTask={onEditTask}
+                  refetchTasks={refetch}
+                />
+              ))}
+            </div>
           </div>
           
           <DragOverlay>
