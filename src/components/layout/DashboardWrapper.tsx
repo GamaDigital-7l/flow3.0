@@ -10,8 +10,8 @@ const DashboardWrapper: React.FC<DashboardWrapperProps> = ({ children }) => {
   return (
     <div className={cn(
       "w-full mx-auto",
-      "max-w-screen-xl", // Exemplo de max-width (1280px)
-      "px-3 sm:px-4 lg:px-6" // Padding responsivo: 12px (mobile) a 24px (desktop)
+      "max-w-[96%]", // Ocupa 96% da largura total
+      "px-3 sm:px-4 lg:px-4" // Padding lateral reduzido (12px a 16px)
     )}>
       {children}
     </div>
