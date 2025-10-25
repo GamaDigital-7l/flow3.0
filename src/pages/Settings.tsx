@@ -16,10 +16,12 @@ import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { sendDailyTelegramSummary } from "@/utils/telegram";
 
-// Schema para as configurações, incluindo Telegram
+// Schema para as configurações, incluindo Telegram e WhatsApp
 const settingsSchema = z.object({
   telegram_bot_token: z.string().optional(),
   telegram_chat_id: z.string().optional(),
+  whatsapp_api_token: z.string().optional(),
+  whatsapp_phone_number_id: z.string().optional(),
 });
 
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -35,7 +37,7 @@ const Settings: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_settings')
-        .select('telegram_bot_token, telegram_chat_id')
+        .select('telegram_bot_token, telegram_chat_id, whatsapp_api_token, whatsapp_phone_number_id')
         .eq('user_id', userId)
         .single();
 
@@ -52,6 +54,8 @@ const Settings: React.FC = () => {
     defaultValues: {
       telegram_bot_token: userSettings?.telegram_bot_token || "",
       telegram_chat_id: userSettings?.telegram_chat_id || "",
+      whatsapp_api_token: userSettings?.whatsapp_api_token || "",
+      whatsapp_phone_number_id: userSettings?.whatsapp_phone_number_id || "",
     },
     values: userSettings,
     resetOptions: {
@@ -75,6 +79,8 @@ const Settings: React.FC = () => {
             user_id: userId,
             telegram_bot_token: values.telegram_bot_token,
             telegram_chat_id: values.telegram_chat_id,
+            whatsapp_api_token: values.whatsapp_api_token,
+            whatsapp_phone_number_id: values.whatsapp_phone_number_id,
           },
           { onConflict: 'user_id' }
         );
@@ -128,6 +134,26 @@ const Settings: React.FC = () => {
                 className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
               />
             </div>
+            <div>
+              <Label htmlFor="whatsapp_api_token">WhatsApp Business API Token</Label>
+              <Input
+                id="whatsapp_api_token"
+                type="text"
+                {...form.register("whatsapp_api_token")}
+                placeholder="Seu WhatsApp Business API Token"
+                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+              />
+            </div>
+            <div>
+              <Label htmlFor="whatsapp_phone_number_id">WhatsApp Phone Number ID</Label>
+              <Input
+                id="whatsapp_phone_number_id"
+                type="text"
+                {...form.register("whatsapp_phone_number_id")}
+                placeholder="Seu WhatsApp Phone Number ID"
+                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+              />
+            </div>
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar Configurações"}
             </Button>
@@ -151,6 +177,9 @@ const Settings: React.FC = () => {
             </div>
             <p className="text-xs text-muted-foreground">
               Para configurar o Telegram, você precisa adicionar o token e o chat ID no console do Supabase.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Para configurar o WhatsApp, você precisa adicionar o token e o ID do número de telefone no console do Supabase.
             </p>
           </form>
         </CardContent>

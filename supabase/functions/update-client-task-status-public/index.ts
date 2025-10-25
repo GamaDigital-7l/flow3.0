@@ -156,7 +156,7 @@ serve(async (req) => {
     // Obter fuso horário do usuário para registro de data/hora
     const { data: profile, error: profileError } = await supabaseServiceRole
       .from('profiles')
-      .select('timezone, telegram_bot_token, telegram_chat_id') // Adicionado telegram_bot_token e telegram_chat_id
+      .select('timezone, telegram_bot_token, telegram_chat_id, whatsapp_api_token, whatsapp_phone_number_id') // Adicionado telegram_bot_token e telegram_chat_id
       .eq('id', user_id)
       .single();
 
@@ -221,13 +221,24 @@ serve(async (req) => {
     } else {
       console.warn("Telegram secrets não configurados. Pulando notificação.");
     }
-    
-    // 7. Integrar com a Evolution API
+
+    // 7. Enviar notificação para o WhatsApp via Evolution API
     const evolutionApiUrl = Deno.env.get("EVOLUTION_API_URL");
     const evolutionApiKey = Deno.env.get("EVOLUTION_API_KEY");
+    const whatsappApiToken = profile?.whatsapp_api_token;
+    const whatsappPhoneNumberId = profile?.whatsapp_phone_number_id;
 
-    if (evolutionApiUrl && evolutionApiKey) {
+    if (evolutionApiUrl && evolutionApiKey && whatsappApiToken && whatsappPhoneNumberId) {
       try {
+        let whatsappMessage = "";
+        if (newStatus === 'approved') {
+          whatsappMessage = `✅ A tarefa "${taskDetails.title}" foi aprovada!`;
+        } else if (newStatus === 'edit_requested') {
+          whatsappMessage = `✏️ Foi solicitada uma edição na tarefa "${taskDetails.title}". Motivo: ${editReason}`;
+        } else if (newStatus === 'rejected') {
+          whatsappMessage = `❌ A tarefa "${taskDetails.title}" foi rejeitada. Motivo: ${editReason}`;
+        }
+
         const evolutionResponse = await fetch(evolutionApiUrl, {
           method: 'POST',
           headers: {
@@ -235,24 +246,22 @@ serve(async (req) => {
             'Authorization': `Bearer ${evolutionApiKey}`,
           },
           body: JSON.stringify({
-            taskId: taskId,
-            taskTitle: taskDetails.title,
-            taskDescription: taskDetails.description,
-            newStatus: newStatus,
-            clientId: client_id,
+            phone: whatsappPhoneNumberId, // Substitua pelo número de telefone do cliente
+            message: whatsappMessage,
+            // Adicione outros campos conforme necessário para a Evolution API
           }),
         });
 
         if (!evolutionResponse.ok) {
-          console.error("Erro ao enviar dados para a Evolution API:", evolutionResponse.status, await evolutionResponse.text());
+          console.error("Erro ao enviar mensagem para a Evolution API (WhatsApp):", evolutionResponse.status, await evolutionResponse.text());
         } else {
-          console.log("Dados enviados para a Evolution API com sucesso.");
+          console.log("Mensagem enviada para a Evolution API (WhatsApp) com sucesso.");
         }
       } catch (evolutionError) {
-        console.error("Erro ao chamar a Evolution API:", evolutionError);
+        console.error("Erro ao chamar a Evolution API (WhatsApp):", evolutionError);
       }
     } else {
-      console.warn("Evolution API URL ou Key não configurados. Pulando integração.");
+      console.warn("Evolution API ou WhatsApp secrets não configurados. Pulando notificação.");
     }
 
     return new Response(JSON.stringify({ message: "Client task status updated successfully." }), {
