@@ -115,7 +115,7 @@ const FinanceSummary: React.FC = () => {
           <CardTitle className="text-sm font-medium">Total de Ganhos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(data.totalIncome)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(data?.totalIncome || 0)}</div>
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
@@ -123,7 +123,7 @@ const FinanceSummary: React.FC = () => {
           <CardTitle className="text-sm font-medium">Total de Gastos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(data.totalExpenses)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(data?.totalExpenses || 0)}</div>
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
@@ -131,7 +131,7 @@ const FinanceSummary: React.FC = () => {
           <CardTitle className="text-sm font-medium">Resultado Líquido</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(data.netResult)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(data?.netResult || 0)}</div>
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
@@ -139,7 +139,7 @@ const FinanceSummary: React.FC = () => {
           <CardTitle className="text-sm font-medium">Previsão de Ganhos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(data.projectedIncome)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(data?.projectedIncome || 0)}</div>
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
@@ -147,7 +147,7 @@ const FinanceSummary: React.FC = () => {
           <CardTitle className="text-sm font-medium">Previsão de Gastos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(data.projectedExpenses)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(data?.projectedExpenses || 0)}</div>
         </CardContent>
       </Card>
       <Card className="bg-card border-border shadow-sm">
@@ -155,7 +155,7 @@ const FinanceSummary: React.FC = () => {
           <CardTitle className="text-sm font-medium">Previsão de Resultado</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(data.projectedNetResult)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(data?.projectedNetResult || 0)}</div>
         </CardContent>
       </Card>
     </div>
