@@ -102,10 +102,6 @@ serve(async (req) => {
       updateData.is_completed = false;
       updateData.completed_at = null;
       updateData.edit_reason = editReason || null; // Usar editReason para rejeição também
-    } else if (newStatus === 'posted') {
-      updateData.is_completed = true;
-      updateData.completed_at = new Date().toISOString();
-      updateData.edit_reason = null;
     }
 
     const { data: updatedClientTask, error: updateTaskError } = await supabaseServiceRole
@@ -160,9 +156,14 @@ serve(async (req) => {
     // Obter fuso horário do usuário para registro de data/hora
     const { data: profile, error: profileError } = await supabaseServiceRole
       .from('profiles')
-      .select('timezone')
+      .select('timezone, telegram_bot_token, telegram_chat_id') // Adicionado telegram_bot_token e telegram_chat_id
       .eq('id', user_id)
       .single();
+
+    if (profileError) {
+      console.error("Erro ao buscar perfil do usuário:", profileError);
+    }
+
     const userTimezone = profile?.timezone || "America/Sao_Paulo";
     const nowInUserTimezone = utcToZonedTime(new Date(), userTimezone);
 
@@ -186,6 +187,72 @@ serve(async (req) => {
       } else {
         console.log(`Evento de histórico registrado para a tarefa ${taskId}.`);
       }
+    }
+    
+    // 6. Enviar notificação para o Telegram
+    const TELEGRAM_BOT_TOKEN = profile?.telegram_bot_token;
+    const TELEGRAM_CHAT_ID = profile?.telegram_chat_id;
+    
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+      let message = "";
+      if (newStatus === 'approved') {
+        message = `✅ Cliente ${clientDetails.name} aprovou a tarefa "${taskDetails.title}"!`;
+      } else if (newStatus === 'edit_requested') {
+        message = `✏️ Cliente ${clientDetails.name} solicitou edição na tarefa "${taskDetails.title}". Motivo: ${editReason}`;
+      } else if (newStatus === 'rejected') {
+        message = `❌ Cliente ${clientDetails.name} rejeitou a tarefa "${taskDetails.title}". Motivo: ${editReason}`;
+      }
+      
+      const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      const telegramBody = {
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+      };
+
+      const resp = await fetch(telegramUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(telegramBody),
+      });
+
+      if (!resp.ok) {
+        console.error("Erro ao enviar mensagem para o Telegram:", resp.status, await resp.text());
+      }
+    } else {
+      console.warn("Telegram secrets não configurados. Pulando notificação.");
+    }
+    
+    // 7. Integrar com a Evolution API
+    const evolutionApiUrl = Deno.env.get("EVOLUTION_API_URL");
+    const evolutionApiKey = Deno.env.get("EVOLUTION_API_KEY");
+
+    if (evolutionApiUrl && evolutionApiKey) {
+      try {
+        const evolutionResponse = await fetch(evolutionApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${evolutionApiKey}`,
+          },
+          body: JSON.stringify({
+            taskId: taskId,
+            taskTitle: taskDetails.title,
+            taskDescription: taskDetails.description,
+            newStatus: newStatus,
+            clientId: client_id,
+          }),
+        });
+
+        if (!evolutionResponse.ok) {
+          console.error("Erro ao enviar dados para a Evolution API:", evolutionResponse.status, await evolutionResponse.text());
+        } else {
+          console.log("Dados enviados para a Evolution API com sucesso.");
+        }
+      } catch (evolutionError) {
+        console.error("Erro ao chamar a Evolution API:", evolutionError);
+      }
+    } else {
+      console.warn("Evolution API URL ou Key não configurados. Pulando integração.");
     }
 
     return new Response(JSON.stringify({ message: "Client task status updated successfully." }), {
