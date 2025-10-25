@@ -130,12 +130,13 @@
   }
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden; /* Garante que o HTML não tenha overflow horizontal */
   }
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden; /* Proteção contra overflow horizontal */
+    overflow-x: hidden; /* Garante que o body não tenha overflow horizontal */
     min-height: 100vh;
     width: 100vw;
   }
@@ -147,7 +148,7 @@
     padding-left: var(--sal);
     padding-right: var(--sar);
     width: 100%;
-    box-sizing: border-box; /* Garante que o padding não cause overflow */
+    box-sizing: border-box;
   }
 
   /* Para navegadores Webkit (Chrome, Safari) */

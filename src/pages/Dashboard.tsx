@@ -17,7 +17,7 @@ import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { format } from "date-fns";
 import OverdueTasksReminder from "@/components/dashboard/OverdueTasksReminder";
-import DashboardWrapper from "@/components/layout/DashboardWrapper"; // Importando o novo wrapper
+import DashboardWrapper from "@/components/layout/DashboardWrapper";
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-primary" },
@@ -130,7 +130,7 @@ const Dashboard: React.FC = () => {
             tasks={overdueTasks.map(t => ({ 
               id: t.id, 
               title: t.title, 
-              dueDate: t.due_date ? format(new Date(t.due_date), 'dd/MM') : 'N/A' 
+              due_date: t.due_date ? format(new Date(t.due_date), 'dd/MM') : 'N/A' 
             }))} 
             onTaskUpdated={handleTaskUpdated}
           />
@@ -139,7 +139,7 @@ const Dashboard: React.FC = () => {
 
       {/* Conteúdo Principal (Dentro do Wrapper) */}
       <DashboardWrapper>
-        <div className="space-y-6 py-6"> {/* Adicionado padding vertical aqui */}
+        <div className="space-y-6 py-6">
           <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
@@ -171,6 +171,7 @@ const Dashboard: React.FC = () => {
 
           {/* Seção de Listas de Tarefas (Grid 1x, 2x, 3x) */}
           <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
+          {/* Ajuste do Grid: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {/* Quadro de Hábitos */}
             <HabitListBoard 
