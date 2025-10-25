@@ -53,7 +53,8 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const kanbanContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowRightArrow] = useState(false);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
 
   // DND Sensors
   const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
@@ -88,6 +89,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const handleScroll = () => {
     if (kanbanContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = kanbanContainerRef.current;
+      setShowLeftArrow(scrollLeft > 0);
       setShowRightArrow(scrollLeft < scrollWidth - clientWidth);
     }
   };
@@ -141,13 +143,13 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
           {/* Container de Scroll Horizontal */}
           <div className="relative">
             {showLeftArrow && (
-              <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(-200)}>
+              <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(-200)} aria-label="Scroll para a esquerda">
                 <ChevronLeft className="h-5 w-5" />
                 <span className="sr-only">Scroll para a esquerda</span>
               </Button>
             )}
             {showRightArrow && (
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(200)}>
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(200)} aria-label="Scroll para a direita">
                 <ChevronRight className="h-5 w-5" />
                 <span className="sr-only">Scroll para a direita</span>
               </Button>
