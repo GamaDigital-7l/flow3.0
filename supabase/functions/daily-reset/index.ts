@@ -29,42 +29,50 @@ serve(async (req) => {
       const userId = user.id;
       const userTimezone = user.timezone || 'America/Sao_Paulo';
 
-      const nowUtc = new Date();
-      const nowInUserTimezone = dateFnsTz.utcToZonedTime(nowUtc, userTimezone);
-      const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd");
+      try {
+        const nowUtc = new Date();
+        const nowInUserTimezone = dateFnsTz.utcToZonedTime(nowUtc, userTimezone);
+        const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd");
 
-      console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString} no fuso horário ${userTimezone}.`);
+        console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString} no fuso horário ${userTimezone}.`);
 
-      // 1. Processar Tarefas Atrasadas (Overdue)
-      // Busca tarefas não concluídas cuja data de vencimento é anterior a HOJE.
-      const { data: pendingTasks, error: pendingTasksError } = await supabase
-        .from('tasks')
-        .select('id, due_date, current_board, is_completed, recurrence_type')
-        .eq('user_id', userId)
-        .eq('is_completed', false)
-        .lt('due_date', todayInUserTimezoneString); // due_date < HOJE
-
-      if (pendingTasksError) {
-        console.error(`[User ${userId}] Erro ao buscar tarefas pendentes:`, pendingTasksError);
-        continue;
-      }
-
-      const overdueUpdates = pendingTasks
-        .filter(task => task.current_board !== 'overdue') // Apenas tarefas que ainda não estão no quadro de atrasadas
-        .map(task => ({
-          id: task.id,
-          overdue: true,
-          current_board: 'overdue',
-          last_moved_to_overdue_at: nowUtc.toISOString(),
-        }));
-
-      if (overdueUpdates.length > 0) {
-        const { error: updateOverdueError } = await supabase
+        // 1. Processar Tarefas Atrasadas (Overdue)
+        // Busca tarefas não concluídas cuja data de vencimento é anterior a HOJE.
+        const { data: pendingTasks, error: pendingTasksError } = await supabase
           .from('tasks')
-          .upsert(overdueUpdates, { onConflict: 'id' });
+          .select('id, due_date, current_board, is_completed, recurrence_type')
+          .eq('user_id', userId)
+          .eq('is_completed', false)
+          .lt('due_date', todayInUserTimezoneString); // due_date < HOJE
 
-        if (updateOverdueError) console.error(`[User ${userId}] Erro ao atualizar tarefas atrasadas:`, updateOverdueError);
-        else console.log(`[User ${userId}] Movidas ${overdueUpdates.length} tarefas para 'overdue'.`);
+        if (pendingTasksError) {
+          console.error(`[User ${userId}] Erro ao buscar tarefas pendentes:`, pendingTasksError);
+          continue;
+        }
+
+        const overdueUpdates = pendingTasks
+          .filter(task => task.current_board !== 'overdue') // Apenas tarefas que ainda não estão no quadro de atrasadas
+          .map(task => ({
+            id: task.id,
+            overdue: true,
+            current_board: 'overdue',
+            last_moved_to_overdue_at: nowUtc.toISOString(),
+          }));
+
+        if (overdueUpdates.length > 0) {
+          const { error: updateOverdueError } = await supabase
+            .from('tasks')
+            .upsert(overdueUpdates, { onConflict: 'id' });
+
+          if (updateOverdueError) console.error(`[User ${userId}] Erro ao atualizar tarefas atrasadas:`, updateOverdueError);
+          else console.log(`[User ${userId}] Movidas ${overdueUpdates.length} tarefas para 'overdue'.`);
+        }
+      } catch (userError) {
+        console.error(`[User ${userId}] Erro ao processar usuário:`, userError);
+        return new Response(JSON.stringify({ error: `Erro ao processar usuário ${userId}: ${userError.message}` }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
