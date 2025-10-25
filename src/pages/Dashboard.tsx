@@ -2,12 +2,12 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
-import { isToday, isBefore, startOfDay } from "date-fns"; // Importando funções de data
+import { isBefore, startOfDay } from "date-fns"; // Importando funções de data
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
 import HabitListBoard from "@/components/dashboard/HabitListBoard";
 import { useTodayHabits } from "@/hooks/useHabits";
 import { Task, TaskCurrentBoard } from "@/types/task";
-import { ListTodo, Loader2, AlertCircle, Repeat, Users, DollarSign, TrendingUp, PlusCircle } from "lucide-react";
+import { ListTodo, Loader2, Users, PlusCircle } from "lucide-react";
 import { showError } from "@/utils/toast";
 import QuickAddTaskInput from "@/components/dashboard/QuickAddTaskInput";
 import DashboardResultsSummary from "@/components/dashboard/DashboardResultsSummary";
@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import TaskForm from "@/components/TaskForm";
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { format } from "date-fns";
 import OverdueTasksReminder from "@/components/dashboard/OverdueTasksReminder";
 import DashboardWrapper from "@/components/layout/DashboardWrapper";
 import { parseISO } from "@/lib/utils"; // Importando parseISO
@@ -52,8 +51,6 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   return mappedData;
 };
 
-// Removendo fetchOverdueTasks e OverdueTask interface, pois calcularemos no frontend
-
 const Dashboard: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
@@ -66,10 +63,6 @@ const Dashboard: React.FC = () => {
     staleTime: 1000 * 60 * 1,
   });
   
-  // Não precisamos mais de um query separado para overdueTasks
-  const isLoadingOverdue = false; 
-  const refetchOverdue = () => {}; // Função dummy
-
   const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits();
   
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
@@ -93,9 +86,7 @@ const Dashboard: React.FC = () => {
     refetchHabits();
   };
 
-  // -------------------------------------------------------------------
-  // NOVO CÁLCULO DE TAREFAS ATRASADAS (CLIENT-SIDE)
-  // -------------------------------------------------------------------
+  // CÁLCULO DE TAREFAS ATRASADAS (CLIENT-SIDE)
   const overdueTasks = React.useMemo(() => {
     const todayStart = startOfDay(new Date());
     
@@ -113,7 +104,6 @@ const Dashboard: React.FC = () => {
       }))
       .sort((a, b) => parseISO(a.due_date).getTime() - parseISO(b.due_date).getTime()); // Ordena pela data mais antiga
   }, [allTasks]);
-  // -------------------------------------------------------------------
 
   const dashboardTasks = allTasks.filter(task => !task.is_completed);
 
@@ -161,7 +151,7 @@ const Dashboard: React.FC = () => {
             </Dialog>
           </div>
 
-          {/* 2. Overdue Tasks Reminder (Logo abaixo do cabeçalho) */}
+          {/* 2. Overdue Tasks Reminder (Carrossel Horizontal) */}
           {overdueTasks.length > 0 && (
             <OverdueTasksReminder 
               tasks={overdueTasks} 
@@ -169,12 +159,12 @@ const Dashboard: React.FC = () => {
             />
           )}
           
-          {/* 3. Seção de Listas de Tarefas (Grid 1x, 2x, 3x) */}
+          {/* 3. Seção de Listas de Tarefas (Grid Responsivo 1/2/3 colunas) */}
           <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
-          {/* Ajuste do Grid: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
+          {/* Grid Responsivo: 1 coluna (mobile), 2 colunas (md), 3 colunas (lg) */}
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             
-            {/* Tarefas (Primeiro) */}
+            {/* Tarefas */}
             {BOARD_DEFINITIONS.map((board) => (
               <TaskListBoard
                 key={board.id}
@@ -196,7 +186,7 @@ const Dashboard: React.FC = () => {
               />
             ))}
             
-            {/* Quadro de Hábitos (Último) */}
+            {/* Quadro de Hábitos */}
             <HabitListBoard 
               habits={todayHabits || []} 
               isLoading={isLoadingHabits} 
@@ -205,7 +195,7 @@ const Dashboard: React.FC = () => {
             />
           </div>
           
-          {/* 4. Seção de Resumos (Métricas de Produtividade - MOVIDA PARA O FINAL) */}
+          {/* 4. Seção de Resumos (Métricas de Produtividade) */}
           <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Métricas de Produtividade</h2>
           <DashboardResultsSummary />
           

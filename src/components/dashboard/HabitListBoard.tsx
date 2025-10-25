@@ -1,13 +1,8 @@
-// src/components/dashboard/HabitListBoard.tsx
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Repeat, PlusCircle } from "lucide-react";
-import { Habit } from "@/types/habit";
-import HabitItem from "@/components/HabitItem";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import HabitForm from "../HabitForm";
-import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Repeat, Loader2, AlertCircle } from 'lucide-react';
+import { Habit } from '@/types/habit';
+import HabitItem from '../HabitItem';
 
 interface HabitListBoardProps {
   habits: Habit[];
@@ -22,76 +17,60 @@ const HabitListBoard: React.FC<HabitListBoardProps> = ({
   error,
   refetchHabits,
 }) => {
-  const [isFormOpen, setIsFormOpen] = React.useState(false);
-
-  if (isLoading) {
-    return (
-      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Repeat className="h-4 w-4 text-status-recurring" /> Hábitos Recorrentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3">
-          <p className="text-muted-foreground text-sm">Carregando hábitos...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Repeat className="h-4 w-4 text-status-recurring" /> Hábitos Recorrentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3">
-          <p className="text-red-500 text-sm">Erro ao carregar hábitos: {error.message}</p>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  const activeHabits = habits.filter(h => !h.paused);
+  const activeHabits = habits.filter(h => !h.is_completed && !h.paused);
+  const completedHabits = habits.filter(h => h.is_completed);
 
   return (
-    <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1 flex-shrink-0">
-        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-          <Repeat className="h-4 w-4 text-status-recurring" /> Hábitos Recorrentes ({activeHabits.length})
+    <Card className="bg-card border-border shadow-lg card-hover-effect flex flex-col min-w-0">
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+          <Repeat className="h-5 w-5 text-status-recurring" /> Hábitos de Hoje
         </CardTitle>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button size="icon" variant="ghost" onClick={() => setIsFormOpen(true)} className="h-7 w-7 text-primary hover:bg-primary/10">
-              <PlusCircle className="h-4 w-4" />
-              <span className="sr-only">Adicionar Hábito</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-            <DialogHeader>
-              <DialogTitle className="text-foreground">Adicionar Novo Hábito</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Crie um hábito recorrente para acompanhar sua consistência.
-              </DialogDescription>
-            </DialogHeader>
-            <HabitForm onHabitSaved={refetchHabits} onClose={() => setIsFormOpen(false)} />
-          </DialogContent>
-        </Dialog>
       </CardHeader>
-      
-      <div className="max-h-[85vh] overflow-y-auto custom-scrollbar flex-1">
-        <CardContent className="p-2 pt-1 space-y-1">
-          {activeHabits.length === 0 ? (
-            <p className="text-muted-foreground text-xs p-2">Nenhum hábito ativo para hoje.</p>
-          ) : (
-            activeHabits.map((habit) => (
-              <HabitItem key={habit.id} habit={habit} refetchHabits={refetchHabits} compactMode={true} showActions={false} />
-            ))
+      <CardContent className="p-4 space-y-3 flex-grow flex flex-col">
+        <div className="space-y-3 flex-grow min-h-[100px]">
+          {isLoading && (
+            <div className="flex items-center justify-center p-4 text-primary">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" /> Carregando...
+            </div>
           )}
-        </CardContent>
-      </div>
+          
+          {error && (
+            <div className="flex items-center p-4 text-red-500 bg-red-500/10 rounded-lg">
+              <AlertCircle className="h-5 w-5 mr-2" /> Erro ao carregar hábitos.
+            </div>
+          )}
+
+          {!isLoading && activeHabits.length === 0 && completedHabits.length === 0 && (
+            <p className="text-muted-foreground p-4 text-center">Nenhum hábito para hoje. <a href="/recurrence" className="text-primary underline">Crie um novo hábito</a>.</p>
+          )}
+
+          {/* Hábitos Ativos */}
+          {activeHabits.map(habit => (
+            <HabitItem 
+              key={habit.id} 
+              habit={habit} 
+              refetchHabits={refetchHabits} 
+              showActions={true}
+            />
+          ))}
+          
+          {/* Hábitos Concluídos */}
+          {completedHabits.length > 0 && (
+            <div className="pt-2 border-t border-border mt-3">
+              <p className="text-sm font-semibold text-muted-foreground mb-2">Concluídos ({completedHabits.length})</p>
+              {completedHabits.map(habit => (
+                <HabitItem 
+                  key={habit.id} 
+                  habit={habit} 
+                  refetchHabits={refetchHabits} 
+                  showActions={false}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </CardContent>
     </Card>
   );
 };
