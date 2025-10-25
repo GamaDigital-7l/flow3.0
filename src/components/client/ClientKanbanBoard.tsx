@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { Input } from "@/components/ui/input";
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface ClientKanbanBoardProps {
   hook: ClientKanbanHook;
