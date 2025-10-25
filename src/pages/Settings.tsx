@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError, showInfo } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,32 +109,21 @@ const Settings: React.FC = () => {
     }
 
     try {
-      const evolutionApiUrl = Deno.env.get("EVOLUTION_API_URL");
-      const evolutionApiKey = Deno.env.get("EVOLUTION_API_KEY");
-
-      if (!evolutionApiUrl || !evolutionApiKey) {
-        showError("URL ou chave da API Evolution não configuradas.");
-        return;
-      }
-
-      const testMessage = "Teste de mensagem da Gama Flow!";
-
-      const evolutionResponse = await axios.post(evolutionApiUrl, {
-        phone: whatsappPhoneNumberId,
-        message: testMessage,
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${evolutionApiKey}`,
+      const { error: fnError } = await supabase.functions.invoke('test-whatsapp', {
+        body: {
+          whatsappApiToken: whatsappApiToken,
+          whatsappPhoneNumberId: whatsappPhoneNumberId,
+          userId: userId,
         },
       });
 
-      if (evolutionResponse.status === 200) {
-        showSuccess("Mensagem de teste enviada para o WhatsApp!");
-      } else {
-        showError("Erro ao enviar mensagem de teste para o WhatsApp.");
-        console.error("Erro na resposta da Evolution API:", evolutionResponse.status, evolutionResponse.data);
+      if (fnError) {
+        console.error("Erro ao chamar a Edge Function:", fnError);
+        showError("Erro ao enviar mensagem de teste para o WhatsApp: " + fnError.message);
+        return;
       }
+
+      showSuccess("Mensagem de teste enviada para o WhatsApp!");
     } catch (error: any) {
       showError("Erro ao enviar mensagem de teste para o WhatsApp: " + error.message);
       console.error("Erro ao enviar mensagem de teste para o WhatsApp:", error);
