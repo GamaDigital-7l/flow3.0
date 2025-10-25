@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { DndContext, closestCorners, DragOverlay, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCorners, DragOverlay, useSensor, useSensors, MouseSensor, TouchSensor, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, Send, Copy, MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -16,12 +17,7 @@ import { ClientTaskStatus, ClientTask } from '@/types/client';
 import { motion } from 'framer-motion';
 import { Input } from "@/components/ui/input";
 import { showSuccess } from '@/utils/toast';
-import { MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
-
-// Define custom sensors locally
-const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
-const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, options);
 
 interface ClientKanbanBoardProps {
   hook: ClientKanbanHook;
@@ -57,9 +53,9 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const [showRightArrow, setShowRightArrow] = useState(false);
 
   // DND Sensors
-  const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
-  const touchSensor = useTouchSensor({ activationConstraint: { delay: 100, tolerance: 5 } });
-  const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
+  const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } });
+  const sensors = useSensors(mouseSensor, touchSensor);
   
   const tasksUnderReview = tasksByStatus.get('under_review') || [];
 
