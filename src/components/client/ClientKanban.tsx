@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send, Copy, XCircle, MessageSquare, X } from 'lucide-react';
+import { ArrowLeft, Loader2, PlusCircle, Edit, Trash2, Repeat, CalendarDays, Link as LinkIcon, Send, Copy, XCircle, MessageSquare, Eye, X, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, getInitials } from '@/lib/utils';
@@ -22,13 +22,14 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientTaskTemplates from './ClientTaskTemplates';
+import ClientVault from './ClientVault'; // Importar o novo componente
 import copy from 'copy-to-clipboard';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
-import ClientMonthSelector from './ClientMonthSelector'; // Importar o seletor
+import ClientMonthSelector from './ClientMonthSelector';
 import { format } from 'date-fns';
-import { motion } from 'framer-motion'; // Importar motion
+import { motion } from 'framer-motion';
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
@@ -104,7 +105,7 @@ const fetchClientData = async (clientId: string, userId: string, monthYearRef: s
   };
 };
 
-type TabValue = "kanban" | "templates";
+type TabValue = "kanban" | "templates" | "vault"; // Adicionado 'vault'
 
 const ClientKanban: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -123,7 +124,7 @@ const ClientKanban: React.FC = () => {
   const [initialStatus, setInitialStatus] = useState<ClientTaskStatus | undefined>(undefined);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null); // Estado para Lightbox
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabValue>("kanban");
   
   // DND State
@@ -131,7 +132,7 @@ const ClientKanban: React.FC = () => {
   const [localTasks, setLocalTasks] = useState<ClientTask[]>([]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["clientTasks", clientId, userId, currentMonthYear], // Adicionado currentMonthYear
+    queryKey: ["clientTasks", clientId, userId, currentMonthYear],
     queryFn: () => fetchClientData(clientId!, userId!, currentMonthYear),
     enabled: !!clientId && !!userId,
     staleTime: 1000 * 60 * 1,
@@ -162,7 +163,6 @@ const ClientKanban: React.FC = () => {
   const tasksUnderReview = tasksByStatus.get('under_review') || [];
 
   const handleTaskSaved = () => {
-    // Força o refetch do servidor para garantir a consistência
     refetch();
     setIsTaskFormOpen(false);
     setEditingTask(undefined);
@@ -247,13 +247,11 @@ const ClientKanban: React.FC = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      // Após a atualização do DB, forçamos o refetch para garantir a consistência
       queryClient.invalidateQueries({ queryKey: ["clientTasks", clientId, userId] });
       queryClient.invalidateQueries({ queryKey: ["allTasks", userId] });
     },
     onError: (err: any) => {
       showError("Erro ao mover tarefa: " + err.message);
-      // Em caso de erro, reverte para o estado do servidor
       refetch();
     },
   });
@@ -269,7 +267,6 @@ const ClientKanban: React.FC = () => {
     const { active, over } = event;
     setActiveDragItem(null);
     
-    // Verifique se over existe antes de prosseguir
     if (!over) {
       return;
     }
@@ -278,7 +275,6 @@ const ClientKanban: React.FC = () => {
     const draggedTask = localTasks.find(t => t.id === activeId);
     if (!draggedTask) return;
 
-    // Determinar o ID do container de destino (pode ser o ID de uma tarefa ou o ID da coluna)
     let targetContainerId: UniqueIdentifier | null = null;
     let overId: UniqueIdentifier | null = null;
 
@@ -286,7 +282,6 @@ const ClientKanban: React.FC = () => {
         targetContainerId = over.data.current.sortable.containerId;
         overId = over.id;
     } else {
-        // Se o over for a coluna vazia (o droppable container), o ID é o status
         targetContainerId = over.id;
         overId = null;
     }
@@ -314,14 +309,12 @@ const ClientKanban: React.FC = () => {
         if (oldIndex !== -1 && newIndex !== -1) {
           newTasksInTarget = arrayMove(tasksInSource, oldIndex, newIndex);
         }
-        newTasksInSource = []; // Não precisamos da lista de origem separada
+        newTasksInSource = [];
       } 
       // Caso 2: Movendo para uma coluna diferente
       else {
-        // Remove da origem
         newTasksInSource = tasksInSource.filter(t => t.id !== activeId);
         
-        // Encontra o índice de inserção na coluna de destino
         const overIndex = overId ? tasksInTarget.findIndex(t => t.id === overId) : -1;
         const insertIndex = overIndex === -1 ? tasksInTarget.length : overIndex;
         
@@ -346,8 +339,6 @@ const ClientKanban: React.FC = () => {
           const updatedTask = { ...task, status: newStatus, order_index: index };
           finalTasks.push(updatedTask);
           
-          // Coleta as atualizações para enviar ao DB
-          // Só envia se o status ou a ordem mudou
           const originalTask = prevTasks.find(t => t.id === task.id);
           if (!originalTask || originalTask.status !== newStatus || originalTask.order_index !== index) {
               updatesToSend.push({
@@ -440,9 +431,10 @@ const ClientKanban: React.FC = () => {
       </PageTitle>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-grow flex flex-col">
-        <TabsList className="grid w-full grid-cols-2 bg-muted text-muted-foreground flex-shrink-0">
+        <TabsList className="grid w-full grid-cols-3 bg-muted text-muted-foreground flex-shrink-0">
           <TabsTrigger value="kanban"><CalendarDays className="mr-2 h-4 w-4" /> Kanban</TabsTrigger>
           <TabsTrigger value="templates"><Repeat className="mr-2 h-4 w-4" /> Templates</TabsTrigger>
+          <TabsTrigger value="vault"><Lock className="mr-2 h-4 w-4" /> Cofre</TabsTrigger>
         </TabsList>
         
         <TabsContent value="kanban" className="mt-4 flex-grow flex flex-col min-h-0">
@@ -501,6 +493,10 @@ const ClientKanban: React.FC = () => {
         
         <TabsContent value="templates" className="mt-4">
           <ClientTaskTemplates clientId={clientId!} clientName={data?.client?.name!} />
+        </TabsContent>
+        
+        <TabsContent value="vault" className="mt-4">
+          <ClientVault clientId={clientId!} />
         </TabsContent>
       </Tabs>
 
