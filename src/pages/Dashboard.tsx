@@ -98,74 +98,77 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="page-content-wrapper space-y-6">
-      {/* Lembrete de Tarefas Atrasadas no Topo */}
+    <div className="page-content-wrapper space-y-6"> {/* Removed max-w-7xl mx-auto px-3 md:px-4 lg:px-6 */}
+      {/* Lembrete de Tarefas Atrasadas no Topo (Full Width) */}
       <OverdueTasksReminder onTaskUpdated={handleTaskUpdated} />
       
-      <div className="flex justify-between items-center flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Seu resumo de tarefas e fluxo de trabalho.
-          </p>
-        </div>
-        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
-            <DialogHeader>
-              <DialogTitle className="text-foreground">Adicionar Nova Tarefa</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Crie uma nova tarefa para organizar seu dia.
-              </DialogDescription>
-            </DialogHeader>
-            <TaskForm
-              onTaskSaved={handleTaskUpdated}
-              onClose={() => setIsTaskFormOpen(false)}
-              initialOriginBoard="general"
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Seção de Resumos (Produtividade) */}
-      <h2 className="text-xl font-bold text-foreground pt-4">Métricas de Produtividade</h2>
-      <DashboardResultsSummary />
-
-      {/* Seção de Listas de Tarefas (Grid 1x, 2x, 3x, 4x) */}
-      <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {/* Quadro de Hábitos */}
-        <HabitListBoard 
-          habits={todayHabits || []} 
-          isLoading={isLoadingHabits} 
-          error={errorHabits} 
-          refetchHabits={handleHabitUpdated} 
-        />
-        
-        {BOARD_DEFINITIONS.map((board) => (
-          <TaskListBoard
-            key={board.id}
-            title={board.title}
-            tasks={dashboardTasks.filter(t => 
-              t.current_board === board.id
-            )}
-            isLoading={isLoadingTasks}
-            error={errorTasks}
-            refetchTasks={handleTaskUpdated}
-            quickAddTaskInput={
-              <QuickAddTaskInput
-                originBoard={board.id}
-                onTaskAdded={handleTaskUpdated}
-                dueDate={new Date()}
+      {/* Conteúdo Principal com Padding Lateral e Max Width */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Seu resumo de tarefas e fluxo de trabalho.
+            </p>
+          </div>
+          <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0">
+                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Tarefa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Adicionar Nova Tarefa</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Crie uma nova tarefa para organizar seu dia.
+                </DialogDescription>
+              </DialogHeader>
+              <TaskForm
+                onTaskSaved={handleTaskUpdated}
+                onClose={() => setIsTaskFormOpen(false)}
+                initialOriginBoard="general"
               />
-            }
-            originBoard={board.id}
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Seção de Listas de Tarefas (Grid 1x, 2x, 3x, 4x) */}
+        <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {/* Quadro de Hábitos */}
+          <HabitListBoard 
+            habits={todayHabits || []} 
+            isLoading={isLoadingHabits} 
+            error={errorHabits} 
+            refetchHabits={handleHabitUpdated} 
           />
-        ))}
+          
+          {BOARD_DEFINITIONS.map((board) => (
+            <TaskListBoard
+              key={board.id}
+              title={board.title}
+              tasks={dashboardTasks.filter(t => 
+                t.current_board === board.id
+              )}
+              isLoading={isLoadingTasks}
+              error={errorTasks}
+              refetchTasks={handleTaskUpdated}
+              quickAddTaskInput={
+                <QuickAddTaskInput
+                  originBoard={board.id}
+                  onTaskAdded={handleTaskUpdated}
+                  dueDate={new Date()}
+                />
+              }
+              originBoard={board.id}
+            />
+          ))}
+        </div>
+        
+        {/* Seção de Resumos (Produtividade) - MOVIDO PARA O FINAL */}
+        <h2 className="text-xl font-bold text-foreground pt-4">Métricas de Produtividade</h2>
+        <DashboardResultsSummary />
       </div>
     </div>
   );
