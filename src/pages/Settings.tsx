@@ -28,165 +28,130 @@ const Settings: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const userEmail = session?.user?.email;
-  const [isSubmitting, setIsSubmitting] from "react";
-import { useForm, zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toast";
-import { useSession } from "@/integrations/supabase/auth";
-import { FinancialAccount } from "@/types/finance";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-const proLaboreSchema = z.object({
-  id: z.string().optional(),
-  amount: z.preprocess(
-    (val) => (val === "" ? 0 : Number(String(val).replace(',', '.'))),
-    z.number().min(0.01, "O valor deve ser maior que zero.")
-  ),
-  payment_day_of_month: z.preprocess(
-    (val) => (val === "" ? null : Number(val)),
-    z.number().int().min(1, "O dia deve ser entre 1 e 31.").max(31, "O dia deve ser entre 1 e 31.").nullable(),
-  ).refine(val => val !== null, "O dia de pagamento é obrigatório."),
-  //target_account_id: z.string().min(1, "A conta alvo é obrigatória."),
-});
+  const { data: userSettings, isLoading, error, refetch } = useQuery(
+    ['userSettings', userId],
+    async () => {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('telegram_bot_token, telegram_chat_id')
+        .eq('user_id', userId)
+        .single();
 
-export type ProLaboreFormValues = z.infer<typeof proLaboreSchema>;
-
-interface ProLaboreFormProps {
-  initialData?: ProLaboreFormValues & { id: string };
-  onProLaboreSaved: () => void;
-  onClose: () => void;
-}
-
-const fetchAccounts = async (userId: string): Promise<FinancialAccount[]> => {
-  const { data, error } = await supabase
-    .from("financial_accounts")
-    .select("*")
-    .eq("user_id", userId)
-    .order("name", { ascending: true });
-  if (error) throw error;
-  return data || [];
-};
-
-const ProLaboreForm: React.FC<ProLaboreFormProps> = ({ initialData, onProLaboreSaved, onClose }) => {
-  const { session } = useSession();
-  const userId = session?.user?.id;
-  const queryClient = useQueryClient();
-
-  const form = useForm<ProLaboreFormValues>({
-    resolver: zodResolver(proLaboreSchema),
-    defaultValues: initialData ? {
-      ...initialData,
-      amount: initialData.amount || 0,
-      payment_day_of_month: initialData.payment_day_of_month || undefined,
-      //target_account_id: initialData.target_account_id || "",
-    } : {
-      amount: 0,
-      payment_day_of_month: undefined,
-      //target_account_id: "",
-    },
-  });
-
-  const { data: accounts, isLoading: isLoadingAccounts } = useQuery<FinancialAccount[], Error>({
-    queryKey: ["financialAccounts", userId],
-    queryFn: () => fetchAccounts(userId!),
-    enabled: !!userId,
-  });
-
-  const onSubmit = async (values: ProLaboreFormValues) => {
-    if (!userId) {
-      showError("Usuário não autenticado.");
-      return;
-    }
-
-    try {
-      const dataToSave = {
-        amount: values.amount,
-        payment_day_of_month: values.payment_day_of_month,
-        //target_account_id: values.target_account_id,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (initialData?.id) {
-        const { error } = await supabase
-          .from("pro_labore_settings")
-          .update(dataToSave)
-          .eq("id", initialData.id)
-          .eq("user_id", userId);
-        if (error) throw error;
-        showSuccess("Configuração de Pro Labore atualizada com sucesso!");
-      } else {
-        const { error } = await supabase.from("pro_labore_settings").insert({
-          ...dataToSave,
-          user_id: userId,
-        });
-        if (error) throw error;
-        showSuccess("Configuração de Pro Labore adicionada com sucesso!");
+      if (error && error.code !== 'PGRST116') {
+        throw error;
       }
-      
-      form.reset();
-      onProLaboreSaved();
-      onClose();
+      return data || {};
+    },
+    {
+      enabled: !!userId,
+    }
+  );
+
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      telegram_bot_token: userSettings?.telegram_bot_token || "",
+      telegram_chat_id: userSettings?.telegram_chat_id || "",
+    },
+    values: userSettings,
+    resetOptions: {
+      keepDirty: true,
+    }
+  });
+
+  useEffect(() => {
+    if (userSettings) {
+      form.reset(userSettings);
+    }
+  }, [userSettings, form]);
+
+  const onSubmit = async (values: SettingsFormValues) => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert(
+          {
+            user_id: userId,
+            telegram_bot_token: values.telegram_bot_token,
+            telegram_chat_id: values.telegram_chat_id,
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      showSuccess("Configurações salvas com sucesso!");
+      refetch();
     } catch (error: any) {
-      showError("Erro ao salvar Pro Labore: " + error.message);
-      console.error("Erro ao salvar Pro Labore:", error);
+      showError("Erro ao salvar configurações: " + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl">
-      <div>
-        <Label htmlFor="amount" className="text-foreground">Valor do Pro Labore</Label>
-        <Input
-          id="amount"
-          type="number"
-          step="0.01"
-          {...form.register("amount", { valueAsNumber: true })}
-          placeholder="Ex: 3000.00"
-          className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-        />
-        {form.formState.errors.amount && (
-          <p className="text-red-500 text-sm mt-1">
-            {form.formState.errors.amount.message}
-          </p>
-        )}
-      </div>
+    <PageWrapper className="space-y-6">
+      <h1 className="text-3xl font-bold">Configurações</h1>
+      <p className="text-lg text-muted-foreground">
+        Gerencie as configurações do seu aplicativo.
+      </p>
 
-      <div>
-        <Label htmlFor="payment_day_of_month" className="text-foreground">Dia do Mês para Pagamento</Label>
-        <Input
-          id="payment_day_of_month"
-          type="number"
-          min="1"
-          max="31"
-          {...form.register("payment_day_of_month", { valueAsNumber: true })}
-          placeholder="Ex: 5"
-          className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-        />
-        {form.formState.errors.payment_day_of_month && (
-          <p className="text-red-500 text-sm mt-1">
-            {form.formState.errors.payment_day_of_month.message}
-          </p>
-        )}
-      </div>
-
-      <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-        {initialData?.id ? "Atualizar Configuração" : "Salvar Configuração"}
-      </Button>
-    </form>
+      <Card className="w-full max-w-lg bg-card border border-border rounded-xl shadow-sm card-hover-effect">
+        <CardHeader>
+          <CardTitle className="text-foreground">Configurações Gerais</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Gerencie as configurações do seu aplicativo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="telegram_bot_token">Telegram Bot Token</Label>
+              <Input
+                id="telegram_bot_token"
+                type="text"
+                {...form.register("telegram_bot_token")}
+                placeholder="Seu Telegram Bot Token"
+                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+              />
+            </div>
+            <div>
+              <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>
+              <Input
+                id="telegram_chat_id"
+                type="text"
+                {...form.register("telegram_chat_id")}
+                placeholder="Seu Telegram Chat ID"
+                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+              />
+            </div>
+            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar Configurações"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Para configurar o Telegram, você precisa adicionar o token e o chat ID no console do Supabase.
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+      <Card className="w-full max-w-lg bg-card border border-border rounded-xl shadow-sm card-hover-effect">
+        <CardHeader>
+          <CardTitle className="text-foreground">Testar Integração Telegram</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Use este botão para testar o envio de mensagens para o Telegram.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TriggerDailyResetButton />
+        </CardContent>
+      </Card>
+    </PageWrapper>
   );
 };
 
-export default ProLaboreForm;
+export default Settings;
