@@ -287,7 +287,7 @@
   
   /* Garantir que o conteúdo dentro do main-content-area tenha padding lateral */
   .page-content-wrapper {
-    @apply py-3 md:py-4 lg:py-6; /* REMOVED HORIZONTAL PADDING */
+    @apply py-3 md:py-4 lg:py-6 px-0; /* REMOVED HORIZONTAL PADDING */
     width: 100%;
     box-sizing: border-box;
   }

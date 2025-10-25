@@ -159,7 +159,7 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
       {/* Embla Carousel Container */}
       <div className="relative">
         <div className="embla overflow-hidden" ref={emblaRef}>
-          <div className="embla__container flex ml-3 md:ml-4 lg:ml-6">
+          <div className="embla__container flex pl-3 md:pl-4 lg:pl-6"> {/* Added padding-left */}
             <AnimatePresence initial={false}>
               {overdueTasks.map(task => {
                 const dueDate = task.due_date ? parseISO(task.due_date) : null;
@@ -173,7 +173,7 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
                     transition={{ duration: 0.3 }}
-                    className="embla__slide flex-shrink-0 w-[80vw] sm:w-[300px] mr-3" // Ajuste de largura
+                    className="embla__slide flex-shrink-0 w-[85vw] sm:w-[320px] mr-3" // Ajuste de largura
                   >
                     <Tooltip delayDuration={200}>
                       <TooltipTrigger asChild>
