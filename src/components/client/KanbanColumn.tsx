@@ -57,7 +57,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = React.memo(({
       <CardHeader className="p-3 pb-2 flex-shrink-0">
         <CardTitle className={cn("text-lg font-semibold", column.color)}>{column.title} ({tasks.length})</CardTitle>
         <Button 
-          variant="outline" 
+          variant="outline"
           size="sm" 
           onClick={() => onAddTask(column.id)} 
           className="w-full border-dashed border-border text-primary hover:bg-primary/10 h-8 text-sm mt-2"
