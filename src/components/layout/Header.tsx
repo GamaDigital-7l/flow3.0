@@ -2,7 +2,7 @@
 
 import React from 'react';
 import AppLogo from './AppLogo';
-import ThemeToggle from '../ThemeToggle'; // Assuming a ThemeToggle component exists
+import ThemeToggle from '../ThemeToggle'; // Importado como default
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 
