@@ -2,7 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/integrations/supabase/auth";
-import { isToday } from "date-fns";
+import { isToday, isBefore, startOfDay } from "date-fns"; // Importando funções de data
 import TaskListBoard from "@/components/dashboard/TaskListBoard";
 import HabitListBoard from "@/components/dashboard/HabitListBoard";
 import { useTodayHabits } from "@/hooks/useHabits";
@@ -18,6 +18,7 @@ import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { format } from "date-fns";
 import OverdueTasksReminder from "@/components/dashboard/OverdueTasksReminder";
 import DashboardWrapper from "@/components/layout/DashboardWrapper";
+import { parseISO } from "@/lib/utils"; // Importando parseISO
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-primary" },
@@ -51,24 +52,7 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
   return mappedData;
 };
 
-interface OverdueTask {
-  id: string;
-  title: string;
-  due_date: string;
-  is_priority: boolean; // Adicionado
-}
-
-const fetchOverdueTasks = async (userId: string): Promise<OverdueTask[]> => {
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("id, title, due_date, is_priority") // Incluindo is_priority
-    .eq("user_id", userId)
-    .eq("overdue", true)
-    .eq("is_completed", false)
-    .order("due_date", { ascending: true });
-  if (error) throw error;
-  return data as OverdueTask[] || [];
-};
+// Removendo fetchOverdueTasks e OverdueTask interface, pois calcularemos no frontend
 
 const Dashboard: React.FC = () => {
   const { session } = useSession();
@@ -82,13 +66,10 @@ const Dashboard: React.FC = () => {
     staleTime: 1000 * 60 * 1,
   });
   
-  const { data: overdueTasks = [], isLoading: isLoadingOverdue, refetch: refetchOverdue } = useQuery<OverdueTask[], Error>({
-    queryKey: ["overdueTasks", userId],
-    queryFn: () => fetchOverdueTasks(userId!),
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
-  });
-  
+  // Não precisamos mais de um query separado para overdueTasks
+  const isLoadingOverdue = false; 
+  const refetchOverdue = () => {}; // Função dummy
+
   const { todayHabits, isLoading: isLoadingHabits, error: errorHabits, refetch: refetchHabits } = useTodayHabits();
   
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
@@ -104,7 +85,7 @@ const Dashboard: React.FC = () => {
 
   const handleTaskUpdated = () => {
     refetchTasks();
-    refetchOverdue();
+    refetchHabits(); // Refetch habits just in case
     setIsTaskFormOpen(false);
   };
   
@@ -112,9 +93,31 @@ const Dashboard: React.FC = () => {
     refetchHabits();
   };
 
+  // -------------------------------------------------------------------
+  // NOVO CÁLCULO DE TAREFAS ATRASADAS (CLIENT-SIDE)
+  // -------------------------------------------------------------------
+  const overdueTasks = React.useMemo(() => {
+    const todayStart = startOfDay(new Date());
+    
+    return allTasks
+      .filter(task => 
+        task.due_date && 
+        !task.is_completed && 
+        isBefore(parseISO(task.due_date), todayStart)
+      )
+      .map(task => ({
+        id: task.id,
+        title: task.title,
+        due_date: task.due_date!,
+        is_priority: task.is_priority,
+      }))
+      .sort((a, b) => parseISO(a.due_date).getTime() - parseISO(b.due_date).getTime()); // Ordena pela data mais antiga
+  }, [allTasks]);
+  // -------------------------------------------------------------------
+
   const dashboardTasks = allTasks.filter(task => !task.is_completed);
 
-  if (isLoadingTasks || isLoadingHabits || isLoadingOverdue) {
+  if (isLoadingTasks || isLoadingHabits) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
         <Loader2 className="h-8 w-8 animate-spin mr-2" /> Carregando seu dia...
@@ -161,12 +164,7 @@ const Dashboard: React.FC = () => {
           {/* 2. Overdue Tasks Reminder (Logo abaixo do cabeçalho) */}
           {overdueTasks.length > 0 && (
             <OverdueTasksReminder 
-              tasks={overdueTasks.map(t => ({ 
-                id: t.id, 
-                title: t.title, 
-                due_date: t.due_date,
-                is_priority: t.is_priority, // Passando a prioridade
-              }))} 
+              tasks={overdueTasks} 
               onTaskUpdated={handleTaskUpdated}
             />
           )}
