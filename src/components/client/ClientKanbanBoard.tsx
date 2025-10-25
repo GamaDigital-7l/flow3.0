@@ -1,7 +1,7 @@
 // src/components/client/ClientKanbanBoard.tsx
 "use client";
 
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { DndContext, closestCorners, DragOverlay, useSensor, useSensors } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { PlusCircle, Loader2, Send, Copy, MessageSquare, X, ChevronLeft, Chevron
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskCard from './ClientTaskCard';
-import KanbanColumn from './ClientKanbanColumn';
+import KanbanColumn from './KanbanColumn';
 import ClientMonthSelector from './ClientMonthSelector';
 import { useClientKanban } from '@/hooks/useClientKanban';
 import { ClientTaskStatus, ClientTask } from '@/types/client';
