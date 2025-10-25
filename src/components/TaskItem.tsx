@@ -5,7 +5,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, CalendarDays, Clock, AlertCircle, Users, PlusCircle } from "lucide-react";
 import { useSession } from "@/integrations/supabase/auth";
-import { Task, TaskCurrentBoard } from "@/types/task";
+import { Task, TaskCurrentBoard, TaskOriginBoard, TaskRecurrenceType, DAYS_OF_WEEK_LABELS } from "@/types/task";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,7 @@ interface TaskItemProps {
   task: Task;
   refetchTasks: () => void;
   compactMode?: boolean;
+  showActions?: boolean;
 }
 
 const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
@@ -49,7 +50,7 @@ const getTaskStatusBadge = (status: TaskCurrentBoard, task: Task) => {
   return null;
 };
 
-const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, compactMode = false }) => {
+const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, compactMode = false, showActions = true }) => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | undefined>(undefined);
@@ -168,13 +169,16 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
 
   const isCompleted = task.is_completed;
   
+  const isAlert = false;
+  const isPaused = false;
+
   return (
     <>
       <Card className={cn(
         "border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
         isCompleted ? "opacity-70" : "card-hover-effect",
         // Usando a cor primária para destaque de atraso
-        isTrulyOverdue && "border-status-overdue ring-1 ring-status-overdue/50",
+        task.overdue && "border-status-overdue ring-1 ring-status-overdue/50",
         compactMode ? "p-1.5" : "p-2" // Ajuste de padding
       )}>
         <div className="flex items-start gap-2">
@@ -208,7 +212,7 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
               <p className={cn("text-muted-foreground break-words line-clamp-1", compactMode ? "text-[0.65rem]" : "text-xs")}>{task.description}</p>
             )}
             <div className="flex flex-wrap gap-1 mt-0.5">
-              {getTaskStatusBadge(task.current_board, task)}
+              {/* {getTaskStatusBadge(task.current_board, task)} */}
               {task.due_date && (
                 <Badge variant="secondary" className="bg-muted/50 text-muted-foreground h-5 px-1.5 text-xs flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" /> {formatDateTime(task.due_date, false)}
