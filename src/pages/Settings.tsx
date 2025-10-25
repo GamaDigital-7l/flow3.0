@@ -4,20 +4,28 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Link as LinkIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants"; // Importar a constante
+import { cn } from "@/lib/utils"; // Importando as novas funções
 import { sendDailyTelegramSummary } from "@/utils/telegram";
-import axios from "axios";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 
-// Schema para as configurações, incluindo Telegram e WhatsApp
 const settingsSchema = z.object({
   telegram_bot_token: z.string().optional(),
   telegram_chat_id: z.string().optional(),
@@ -30,7 +38,8 @@ export type SettingsFormValues = z.infer<typeof settingsSchema>;
 const Settings: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const userEmail = session?.user?.email;
+  const queryClient = useQueryClient();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: userSettings, isLoading, error, refetch } = useQuery({
@@ -99,37 +108,6 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleTestWhatsApp = async () => {
-    const whatsappApiToken = form.getValues('whatsapp_api_token');
-    const whatsappPhoneNumberId = form.getValues('whatsapp_phone_number_id');
-
-    if (!whatsappApiToken || !whatsappPhoneNumberId) {
-      showError("Por favor, preencha o token e o ID do número do WhatsApp.");
-      return;
-    }
-
-    try {
-      const { error: fnError } = await supabase.functions.invoke('test-whatsapp', {
-        body: {
-          whatsappApiToken: whatsappApiToken,
-          whatsappPhoneNumberId: whatsappPhoneNumberId,
-          userId: userId,
-        },
-      });
-
-      if (fnError) {
-        console.error("Erro ao chamar a Edge Function:", fnError);
-        showError("Erro ao enviar mensagem de teste para o WhatsApp: " + fnError.message);
-        return;
-      }
-
-      showSuccess("Mensagem de teste enviada para o WhatsApp!");
-    } catch (error: any) {
-      showError("Erro ao enviar mensagem de teste para o WhatsApp: " + error.message);
-      console.error("Erro ao enviar mensagem de teste para o WhatsApp:", error);
-    }
-  };
-
   return (
     <PageWrapper className="space-y-6">
       <h1 className="text-3xl font-bold">Configurações</h1>
@@ -145,83 +123,53 @@ const Settings: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="telegram_bot_token">Telegram Bot Token</Label>
-              <Input
-                id="telegram_bot_token"
-                type="text"
-                {...form.register("telegram_bot_token")}
-                placeholder="Seu Telegram Bot Token"
-                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-              />
-            </div>
-            <div>
-              <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>
-              <Input
-                id="telegram_chat_id"
-                type="text"
-                {...form.register("telegram_chat_id")}
-                placeholder="Seu Telegram Chat ID"
-                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-              />
-            </div>
-            <div>
-              <Label htmlFor="whatsapp_api_token">WhatsApp Business API Token</Label>
-              <Input
-                id="whatsapp_api_token"
-                type="text"
-                {...form.register("whatsapp_api_token")}
-                placeholder="Seu WhatsApp Business API Token"
-                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-              />
-            </div>
-            <div>
-              <Label htmlFor="whatsapp_phone_number_id">WhatsApp Phone Number ID</Label>
-              <Input
-                id="whatsapp_phone_number_id"
-                type="text"
-                {...form.register("whatsapp_phone_number_id")}
-                placeholder="Seu WhatsApp Phone Number ID"
-                className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
-              />
-            </div>
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar Configurações"}
-            </Button>
-            <div className="flex flex-col gap-2">
-              <Button
-                type="button"
-                onClick={() => sendDailyTelegramSummary(userId, 'morning')}
-                disabled={isSubmitting}
-                className="w-full bg-green-500 text-white hover:bg-green-700"
-              >
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste Telegram (Manhã)"}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <Label htmlFor="telegram_bot_token">Telegram Bot Token</Label>
+                <Input
+                  id="telegram_bot_token"
+                  type="text"
+                  {...form.register("telegram_bot_token")}
+                  placeholder="Seu Telegram Bot Token"
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                />
+              </div>
+              <div>
+                <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>
+                <Input
+                  id="telegram_chat_id"
+                  type="text"
+                  {...form.register("telegram_chat_id")}
+                  placeholder="Seu Telegram Chat ID"
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                />
+              </div>
+              <div>
+                <Label htmlFor="whatsapp_api_token">WhatsApp Business API Token</Label>
+                <Input
+                  id="whatsapp_api_token"
+                  type="text"
+                  {...form.register("whatsapp_api_token")}
+                  placeholder="Seu WhatsApp Business API Token"
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                />
+              </div>
+              <div>
+                <Label htmlFor="whatsapp_phone_number_id">WhatsApp Phone Number ID</Label>
+                <Input
+                  id="whatsapp_phone_number_id"
+                  type="text"
+                  {...form.register("whatsapp_phone_number_id")}
+                  placeholder="Seu WhatsApp Phone Number ID"
+                  className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
+                />
+              </div>
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar Configurações"}
               </Button>
-              <Button
-                type="button"
-                onClick={() => sendDailyTelegramSummary(userId, 'evening')}
-                disabled={isSubmitting}
-                className="w-full bg-green-500 text-white hover:bg-green-700"
-              >
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste Telegram (Noite)"}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleTestWhatsApp}
-                disabled={isSubmitting}
-                className="w-full bg-blue-500 text-white hover:bg-blue-700"
-              >
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar Teste WhatsApp"}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Para configurar o Telegram, você precisa adicionar o token e o chat ID no console do Supabase.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Para configurar o WhatsApp, você precisa adicionar o token e o ID do número de telefone no console do Supabase.
-            </p>
-          </form>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </PageWrapper>

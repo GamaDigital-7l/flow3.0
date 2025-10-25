@@ -34,7 +34,6 @@ serve(async (req) => {
     );
 
     const today = new Date();
-    const todayStart = startOfDay(today);
     const todayString = format(today, 'dd/MM/yyyy');
 
     // Fetch tasks for the user
@@ -53,7 +52,7 @@ serve(async (req) => {
 
     // Filter tasks for today and overdue tasks
     const todaysTasks = tasks.filter(task => task.due_date && isToday(parseISO(task.due_date)));
-    const overdueTasks = tasks.filter(task => task.due_date && isBefore(parseISO(task.due_date), todayStart) && !task.is_completed);
+    const overdueTasks = tasks.filter(task => task.due_date && isBefore(parseISO(task.due_date), startOfDay(today)) && !task.is_completed);
 
     let message = '';
 
