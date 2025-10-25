@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { format, subDays, isToday, parseISO, isBefore, startOfDay } from "https://esm.sh/date-fns@3.6.0";
-import * as dateFnsTz from "https://esm.sh/date-fns-tz@3.0.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,9 +29,12 @@ serve(async (req) => {
       const userTimezone = user.timezone || 'America/Sao_Paulo';
 
       try {
+        // Set the TZ environment variable for the user's timezone
+        Deno.env.set('TZ', userTimezone);
+
         const nowUtc = new Date();
-        const nowInUserTimezone = dateFnsTz.utcToZonedTime(nowUtc, userTimezone);
-        const todayInUserTimezoneString = format(nowInUserTimezone, "yyyy-MM-dd");
+        // Format the date using the user's timezone
+        const todayInUserTimezoneString = format(nowUtc, "yyyy-MM-dd", { timeZone: userTimezone });
 
         console.log(`[User ${userId}] Executando daily-reset. Hoje (TZ): ${todayInUserTimezoneString} no fuso horário ${userTimezone}.`);
 
@@ -73,6 +75,9 @@ serve(async (req) => {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      } finally {
+        // Clear the TZ environment variable after processing the user
+        Deno.env.delete('TZ');
       }
     }
 
