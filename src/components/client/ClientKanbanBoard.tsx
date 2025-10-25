@@ -12,7 +12,7 @@ import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskCard from './ClientTaskCard';
 import KanbanColumn from './ClientKanbanColumn';
 import ClientMonthSelector from './ClientMonthSelector';
-import { useClientKanban } from '@/hooks/useClientKanban';
+import { useClientKanban, ClientKanbanHook } from '@/hooks/useClientKanban';
 import { ClientTaskStatus, ClientTask } from '@/types/client';
 import { motion } from 'framer-motion';
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ interface ClientKanbanBoardProps {
   onAddTask: (status: ClientTaskStatus) => void;
   onEditTask: (task: ClientTask) => void;
   refetchTasks: () => void;
+  onImageClick: (url: string) => void;
 }
 
 const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
@@ -31,8 +32,10 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   onAddTask,
   onEditTask,
   refetchTasks,
+  onImageClick,
 }) => {
   const {
+    client,
     tasksByStatus,
     isLoading,
     error,
@@ -43,11 +46,12 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
     handleDragEnd,
     handleGenerateApprovalLink,
     currentMonthYear,
+    setCurrentMonthYear,
   } = hook;
 
-  const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false);
-  const [generatedLink, setGeneratedLink] = React.useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const kanbanContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -107,7 +111,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
     <div className="flex-grow flex flex-col min-h-0">
       
       {/* Seletor de Mês */}
-      <ClientMonthSelector currentMonthYear={currentMonthYear} onMonthChange={hook.setCurrentMonthYear} />
+      <ClientMonthSelector currentMonthYear={currentMonthYear} onMonthChange={setCurrentMonthYear} />
       
       {/* Botão de Link de Aprovação */}
       {tasksUnderReview.length > 0 && (
@@ -161,6 +165,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
                   onAddTask={onAddTask}
                   onEditTask={onEditTask}
                   refetchTasks={refetch}
+                  onImageClick={setLightboxUrl}
                 />
               ))}
             </div>
@@ -194,7 +199,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
               <Button variant="outline" onClick={() => handleCopyLink(generatedLink || '')} className="w-1/2 mr-2">
                 <Copy className="mr-2 h-4 w-4" /> Copiar Link
               </Button>
-              <Button onClick={() => handleCopyLink(generatedLink || '', true)} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+              <Button onClick={() => {}} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
                 <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
               </Button>
             </div>
