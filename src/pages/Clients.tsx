@@ -24,6 +24,7 @@ interface Client {
   description: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  monthly_delivery_goal: number;
 }
 
 const fetchClients = async (userId: string): Promise<Client[]> => {
