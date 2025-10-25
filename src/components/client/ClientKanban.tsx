@@ -131,4 +131,3 @@ const ClientKanban: React.FC = () => {
 };
 
 export default ClientKanban;
-}
