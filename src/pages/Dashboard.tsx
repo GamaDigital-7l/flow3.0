@@ -131,10 +131,6 @@ const Dashboard: React.FC = () => {
         </Dialog>
       </div>
 
-      {/* Seção de Resumos (Produtividade) */}
-      <h2 className="text-xl font-bold text-foreground pt-4">Métricas de Produtividade</h2>
-      <DashboardResultsSummary />
-
       {/* Seção de Listas de Tarefas (Grid 1x, 2x, 3x, 4x) */}
       <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Seu Fluxo de Trabalho</h2>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -167,6 +163,10 @@ const Dashboard: React.FC = () => {
           />
         ))}
       </div>
+      
+      {/* Seção de Resumos (Produtividade) - MOVIDO PARA O FINAL */}
+      <h2 className="text-xl font-bold text-foreground pt-4">Métricas de Produtividade</h2>
+      <DashboardResultsSummary />
     </div>
   );
 };

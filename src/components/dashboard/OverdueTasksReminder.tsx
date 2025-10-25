@@ -7,9 +7,9 @@ import { useSession } from '@/integrations/supabase/auth';
 import { Task, TaskCurrentBoard } from '@/types/task';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, CalendarDays, ListTodo } from "lucide-react";
-import { format, isBefore, startOfDay, parseISO, differenceInDays } from "date-fns";
-import { cn, formatDateTime } from "@/lib/utils";
+import { AlertCircle, CheckCircle2, CalendarDays, ListTodo, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, isBefore, startOfDay, parseISO, differenceInDays, subDays } from "date-fns";
+import { cn, formatDateTime } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
@@ -129,70 +129,72 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
       </h2>
       
       {/* Horizontal Scroll Container (Carrossel style) */}
-      <div className="overflow-x-auto whitespace-nowrap custom-scrollbar pb-2">
-        <AnimatePresence initial={false}>
-          {overdueTasks.map(task => {
-            const dueDate = task.due_date ? parseISO(task.due_date) : null;
-            // Calculate days overdue relative to today
-            const daysOverdue = dueDate ? differenceInDays(startOfDay(new Date()), startOfDay(dueDate)) : 0;
-            const isUrgent = daysOverdue >= 3; // Consider urgent if 3+ days overdue
+      <div className="relative">
+        <div className="overflow-x-auto whitespace-nowrap custom-scrollbar pb-2">
+          <AnimatePresence initial={false}>
+            {overdueTasks.map(task => {
+              const dueDate = task.due_date ? parseISO(task.due_date) : null;
+              // Calculate days overdue relative to today
+              const daysOverdue = dueDate ? differenceInDays(startOfDay(new Date()), startOfDay(dueDate)) : 0;
+              const isUrgent = daysOverdue >= 3; // Consider urgent if 3+ days overdue
 
-            return (
-              <motion.div
-                key={task.id}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
-                transition={{ duration: 0.3 }}
-                className="inline-block w-72 sm:w-80 mr-3 last:mr-0"
-              >
-                <Tooltip delayDuration={200}>
-                  <TooltipTrigger asChild>
-                    <Card className={cn(
-                      "w-full bg-secondary border border-border rounded-xl shadow-minimal p-3 flex flex-col justify-between h-full",
-                      isUrgent && "border-primary ring-1 ring-primary/50" // Highlight urgent tasks
-                    )}>
-                      <CardHeader className="p-0 pb-1">
-                        <CardTitle className="text-sm font-semibold text-foreground truncate">{task.title}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-0 text-sm text-muted-foreground space-y-1">
-                        <div className="flex items-center justify-between">
-                            <Badge variant="secondary" className="bg-primary/10 text-primary h-5 px-1.5 text-xs">
-                                {getBoardDisplayName(task.origin_board)}
-                            </Badge>
-                            <p className={cn("text-xs font-bold flex-shrink-0", isUrgent ? "text-primary" : "text-muted-foreground")}>
-                              {daysOverdue} DIAS DE ATRASO
+              return (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
+                  transition={{ duration: 0.3 }}
+                  className="inline-block w-72 sm:w-80 mr-3 last:mr-0"
+                >
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <Card className={cn(
+                        "w-full bg-secondary border border-border rounded-xl shadow-minimal p-3 flex flex-col justify-between h-full",
+                        isUrgent && "border-primary ring-1 ring-primary/50" // Highlight urgent tasks
+                      )}>
+                        <CardHeader className="p-0 pb-1">
+                          <CardTitle className="text-sm font-semibold text-foreground truncate">{task.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0 text-sm text-muted-foreground space-y-1">
+                          <div className="flex items-center justify-between">
+                              <Badge variant="secondary" className="bg-primary/10 text-primary h-5 px-1.5 text-xs">
+                                  {getBoardDisplayName(task.origin_board)}
+                              </Badge>
+                              <p className={cn("text-xs font-bold flex-shrink-0", isUrgent ? "text-primary" : "text-muted-foreground")}>
+                                {daysOverdue} DIAS DE ATRASO
+                              </p>
+                          </div>
+                          {dueDate && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <CalendarDays className="h-3 w-3" /> Vencimento: {formatDateTime(dueDate, false)}
                             </p>
-                        </div>
-                        {dueDate && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <CalendarDays className="h-3 w-3" /> Vencimento: {formatDateTime(dueDate, false)}
-                          </p>
-                        )}
-                      </CardContent>
-                      <CardFooter className="p-0 mt-2 flex items-center justify-end">
-                        <Button 
-                          size="sm" 
-                          className="bg-green-600 text-white hover:bg-green-700 h-7 text-xs"
-                          onClick={() => completeTaskMutation.mutate(task.id)}
-                          disabled={completeTaskMutation.isPending}
-                        >
-                          <CheckCircle2 className="mr-2 h-3 w-3" /> Concluir
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="space-y-1 max-w-xs">
-                      <p className="text-sm font-semibold">{task.title}</p>
-                      <p className="text-xs">Descrição: {task.description || 'Nenhuma descrição'}</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                          )}
+                        </CardContent>
+                        <CardFooter className="p-0 mt-2 flex items-center justify-end">
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 text-white hover:bg-green-700 h-7 text-xs"
+                            onClick={() => completeTaskMutation.mutate(task.id)}
+                            disabled={completeTaskMutation.isPending}
+                          >
+                            <CheckCircle2 className="mr-2 h-3 w-3" /> Concluir
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="space-y-1 max-w-xs">
+                        <p className="text-sm font-semibold">{task.title}</p>
+                        <p className="text-xs">Descrição: {task.description || 'Nenhuma descrição'}</p>
+                      </div>
+                    </TooltipContent>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div >
+        </div>
       </div>
     </div>
   );
