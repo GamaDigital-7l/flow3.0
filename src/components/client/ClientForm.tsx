@@ -102,7 +102,17 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
       contact_phone: null,
       monthly_delivery_goal: 0,
     },
+    values: initialData,
+    resetOptions: {
+      keepDirty: true,
+    }
   });
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
