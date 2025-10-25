@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, getInitials } from '@/lib/utils';
 import PageTitle from "@/components/layout/PageTitle";
 import { useSession } from "@/integrations/supabase/auth";
-import { showError, showSuccess, showInfo } from "@/utils/toast";
+import { showError, showSuccess, showInfo } from '@/utils/toast';
 import { DndContext, closestCorners, DragEndEvent, useSensor, MouseSensor, TouchSensor, DragOverlay, UniqueIdentifier } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import ClientTaskCard from './ClientTaskCard';
@@ -33,7 +33,8 @@ import { motion } from 'framer-motion';
 
 // Define custom hooks locally to ensure compatibility
 const useMouseSensor = (options: any = {}) => useSensor(MouseSensor, options);
-const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, options);
+const useTouchSensor = (options: any = {}) => useSensor(TouchSensor, TouchSensor);
+const sensors = useMemo(() => [mouseSensor, touchSensor], [mouseSensor, touchSensor]);
 
 // Tipos simplificados
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -63,7 +64,7 @@ interface Client {
 
 const KANBAN_COLUMNS: { id: ClientTaskStatus; title: string; color: string }[] = [
   { id: "in_progress", title: "Em Produção", color: "text-muted-foreground" },
-  { id: "under_review", title: "Para Aprovação", color: "text-primary" },
+  { id: "under_review", title: "Para Aprovação", color="text-primary" },
   { id: "edit_requested", title: "Edição Solicitada", color: "text-primary" },
   { id: "approved", title: "Aprovado", color: "text-foreground" },
   { id: "posted", title: "Postado/Concluído", color: "text-muted-foreground" },
@@ -208,7 +209,7 @@ const ClientKanban: React.FC = () => {
 
       if (fetchError) throw fetchError;
       
-      const taskMap = new Map(existingTasks.map(t => [t.id, t]));
+      const taskMap = new Map(existingTasks.map(t => [t.id, t.id]));
 
       // 2. Montar o payload de upsert com todos os campos obrigatórios
       const dbUpdates = updates.map(({ taskId, newStatus, newOrderIndex }) => {
@@ -538,34 +539,6 @@ const ClientKanban: React.FC = () => {
             onClientTaskSaved={handleTaskSaved}
             onClose={() => setIsTaskFormOpen(false)}
           />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Lightbox para Imagem (Tela Cheia) */}
-      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
-        <DialogContent 
-          className="lightbox-fullscreen-override"
-        >
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setLightboxUrl(null)} 
-            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-10 w-10"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          {lightboxUrl && (
-            <motion.img
-              key={lightboxUrl}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              src={lightboxUrl}
-              alt="Visualização em Tela Cheia"
-              className="max-w-[95%] max-h-[95%] object-contain"
-            />
-          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -298,8 +298,8 @@ const VaultAssetForm: React.FC<VaultAssetFormProps> = ({ clientId, initialData, 
                   <FormMessage />
                 </FormItem>
               )}
-            />
-          </div>
+            )}
+          />
         );
       default:
         return null;
@@ -307,9 +307,8 @@ const VaultAssetForm: React.FC<VaultAssetFormProps> = ({ clientId, initialData, 
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      
         {/* Tipo de Ativo */}
         <FormField
           control={form.control}

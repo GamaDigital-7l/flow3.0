@@ -5,15 +5,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/integrations/supabase/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, Search, FileText, Lock, Palette, Type, Link as LinkIcon, Download } from 'lucide-react';
 import { showError, showSuccess, showInfo } from '@/utils/toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { VaultAsset, AssetType, ASSET_TYPE_LABELS } from '@/types/vault';
 import VaultAssetForm from './VaultAssetForm';
 import VaultAssetCard from './VaultAssetCard';
-import { Input } from '@/components/ui/input';
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import copy from 'copy-to-clipboard';
 import { Label } from '@/components/ui/label';
@@ -54,6 +54,7 @@ const ClientVault: React.FC<ClientVaultProps> = ({ clientId }) => {
     queryKey: ["clientVaultAssets", clientId, userId],
     queryFn: () => fetchClientVaultAssets(clientId, userId!),
     enabled: !!userId && !!clientId,
+    staleTime: 1000 * 60 * 5,
   });
 
   const handleAssetSaved = () => {
