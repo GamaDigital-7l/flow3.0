@@ -26,7 +26,7 @@ interface ClientKanbanBoardProps {
   onAddTask: (status: ClientTaskStatus) => void;
   onEditTask: (task: ClientTask) => void;
   refetchTasks: () => void;
-  onImageClick: (url: string) => void;
+  // onImageClick: (url: string) => void; // Removido, pois o lightbox será local
 }
 
 const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
@@ -34,7 +34,6 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
   onAddTask,
   onEditTask,
   refetchTasks,
-  onImageClick,
 }) => {
   const {
     tasksByStatus,
@@ -45,11 +44,12 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
     handleGenerateApprovalLink,
     currentMonthYear,
     setCurrentMonthYear,
+    refetch, // Usar o refetch do hook
   } = hook;
 
   const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null); // Estado para Lightbox
 
   // DND Sensors
   const mouseSensor = useMouseSensor({ activationConstraint: { distance: 5 } });
@@ -70,9 +70,15 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
     }
   };
   
-  const handleCopyLink = (link: string) => {
-    copy(link);
-    showSuccess("Link copiado!");
+  const handleCopyLink = (link: string, message: boolean = false) => {
+    if (message) {
+      const whatsappMessage = `Olá! Segue o link para aprovação dos posts de ${currentMonthYear}: ${link}`;
+      copy(whatsappMessage);
+      showSuccess("Mensagem e link copiados para o WhatsApp!");
+    } else {
+      copy(link);
+      showSuccess("Link copiado!");
+    }
   };
 
   return (
@@ -114,8 +120,8 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
                 tasks={tasksByStatus.get(column.id) || []}
                 onAddTask={onAddTask}
                 onEditTask={onEditTask}
-                refetchTasks={refetchTasks}
-                onImageClick={onImageClick}
+                refetchTasks={refetch} // Usando o refetch do hook
+                onImageClick={setLightboxUrl} // Passando o setter do lightbox
               />
             ))}
           </div>
@@ -125,8 +131,8 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
               <ClientTaskCard 
                 task={activeDragItem as ClientTask} 
                 onEdit={onEditTask} 
-                refetchTasks={refetchTasks}
-                onImageClick={onImageClick}
+                refetchTasks={refetch}
+                onImageClick={setLightboxUrl}
               />
             ) : null}
           </DragOverlay>
@@ -148,7 +154,7 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = ({
               <Button variant="outline" onClick={() => handleCopyLink(generatedLink || '')} className="w-1/2 mr-2">
                 <Copy className="mr-2 h-4 w-4" /> Copiar Link
               </Button>
-              <Button onClick={() => {}} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+              <Button onClick={() => handleCopyLink(generatedLink || '', true)} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
                 <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
               </Button>
             </div>
