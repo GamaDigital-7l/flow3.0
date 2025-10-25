@@ -92,9 +92,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
     resolver: zodResolver(clientSchema),
     defaultValues: initialData ? {
       ...initialData,
-      amount: initialData.amount || 0,
-      payment_day_of_month: initialData.payment_day_of_month || undefined,
-      //target_account_id: initialData.target_account_id || "",
+      // Removed non-existent fields (amount, payment_day_of_month)
     } : {
       name: "",
       description: null,
@@ -381,7 +379,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={member.profile?.avatar_url || undefined} alt={member.profile?.first_name || 'Avatar'} />
                     <AvatarFallback className="text-sm bg-primary/20 text-primary">{getInitials(member.profile?.first_name || 'Membro')}</AvatarFallback>
-                  </div>
+                  </Avatar>
                   <div>
                     <p className="font-semibold text-foreground">{member.profile?.first_name} {member.profile?.last_name}</p>
                     <p className="text-xs text-muted-foreground">{member.role}</p>
@@ -454,3 +452,5 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClientSaved, onC
     </Tabs>
   );
 };
+
+export default ClientForm;
