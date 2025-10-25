@@ -234,11 +234,6 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
                 <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> ⚠️ Tarefa Atrasada!
               </p>
             )}
-            {shouldShowHabitWarning && (
-              <p className={cn("text-red-500 mt-1 flex items-center gap-1", compactMode ? "text-[0.65rem]" : "text-xs")}>
-                <AlertCircle className={cn("flex-shrink-0", compactMode ? "h-3 w-3" : "h-3 w-3")} /> ⚠️ Não quebre o hábito!
-              </p>
-            )}
           </div>
           <div className="flex-shrink-0 flex gap-0.5">
             <Button variant="ghost" size="icon" onClick={() => handleEditTask(task)} className="h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground">
