@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition, lazy, Suspense } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { Sidebar } from "./Sidebar";
-import { Header } from "./Header";
+import Sidebar from "./Sidebar";
+import Header from "./Header";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import OfflineIndicator from "../OfflineIndicator";
@@ -53,7 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ isOnline, deferredPrompt, onInstallClic
       
       {/* Conteúdo Principal (Ocupa 100% da largura) */}
       <div className="flex flex-col flex-1">
-        <Header onMenuClick={() => setIsSidebarOpen(true)} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
+        <Header onMenuToggle={() => setIsSidebarOpen(true)} />
         <OfflineIndicator isOnline={isOnline} />
         <main className="main-content-area">
           <AnimatePresence>
