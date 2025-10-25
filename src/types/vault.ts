@@ -8,14 +8,14 @@ export interface VaultAsset {
   description: string | null;
   asset_type: AssetType;
   
-  -- File specific
+  // File specific
   file_url: string | null;
   mime_type: string | null;
   
-  -- Secret specific
+  // Secret specific
   encrypted_secret: string | null;
   
-  -- Metadata (for colors/fonts)
+  // Metadata (for colors/fonts)
   metadata: any | null; 
   
   created_at: string;
