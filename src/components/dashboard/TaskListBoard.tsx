@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, AlertCircle } from "lucide-react";
+import { ListTodo, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskOriginBoard } from "@/types/task"; // Importar Task e TaskOriginBoard
 import TaskItem from "@/components/TaskItem"; // Import TaskItem
