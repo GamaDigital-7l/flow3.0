@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
@@ -191,7 +191,7 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, refetchTasks, comp
         "border border-border rounded-lg bg-card shadow-sm transition-all duration-200",
         isCompleted ? "opacity-70" : "card-hover-effect",
         // Usando a cor primária para destaque de atraso
-        isTrulyOverdue && "border-status-overdue ring-1 ring-status-overdue/50",
+        task.overdue && "border-status-overdue ring-1 ring-status-overdue/50",
         compactMode ? "p-1.5" : "p-2" // Ajuste de padding
       )}>
         <div className="flex items-start gap-2">
