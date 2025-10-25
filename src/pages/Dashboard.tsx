@@ -18,13 +18,15 @@ import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import OverdueTasksReminder from "@/components/dashboard/OverdueTasksReminder";
 import DashboardWrapper from "@/components/layout/DashboardWrapper";
 import { parseISO } from "@/lib/utils"; // Importando parseISO
+import ClientProgressBoard from "@/components/dashboard/ClientProgressBoard"; // Importando o novo componente
 
 const BOARD_DEFINITIONS: { id: TaskCurrentBoard; title: string; icon: React.ReactNode; color: string }[] = [
   { id: "today_high_priority", title: "Hoje — Prioridade Alta", icon: <ListTodo className="h-5 w-5" />, color: "text-primary" },
   { id: "today_medium_priority", title: "Hoje — Prioridade Média", icon: <ListTodo className="h-5 w-5" />, color: "text-orange-500" },
   { id: "week_low_priority", title: "Esta Semana — Baixa", icon: <ListTodo className="h-5 w-5" />, color: "text-yellow-600" },
   { id: "general", title: "Woe Comunicação", icon: <ListTodo className="h-5 w-5" />, color: "text-muted-foreground" },
-  { id: "client_tasks", title: "Clientes Fixos", icon: <Users className="h-5 w-5" />, color: "text-blue-500" },
+  { id: "client_tasks", title: "Tarefas de Cliente", icon: <Users className="h-5 w-5" />, color: "text-blue-500" },
+  { id: "completed", title: "Concluídas", icon: <ListTodo className="h-5 w-5" />, color: "text-green-500" },
 ];
 
 const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -49,6 +51,32 @@ const fetchTasks = async (userId: string): Promise<Task[]> => {
     template_task_id: null,
   })) || [];
   return mappedData;
+};
+
+const getBoardTitle = (boardId: TaskOriginBoard) => {
+  switch (boardId) {
+    case "today_high_priority": return "Hoje (Alta Prioridade)";
+    case "today_medium_priority": return "Hoje (Média Prioridade)";
+    case "week_low_priority": return "Esta Semana (Baixa Prioridade)";
+    case "general": return "Woe Comunicação";
+    case "client_tasks": return "Tarefas de Cliente";
+    case "completed": return "Concluídas";
+    default: return boardId;
+  }
+};
+
+interface Profile {
+  points: number;
+}
+
+const fetchProfile = async (userId: string): Promise<Profile | null> => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("points")
+    .eq("id", userId)
+    .single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data || null;
 };
 
 const Dashboard: React.FC = () => {
@@ -198,6 +226,9 @@ const Dashboard: React.FC = () => {
           {/* 4. Seção de Resumos (Métricas de Produtividade) */}
           <h2 className="text-xl font-bold text-foreground pt-4 border-t border-border">Métricas de Produtividade</h2>
           <DashboardResultsSummary />
+          
+          {/* 5. Client Progress Board */}
+          <ClientProgressBoard />
           
         </div>
       </DashboardWrapper>
