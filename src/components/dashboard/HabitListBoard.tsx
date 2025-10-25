@@ -84,7 +84,7 @@ const HabitListBoard: React.FC<HabitListBoardProps> = ({
       <div className="max-h-[85vh] overflow-y-auto custom-scrollbar flex-1">
         <CardContent className="p-2 pt-1 space-y-1">
           {activeHabits.length === 0 ? (
-            <p className="text-muted-foreground text-xs">Nenhum hábito ativo para hoje.</p>
+            <p className="text-muted-foreground text-xs p-2">Nenhum hábito ativo para hoje.</p>
           ) : (
             activeHabits.map((habit) => (
               <HabitItem key={habit.id} habit={habit} refetchHabits={refetchHabits} compactMode={true} showActions={false} />

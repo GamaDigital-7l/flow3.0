@@ -73,12 +73,9 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
   const overdueCount = tasks.filter(task => task.overdue).length;
 
   // --- Dynamic Layout Logic ---
-  const maxVisibleTasks = 6;
-  const compactMode = tasks.length > maxVisibleTasks;
-  
-  // Determine padding for CardContent based on compactMode
-  const contentPaddingClass = compactMode ? "p-2 pt-1" : "p-3 pt-1";
-  const itemSpacingClass = compactMode ? "space-y-1" : "space-y-2";
+  // Usando classes responsivas para padding e espaçamento
+  const contentPaddingClass = "p-2 pt-1";
+  const itemSpacingClass = "space-y-1";
   // --- End Dynamic Layout Logic ---
 
   if (isLoading) {
@@ -118,6 +115,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
             </span>
           )}
         </div>
+        {/* QuickAddTaskInput ocupa a largura total no mobile */}
         {quickAddTaskInput && <div className="w-full">{quickAddTaskInput}</div>}
       </CardHeader>
       
@@ -125,11 +123,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
       <div className="max-h-[85vh] overflow-y-auto custom-scrollbar flex-1">
         <CardContent className={contentPaddingClass}>
           {taskTree.length === 0 ? (
-            <p className="text-muted-foreground text-xs">Nenhuma tarefa encontrada para este quadro.</p>
+            <p className="text-muted-foreground text-xs p-2">Nenhuma tarefa encontrada para este quadro.</p>
           ) : (
             <div className={itemSpacingClass}>
               {taskTree.map((task) => (
-                <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} compactMode={compactMode} />
+                <TaskItem key={task.id} task={task} refetchTasks={refetchTasks} compactMode={true} />
               ))}
             </div>
           )}
