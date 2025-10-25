@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/integrations/supabase/auth';
+import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskCurrentBoard } from '@/types/task';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { cn, formatDateTime } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError, showSuccess } from "@/utils/toast";
 
 interface OverdueTasksReminderProps {
   onTaskUpdated: () => void;
@@ -39,8 +39,7 @@ const fetchOverdueTasks = async (userId: string): Promise<Task[]> => {
 const getBoardDisplayName = (board: TaskCurrentBoard) => {
     switch (board) {
         case "today_high_priority": return "Prioridade Alta";
-        case "today_medium_priority": return "Prioridade Média";
-        case "week_low_priority": return "Semana Baixa";
+        case "today_medium_priority": return "Semana Baixa";
         case "general": return "Woe Comunicação";
         case "client_tasks": return "Clientes Fixos";
         case "urgent": return "Urgente";
@@ -193,7 +192,7 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ onTaskUpdat
                 );
               })}
             </AnimatePresence>
-          </div >
+          </div>
         </div>
       </div>
     </div>
