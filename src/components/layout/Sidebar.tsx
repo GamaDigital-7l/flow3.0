@@ -1,103 +1,113 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Home, ListTodo, Target, BookOpen, Dumbbell, Notebook, CalendarDays, Users, BarChart3, Settings, DollarSign, Repeat, Download, GraduationCap, Wallet, FileText, Image } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { useSession } from "@/integrations/supabase/auth";
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toast";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+"use client";
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Home, ListTodo, Repeat, Settings, Users, X, LogOut, Calendar, BarChart3 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useSupabaseAuth } from '@/integrations/supabase/auth';
+import AppLogo from './AppLogo'; // Importando o novo componente de logo
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const navItems: NavItem[] = [
+  { href: '/', label: 'Dashboard', icon: <Home className="h-5 w-5" /> },
+  { href: '/tasks', label: 'Todas as Tarefas', icon: <ListTodo className="h-5 w-5" /> },
+  { href: '/recurrence', label: 'Recorrência/Hábitos', icon: <Repeat className="h-5 w-5" /> },
+  { href: '/calendar', label: 'Calendário', icon: <Calendar className="h-5 w-5" /> },
+  { href: '/clients', label: 'Clientes', icon: <Users className="h-5 w-5" /> },
+  { href: '/reports', label: 'Relatórios', icon: <BarChart3 className="h-5 w-5" /> },
+];
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  deferredPrompt: Event | null;
-  onInstallClick: () => void;
-  isDesktop?: boolean; // Mantido para compatibilidade, mas não usado na lógica de renderização
 }
 
-const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Tarefas", href: "/tasks", icon: ListTodo },
-  { name: "Recorrência", href: "/recurrence", icon: Repeat },
-  { name: "Clientes", href: "/clients", icon: Users },
-  { name: "Orçamentos", href: "/proposals", icon: FileText },
-  { name: "Portfólio", href: "/portfolio", icon: Image },
-  { name: "Financeiro", href: "/finance", icon: DollarSign },
-  { name: "Metas", href: "/goals", icon: Target },
-  { name: "Saúde", href: "/health", icon: Dumbbell },
-  { name: "Livros", href: "/books", icon: BookOpen },
-  { name: "Notas", href: "/notes", icon: Notebook },
-  { name: "Resultados", href: "/results", icon: BarChart3 },
-];
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const pathname = usePathname();
+  const { signOut } = useSupabaseAuth();
 
-const SidebarContent: React.FC<Omit<SidebarProps, 'isOpen' | 'onClose'> & { onClose: () => void }> = ({ onClose }) => {
-  const location = useLocation();
-  const { session } = useSession();
-
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      showSuccess("Desconectado com sucesso!");
-    } catch (error: any) {
-      showError("Erro ao desconectar: " + error.message);
-    }
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
     <>
-      <ScrollArea className="flex-1 overflow-y-auto p-3">
-        <nav className="grid gap-1.5 text-sm font-medium">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                onClick={onClose}
-                className={cn(
-                  "nav-link-base",
-                  isActive ? "nav-link-active" : "nav-link-inactive"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-      </ScrollArea>
-      <div className="p-3 border-t border-sidebar-border space-y-1.5 flex-shrink-0">
-        <Link to="/settings" onClick={onClose}>
-          <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent h-9 px-3 text-sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Configurações
+      {/* Sidebar Principal */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-[250px] bg-sidebar-background border-r border-sidebar-border",
+          "flex flex-col transition-transform duration-300 ease-in-out",
+          // Esconder no mobile por padrão, mostrar quando isOpen
+          "transform lg:translate-x-0",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {/* Header da Sidebar */}
+        <div className="h-14 flex items-center justify-between p-4 border-b border-sidebar-border">
+          <Link href="/" className="flex items-center gap-2">
+            <AppLogo /> {/* Usando o novo componente de logo */}
+          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
           </Button>
-        </Link>
-        <Button onClick={handleLogout} variant="destructive" className="w-full h-9 px-3 text-sm">
-          Sair
-        </Button>
-      </div>
+        </div>
+
+        {/* Navegação Principal */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "nav-link-base",
+                pathname === item.href ? "nav-link-active" : "nav-link-inactive"
+              )}
+              onClick={onClose} // Fecha a sidebar no mobile ao clicar
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Footer da Sidebar (Configurações e Logout) */}
+        <div className="p-4 border-t border-sidebar-border space-y-1">
+          <Link
+            href="/settings"
+            className={cn(
+              "nav-link-base",
+              pathname === '/settings' ? "nav-link-active" : "nav-link-inactive"
+            )}
+            onClick={onClose}
+          >
+            <Settings className="h-5 w-5" />
+            <span>Configurações</span>
+          </Link>
+          
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive nav-link-base"
+            onClick={handleSignOut}
+          >
+            <LogOut className="h-5 w-5 mr-2" />
+            Sair
+          </Button>
+        </div>
+      </aside>
     </>
   );
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, deferredPrompt, onInstallClick }) => {
-  // Sempre renderiza o Sheet, independentemente do modo desktop
-  return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent 
-        side="left" 
-        className="flex flex-col w-60 bg-sidebar-background border-r border-sidebar-border p-0"
-      >
-        <div className="flex h-[calc(3.5rem+var(--sat))] items-center border-b border-sidebar-border px-3 pt-[var(--sat)] flex-shrink-0">
-          <h1 className="text-lg font-bold text-sidebar-primary">Gama Flow</h1>
-        </div>
-        <SidebarContent onClose={onClose} deferredPrompt={deferredPrompt} onInstallClick={onInstallClick} />
-      </SheetContent>
-    </Sheet>
-  );
-};
+export default Sidebar;
