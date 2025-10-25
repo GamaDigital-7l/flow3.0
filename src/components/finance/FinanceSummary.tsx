@@ -7,7 +7,7 @@ import { useSession } from '@/integrations/supabase/auth';
 import { formatCurrency } from '@/utils/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowUp, ArrowDown } from 'lucide-react';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfMonth, endOfMonth, format, isBefore, isAfter } from 'date-fns';
 
 interface FinanceSummaryData {
   totalIncome: number;
@@ -23,6 +23,7 @@ const fetchFinanceSummary = async (userId: string): Promise<FinanceSummaryData> 
   const start = format(startOfMonth(today), "yyyy-MM-dd");
   const end = format(endOfMonth(today), "yyyy-MM-dd");
 
+  // 1. Buscar transações dentro do período
   const { data: transactions, error: transactionsError } = await supabase
     .from("financial_transactions")
     .select("amount, type")
@@ -32,13 +33,38 @@ const fetchFinanceSummary = async (userId: string): Promise<FinanceSummaryData> 
 
   if (transactionsError) throw transactionsError;
 
-  const totalIncome = transactions
+  // 2. Buscar recorrências ativas que se aplicam ao período
+  const { data: recurrences, error: recurrencesError } = await supabase
+    .from("financial_recurrences")
+    .select("amount, type, next_due_date")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .lte("next_due_date", end); // Próxima data de vencimento dentro do período
+
+  if (recurrencesError) throw recurrencesError;
+
+  // Filtrar recorrências para incluir apenas aquelas que deveriam ter ocorrido no período
+  const validRecurrences = recurrences.filter(recurrence => {
+    return isAfter(new Date(recurrence.next_due_date), new Date(start));
+  });
+
+  // 3. Calcular totais
+  let totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalExpenses = transactions
+  let totalExpenses = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
+
+  // Adicionar valores das recorrências
+  totalIncome += validRecurrences
+    .filter(r => r.type === 'income')
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  totalExpenses += validRecurrences
+    .filter(r => r.type === 'expense')
+    .reduce((sum, r) => sum + r.amount, 0);
 
   const netResult = totalIncome - totalExpenses;
 
@@ -115,7 +141,7 @@ const FinanceSummary: React.FC = () => {
       </Card>
       <Card className="bg-card border-border shadow-sm">
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Previsão de Gastos</CardTitle>
+          <CardTitle className="text-sm font-medium">Previsão de Gastos</CardHeader>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(data.projectedExpenses)}</div>
