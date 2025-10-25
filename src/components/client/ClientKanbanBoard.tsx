@@ -45,9 +45,9 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
     currentMonthYear,
   } = hook;
 
-  const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false);
-  const [generatedLink, setGeneratedLink] = React.useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const kanbanContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
