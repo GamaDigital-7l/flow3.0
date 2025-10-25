@@ -143,11 +143,13 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
             {showLeftArrow && (
               <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(-200)}>
                 <ChevronLeft className="h-5 w-5" />
+                <span className="sr-only">Scroll para a esquerda</span>
               </Button>
             )}
             {showRightArrow && (
               <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(200)}>
                 <ChevronRight className="h-5 w-5" />
+                <span className="sr-only">Scroll para a direita</span>
               </Button>
             )}
             <div
