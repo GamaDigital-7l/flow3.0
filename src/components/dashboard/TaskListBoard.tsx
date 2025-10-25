@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ListTodo, ArrowRight } from "lucide-react";
+import { ListTodo, ArrowRight, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskOriginBoard } from "@/types/task"; // Importar Task e TaskOriginBoard
@@ -13,6 +13,7 @@ import TaskItem from "@/components/TaskItem"; // Import TaskItem
 import { DIALOG_CONTENT_CLASSNAMES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/utils"; // Importando as novas funções
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TaskListBoardProps {
   title: string;
@@ -85,7 +86,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
           <CardTitle className="text-base font-semibold text-foreground">{title}</CardTitle>
         </CardHeader>
         <CardContent className="p-3">
-          <p className="text-muted-foreground text-sm">Carregando tarefas...</p>
+          <div className="flex flex-col space-y-1">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-1/4" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -94,8 +99,15 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
   if (error) {
     return (
       <Card className="w-full bg-card border border-border rounded-xl shadow-sm card-hover-effect">
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-base font-semibold text-foreground">{title}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1 flex-wrap gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 min-w-0">
+            <CardTitle className="text-base font-semibold text-foreground break-words">{title}</CardTitle>
+            <span className="flex items-center gap-1 text-xs text-red-500 flex-shrink-0">
+              <AlertTriangle className="h-3 w-3" /> Erro
+            </span>
+          </div>
+          {/* QuickAddTaskInput ocupa a largura total no mobile */}
+          {quickAddTaskInput && <div className="w-full">{quickAddTaskInput}</div>}
         </CardHeader>
         <CardContent className="p-3">
           <p className="text-red-500 text-sm">Erro ao carregar tarefas: {error.message}</p>
@@ -111,7 +123,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = React.memo(({
           <CardTitle className="text-base font-semibold text-foreground break-words">{title}</CardTitle>
           {overdueCount > 0 && (
             <span className="flex items-center gap-1 text-xs text-red-500 flex-shrink-0">
-              <AlertCircle className="h-3 w-3" /> {overdueCount}
+              <AlertTriangle className="h-3 w-3" /> {overdueCount}
             </span>
           )}
         </div>
