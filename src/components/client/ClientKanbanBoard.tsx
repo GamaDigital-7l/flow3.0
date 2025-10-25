@@ -10,7 +10,7 @@ import { PlusCircle, Loader2, Send, Copy, MessageSquare, X, ChevronLeft, Chevron
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import ClientTaskCard from './ClientTaskCard';
-import KanbanColumn from './ClientKanbanColumn';
+import KanbanColumn from './KanbanColumn';
 import ClientMonthSelector from './ClientMonthSelector';
 import { useClientKanban } from '@/hooks/useClientKanban';
 import { ClientTaskStatus, ClientTask } from '@/types/client';
@@ -53,8 +53,17 @@ const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
   const [showRightArrow, setShowRightArrow] = useState(false);
 
   // DND Sensors
-  const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
-  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } });
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 5
+    }
+  });
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 100,
+      tolerance: 5
+    }
+  });
   const sensors = useSensors(mouseSensor, touchSensor);
   
   const tasksUnderReview = tasksByStatus.get('under_review') || [];
