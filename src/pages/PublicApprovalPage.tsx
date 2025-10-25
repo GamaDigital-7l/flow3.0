@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, Edit, FileText, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, CheckCircle, Clock, AlertTriangle, Info, XCircle } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 // Tipos
 type ClientTaskStatus = "in_progress" | "under_review" | "approved" | "edit_requested" | "posted";
@@ -98,6 +99,7 @@ const PublicApprovalPage: React.FC = () => {
   const [editReason, setEditReason] = useState('');
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState<'reject' | 'edit' | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery<ApprovalLinkData | null, Error>({
     queryKey: ["publicApproval", uniqueId],
@@ -143,6 +145,50 @@ const PublicApprovalPage: React.FC = () => {
       showError("Erro ao processar ação: " + err.message);
     }
   };
+
+  const renderTaskCard = (task: ClientTask) => (
+    <Card className="w-full overflow-hidden shadow-lg bg-card border-border transition-all duration-300">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-foreground">{task.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {task.image_urls && task.image_urls.length > 0 && (
+          <div className="grid grid-cols-1 gap-2">
+            {task.image_urls.map((url, index) => (
+              <button key={index} onClick={() => setLightboxUrl(url)} className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg">
+                <img
+                  src={url}
+                  alt={`Imagem ${index + 1} de ${task.title}`}
+                  className="rounded-lg object-cover w-full h-auto cursor-pointer"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+        {task.description && (
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{task.description}</p>
+        )}
+      </CardContent>
+      <CardFooter className="flex flex-col items-start space-y-4 bg-muted/50 p-4">
+        {task.status === 'under_review' && (
+          <div className="flex w-full gap-2">
+            <Button onClick={() => handleAction('approved')} className="w-full bg-green-600 hover:bg-green-700 text-white">
+              <ThumbsUp className="mr-2 h-4 w-4" /> Aprovar
+            </Button>
+            <Button variant="outline" onClick={() => { setActionType('edit'); setIsActionModalOpen(true); }} className="w-full">
+              <MessageSquare className="mr-2 h-4 w-4" /> Solicitar Edição
+            </Button>
+          </div>
+        )}
+        {task.status === 'edit_requested' && (
+          <div className="w-full p-3 rounded-md bg-yellow-100 border border-yellow-200 text-yellow-800 text-sm">
+            <p className="font-semibold">Edição solicitada:</p>
+            <p className="whitespace-pre-wrap mt-1">{task.edit_reason}</p>
+          </div>
+        )}
+      </CardFooter>
+    </Card>
+  );
 
   if (!uniqueId) {
     return (
@@ -191,18 +237,14 @@ const PublicApprovalPage: React.FC = () => {
               <>
                 <h3 className="text-xl font-semibold text-foreground">Tarefas para Aprovação</h3>
                 {data.tasks.map(task => (
-                  <div key={task.id} className="p-4 border border-border rounded-lg bg-muted/20">
-                    <h4 className="font-semibold text-foreground">{task.title}</h4>
-                    <p className="text-sm text-muted-foreground">{task.description}</p>
-                    <div className="flex justify-end gap-2 mt-4">
-                      <Button onClick={() => handleAction('approved')} className="bg-green-600 text-white hover:bg-green-700">
-                        <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar
-                      </Button>
-                      <Button variant="outline" onClick={() => { setActionType('edit'); setIsActionModalOpen(true); }} className="text-yellow-600 hover:bg-yellow-600/10">
-                        <Edit className="mr-2 h-4 w-4" /> Solicitar Edição
-                      </Button>
-                    </div>
-                  </div>
+                  <ApprovalTaskCard
+                    key={task.id}
+                    task={task}
+                    onApprove={handleAction}
+                    onEditRequest={handleAction}
+                    isProcessing={updateTaskStatus.isPending}
+                    onImageClick={setLightboxUrl}
+                  />
                 ))}
               </>
             )}
