@@ -110,7 +110,8 @@ const OverdueTasksReminder: React.FC<OverdueTasksReminderProps> = ({ tasks, onTa
               
               <Button 
                 onClick={() => completeTaskMutation.mutate(task.id)} 
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                size="sm" // Diminuindo o tamanho do botão
+                className="w-full bg-primary hover:bg-primary/90 text-white" // Usando cor primária (rosa)
                 disabled={completeTaskMutation.isPending}
               >
                 {completeTaskMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
