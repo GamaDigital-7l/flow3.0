@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import PageWrapper from '@/components/layout/PageWrapper'; // Import PageWrapper
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 // Schema para as configurações, incluindo Telegram
 const settingsSchema = z.object({
@@ -25,25 +26,36 @@ const Settings: React.FC = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const userEmail = session?.user?.email;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      telegram_bot_token: process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || "",
-      telegram_chat_id: process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID || "",
+      telegram_bot_token: "",
+      telegram_chat_id: "",
     },
   });
 
   const onSubmit = async (values: SettingsFormValues) => {
+    setIsSubmitting(true);
     try {
-      // Atualizar as variáveis de ambiente no Supabase
-      await supabase.functions.setEnvVariables({
-        TELEGRAM_BOT_TOKEN: values.telegram_bot_token,
-        TELEGRAM_CHAT_ID: values.telegram_chat_id,
+      // Call the Edge Function
+      const { data, error } = await supabase.functions.invoke('set-env-vars', {
+        body: {
+          telegram_bot_token: values.telegram_bot_token,
+          telegram_chat_id: values.telegram_chat_id,
+        },
       });
-      showSuccess("Configurações salvas com sucesso!");
+
+      if (error) {
+        throw error;
+      }
+
+      showSuccess("Configurações salvas com sucesso! Lembre-se de configurar as variáveis de ambiente no console do Supabase.");
     } catch (error: any) {
       showError("Erro ao salvar configurações: " + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -83,9 +95,12 @@ const Settings: React.FC = () => {
                 className="w-full bg-input border-border text-foreground focus-visible:ring-ring"
               />
             </div>
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              Salvar Configurações
+            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar Configurações"}
             </Button>
+            <p className="text-xs text-muted-foreground">
+              Para configurar o Telegram, você precisa adicionar o token e o chat ID no console do Supabase.
+            </p>
           </form>
         </CardContent>
       </Card>
