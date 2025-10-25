@@ -11,7 +11,7 @@ const DashboardWrapper: React.FC<DashboardWrapperProps> = ({ children }) => {
     <div className={cn(
       "w-full mx-auto",
       "max-w-[96%]", // Ocupa 96% da largura total
-      "px-3 sm:px-4 lg:px-4" // Padding lateral reduzido (12px a 16px)
+      "px-3 sm:px-4 lg:px-6" // Padding lateral sutil (12px a 24px)
     )}>
       {children}
     </div>
