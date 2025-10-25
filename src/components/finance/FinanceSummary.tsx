@@ -8,6 +8,8 @@ import { formatCurrency } from '@/utils/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowUp, ArrowDown } from 'lucide-react';
 import { startOfMonth, endOfMonth, format, isBefore, isAfter } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { FinancialRecurrence } from '@/types/finance';
 
 interface FinanceSummaryData {
   totalIncome: number;
