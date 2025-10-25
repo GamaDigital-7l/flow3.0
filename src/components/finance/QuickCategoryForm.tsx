@@ -1,7 +1,9 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+"use client";
+
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +13,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+} from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { FinancialTransactionType, FinancialScope } from '@/types/finance';
 
 const quickCategorySchema = z.object({
@@ -21,7 +23,7 @@ const quickCategorySchema = z.object({
   scope: z.enum(["company", "personal"]),
 });
 
-type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
+export type QuickCategoryFormValues = z.infer<typeof quickCategorySchema>;
 
 interface QuickCategoryFormProps {
   onCategorySaved: () => void;
@@ -44,38 +46,40 @@ const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, 
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Nome da Categoria</FormLabel>
-            <FormControl>
-              <Input placeholder="Ex: Aluguel, Salário" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="type"
+          name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="income">Receita</SelectItem>
-                  <SelectItem value="expense">Despesa</SelectItem>
-                </SelectContent>
+              <FormLabel>Nome da Categoria</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Aluguel, Salário" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="income">Receita</SelectItem>
+                    <SelectItem value="expense">Despesa</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -97,9 +101,9 @@ const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, 
                     <SelectItem value="company">Empresa</SelectItem>
                     <SelectItem value="personal">Pessoal</SelectItem>
                   </SelectContent>
-                  <FormMessage />
-                </FormItem>
-              )}
+                </Select>
+                <FormMessage />
+              </FormItem>
             )}
         />
         </div>
@@ -107,6 +111,7 @@ const QuickCategoryForm: React.FC<QuickCategoryFormProps> = ({ onCategorySaved, 
 
       <Button type="submit">Salvar Categoria</Button>
     </form>
+  </Form>
   );
 };
 

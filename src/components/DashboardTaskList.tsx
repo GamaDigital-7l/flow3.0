@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { useSession } from "@/integrations/supabase/auth";
 import { Task, TaskOriginBoard } from "@/types/task"; // Importar Task e TaskOriginBoard
 import TaskListBoard from "./dashboard/TaskListBoard"; // Importar o componente reutilizável
+import QuickAddTaskInput from "./dashboard/QuickAddTaskInput";
 
 const fetchAllTasks = async (userId: string): Promise<Task[]> => {
   const { data, error } = await supabase
@@ -52,6 +53,12 @@ const DashboardTaskList: React.FC = () => {
       error={error}
       refetchTasks={refetch}
       originBoard="general"
+      quickAddTaskInput={
+        <QuickAddTaskInput
+          originBoard="general"
+          onTaskAdded={refetch}
+        />
+      }
     />
   );
 };
