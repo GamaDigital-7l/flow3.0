@@ -1,16 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PlusCircle, Trash2, Repeat, CalendarDays } from "lucide-react";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useSession } from "@/integrations/supabase/auth";
@@ -19,6 +15,19 @@ import { ClientTaskTemplate, DAYS_OF_WEEK_OPTIONS, WEEK_OPTIONS, ClientTaskGener
 import TagSelector from "../TagSelector";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+
+const tagSchema = z.object({
+  name: z.string().min(1, "O nome da tag é obrigatório."),
+  color: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Cor inválida. Use formato hexadecimal (ex: #RRGGBB).").default("#000000"),
+});
+
+export type TagFormValues = z.infer<typeof tagSchema>;
+
+interface TagFormProps {
+  initialData?: TagFormValues & { id: string };
+  onTagSaved: () => void;
+  onClose: () => void;
+}
 
 const patternSchema = z.object({
   week: z.preprocess(
@@ -40,8 +49,8 @@ const templateSchema = z.object({
     z.number().int().min(1, "A contagem de entregas deve ser positiva.")
   ),
   default_due_days: z.preprocess(
-    (val) => Number(val),
-    z.number().int().min(0, "Dias de vencimento não pode ser negativo.")
+    (val) => (val === "" ? null : Number(val)),
+    z.number().int().min(0, "Dias de vencimento não pode ser negativo.").nullable(),
   ),
   is_active: z.boolean().default(true),
   is_standard_task: z.boolean().default(false),
@@ -155,7 +164,7 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 bg-card rounded-xl card-hover-effect">
         
         {/* Informações Básicas */}
         <FormField
@@ -349,8 +358,8 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
             />
         </div>
 
-        <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-          {initialData ? "Atualizar Template" : "Criar Template"}
+        <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={saveTemplateMutation.isPending}>
+          {saveTemplateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (initialData ? "Atualizar Template" : "Criar Template")}
         </Button>
       </form>
     </Form>
@@ -358,3 +367,217 @@ const ClientTaskTemplateForm: React.FC<ClientTaskTemplateFormProps> = ({ clientI
 };
 
 export default ClientTaskTemplateForm;
+```
+
+```typescript
+<dyad-write path="src/components/client/ClientKanbanBoard.tsx" description="Adding onImageClick prop to KanbanColumn component">
+// src/components/client/ClientKanbanBoard.tsx
+"use client";
+
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { DndContext, closestCorners, DragOverlay, useSensor, useSensors, MouseSensor, TouchSensor, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Loader2, Send, Copy, MessageSquare, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DIALOG_CONTENT_CLASSNAMES } from '@/lib/constants';
+import ClientTaskCard from './ClientTaskCard';
+import KanbanColumn from './ClientKanbanColumn';
+import ClientMonthSelector from './ClientMonthSelector';
+import { useClientKanban } from '@/hooks/useClientKanban';
+import { ClientTaskStatus, ClientTask } from '@/types/client';
+import { motion } from 'framer-motion';
+import { Input } from "@/components/ui/input";
+import { showSuccess } from '@/utils/toast';
+import { cn } from '@/lib/utils';
+
+interface ClientKanbanBoardProps {
+  hook: ClientKanbanHook;
+  onAddTask: (status: ClientTaskStatus) => void;
+  onEditTask: (task: ClientTask) => void;
+  refetchTasks: () => void;
+  onImageClick: (url: string) => void;
+}
+
+const ClientKanbanBoard: React.FC<ClientKanbanBoardProps> = React.memo(({
+  hook,
+  onAddTask,
+  onEditTask,
+  refetchTasks,
+  onImageClick,
+}) => {
+  const {
+    tasksByStatus,
+    isLoading,
+    error,
+    refetch,
+    KANBAN_COLUMNS,
+    activeDragItem,
+    handleDragStart,
+    handleDragEnd,
+    handleGenerateApprovalLink,
+    currentMonthYear,
+  } = hook;
+
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const kanbanContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+
+  // DND Sensors
+  const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } });
+  const sensors = useSensors(mouseSensor, touchSensor);
+  
+  const tasksUnderReview = tasksByStatus.get('under_review') || [];
+
+  const handleGenerateLinkClick = async () => {
+    try {
+      const link = await handleGenerateApprovalLink.mutateAsync();
+      if (link) {
+        setGeneratedLink(link);
+        setIsLinkModalOpen(true);
+      }
+    } catch (e) {
+      // Error handled in hook mutation onError
+    }
+  };
+  
+  const handleCopyLink = (link: string, message: boolean = false) => {
+    if (message) {
+      const whatsappMessage = `Olá! Segue o link para aprovação dos posts de ${currentMonthYear}: ${link}`;
+      copy(whatsappMessage);
+      showSuccess("Mensagem e link copiados para o WhatsApp!");
+    } else {
+      copy(link);
+      showSuccess("Link copiado!");
+    }
+  };
+
+  const handleScroll = () => {
+    if (kanbanContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = kanbanContainerRef.current;
+      setShowLeftArrow(scrollLeft > 0);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth);
+    }
+  };
+
+  useEffect(() => {
+    handleScroll(); // Initial check
+    const container = kanbanContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  const scroll = (scrollOffset: number) => {
+    kanbanContainerRef.current?.scrollBy({ left: scrollOffset, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="flex-grow flex flex-col min-h-0">
+      
+      {/* Seletor de Mês */}
+      <ClientMonthSelector currentMonthYear={currentMonthYear} onMonthChange={hook.setCurrentMonthYear} />
+      
+      {/* Botão de Link de Aprovação */}
+      {tasksUnderReview.length > 0 && (
+        <div className="mb-4 flex-shrink-0 mt-4">
+          <Button 
+            onClick={handleGenerateLinkClick} 
+            disabled={handleGenerateApprovalLink.isPending || !tasksByStatus.get('under_review')?.filter(t => t.public_approval_enabled).length}
+            className="w-full bg-primary text-white hover:bg-primary/90"
+          >
+            {handleGenerateApprovalLink.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            Gerar Link de Aprovação ({tasksUnderReview.filter(t => t.public_approval_enabled).length} itens)
+          </Button>
+        </div>
+      )}
+      
+      {isLoading ? (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : error ? (
+        <div className="p-4 text-red-500">Erro ao carregar tarefas.</div>
+      ) : (
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          {/* Container de Scroll Horizontal */}
+          <div className="relative">
+            {showLeftArrow && (
+              <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(-200)}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+            {showRightArrow && (
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-card/80 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => scroll(200)}>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            )}
+            <div
+              ref={kanbanContainerRef}
+              className="flex gap-4 pb-4 w-full flex-grow min-h-[50vh] overflow-x-auto scroll-smooth snap-mandatory snap-x"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {KANBAN_COLUMNS.map(column => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  tasks={tasksByStatus.get(column.id) || []}
+                  onAddTask={onAddTask}
+                  onEditTask={onEditTask}
+                  refetchTasks={refetch}
+                  onImageClick={onImageClick}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <DragOverlay>
+            {activeDragItem ? (
+              <ClientTaskCard 
+                task={activeDragItem as ClientTask} 
+                onEdit={onEditTask} 
+                refetchTasks={refetch}
+                onImageClick={onImageClick}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
+
+      {/* Modal de Link de Aprovação (mantido) */}
+      <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
+        <DialogContent className={DIALOG_CONTENT_CLASSNAMES}>
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Link de Aprovação Gerado</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Compartilhe este link com o cliente para aprovação dos posts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input value={generatedLink || ''} readOnly className="bg-input border-border text-foreground focus-visible:ring-ring" />
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => handleCopyLink(generatedLink || '')} className="w-1/2 mr-2">
+                <Copy className="mr-2 h-4 w-4" /> Copiar Link
+              </Button>
+              <Button onClick={() => handleCopyLink(generatedLink || '', true)} className="w-1/2 bg-green-500 text-white hover:bg-green-700">
+                <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+});
+
+export default ClientKanbanBoard;
