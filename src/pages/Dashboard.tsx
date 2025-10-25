@@ -157,13 +157,13 @@ const Dashboard: React.FC = () => {
             </Dialog>
           </div>
 
-          {/* 2. Overdue Tasks Reminder (Moved here) */}
+          {/* 2. Overdue Tasks Reminder */}
           {overdueTasks.length > 0 && (
             <OverdueTasksReminder 
               tasks={overdueTasks.map(t => ({ 
                 id: t.id, 
                 title: t.title, 
-                due_date: t.due_date // Passando a data completa para cálculo
+                due_date: t.due_date
               }))} 
               onTaskUpdated={handleTaskUpdated}
             />
